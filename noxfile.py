@@ -21,7 +21,7 @@ import os
 
 import nox
 
-LOCAL_DEPS = ('google-cloud-core', 'google-api-core')
+LOCAL_DEPS = ("google-cloud-core", "google-api-core")
 NOX_DIR = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_INTERPRETER = "3.7"
 PYPY = "pypy3"
@@ -167,7 +167,7 @@ def system(session):
     session.install("pytest")
     for local_dep in LOCAL_DEPS:
         session.install(local_dep)
-    session.install("-e", get_path("..", "test_utils"))
+    session.install("-e", get_path("test_utils", "test_utils"))
     session.install("-e", ".")
 
     # Run py.test against the system tests.
