@@ -25,7 +25,7 @@ LOCAL_DEPS = (os.path.join("..", "api_core"), os.path.join("..", "core"))
 NOX_DIR = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_INTERPRETER = "3.7"
 PYPY = "pypy3"
-ALL_INTERPRETERS = ("3.5", "3.6", "3.7", PYPY)
+ALL_INTERPRETERS = ( "3.6", "3.7", PYPY)
 
 
 def get_path(*names):
