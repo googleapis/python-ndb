@@ -16,7 +16,7 @@
 
 set -eo pipefail
 
-cd github/google-cloud-python
+cd github/python-ndb
 
 # Disable buffering, so that the logs stream through.
 export PYTHONUNBUFFERED=1
