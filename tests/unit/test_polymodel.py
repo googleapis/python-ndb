@@ -83,7 +83,7 @@ class TestPolyModel:
 
         cat = Cat()
 
-        assert cat._get_kind() == 'Animal'
+        assert cat._get_kind() == "Animal"
         assert cat.class_ == ["Animal", "Feline", "Cat"]
 
     @staticmethod
