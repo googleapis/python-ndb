@@ -1997,9 +1997,9 @@ class BlobProperty(Property):
             .BadValueError: If the current property is indexed but the value
                 exceeds the maximum length (1500 bytes).
         """
-        if not isinstance(value, bytes):
+        if not isinstance(value, (str, bytes)):
             raise exceptions.BadValueError(
-                "Expected bytes, got {!r}".format(value)
+                "Expected str or bytes, got {!r}".format(value)
             )
 
         if self._indexed and len(value) > _MAX_STRING_LENGTH:
@@ -2171,11 +2171,14 @@ class TextProperty(BlobProperty):
 
         Returns:
             Optional[bytes]: The converted value. If ``value`` is a
-            :class:`str`, this will return the UTF-8 encoded bytes for it.
+            :class:`bytes`, this will return utf-8 decoded unicode string.
             Otherwise, it will return :data:`None`.
         """
-        if isinstance(value, str):
-            return value.encode("utf-8")
+        if isinstance(value, bytes):
+            try:
+                return value.decode("utf-8")
+            except UnicodeError:
+                pass
 
     def _from_base_type(self, value):
         """Convert a value from the "base" value type for this property.
