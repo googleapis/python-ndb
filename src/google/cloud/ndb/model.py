@@ -2170,15 +2170,12 @@ class TextProperty(BlobProperty):
             value (Union[bytes, str]): The value to be converted.
 
         Returns:
-            Optional[bytes]: The converted value. If ``value`` is a
-            :class:`bytes`, this will return utf-8 decoded unicode string.
-            Otherwise, it will return :data:`None`.
+            Optional[bytes]: The converted value. No conversion is required
+            here as TextProperty and StringProperty can accept both string
+            and bytes. However, this method needs to exist because of how
+            validation is done.
         """
-        if isinstance(value, bytes):
-            try:
-                return value.decode("utf-8")
-            except UnicodeError:
-                pass
+        return value
 
     def _from_base_type(self, value):
         """Convert a value from the "base" value type for this property.
