@@ -734,6 +734,9 @@ class Property(ModelAttribute):
         args = []
         cls = type(self)
         for name, is_keyword in self._constructor_info():
+            # for py 3.5 compatibility, kwargs is on signature, get rid of it
+            if name == "kwargs":
+                continue
             attr = "_{}".format(name)
             instance_val = getattr(self, attr)
             default_val = getattr(cls, attr)
