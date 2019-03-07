@@ -28,6 +28,12 @@ class Test_transaction:
             _transaction.transaction(None, retries=2)
 
     @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_propagation():
+        with pytest.raises(NotImplementedError):
+            _transaction.transaction(None, propagation=1)
+
+    @staticmethod
     def test_already_in_transaction(in_context):
         with in_context.new(transaction=b"tx123").use():
             with pytest.raises(NotImplementedError):
@@ -39,7 +45,7 @@ class Test_transaction:
         transaction_async.return_value.result.return_value = 42
         assert _transaction.transaction("callback") == 42
         transaction_async.assert_called_once_with(
-            "callback", read_only=False, retries=0
+            "callback", read_only=False, retries=0, xg=True, propagation=None
         )
 
 
