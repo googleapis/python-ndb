@@ -18,12 +18,24 @@ from google.cloud.ndb import tasklets
 
 
 def transaction(callback, retries=0, read_only=False):
+    """Run a callback in a transaction.
+
+    Args:
+        callback (Callable): The function or tasklet to be called.
+        retries (int): Number of times to potentially retry the callback in
+            case of transient server errors.
+        read_only (bool): Whether to run the transaction in read only mode.
+    """
     future = transaction_async(callback, retries=retries, read_only=read_only)
     return future.result()
 
 
 @tasklets.tasklet
 def transaction_async(callback, retries=0, read_only=False):
+    """Run a callback in a transaction.
+
+    This is the asynchronous version of :func:`transaction`.
+    """
     if retries:
         raise NotImplementedError("Retry is not implemented yet")
 
