@@ -95,6 +95,7 @@ from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _datastore_api
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import tasklets
+from google.cloud.ndb import _transaction
 
 
 __all__ = ["Key"]
@@ -615,7 +616,7 @@ class Key:
         flat = self.flat()
         pairs = []
         for i in range(0, len(flat), 2):
-            pairs.append(flat[i : i + 2])
+            pairs.append(flat[i: i + 2])
         return tuple(pairs)
 
     def flat(self):
@@ -740,22 +741,29 @@ class Key:
         if entity_pb is not _datastore_api._NOT_FOUND:
             return model._entity_from_protobuf(entity_pb)
 
-    def delete(self, **ctx_options):
+    def delete(self, **options):
         """Synchronously delete the entity for this key.
 
         This is a no-op if no such entity exists.
 
+        Note:
+            If in a transaction, the entity can only be deleted at transaction
+            commit time. In that case, this function will schedule the entity
+            to be deleted as part of the transaction and will return
+            immediately, which is effectively the same as calling
+            :meth:`delete_async` and ignoring the returned future. If not in a
+            transaction, this function will block synchronously until the
+            entity is deleted, as one would expect.
+
         Args:
-            ctx_options (Dict[str, Any]): The context options for the request.
+            options (Dict[str, Any]): The context options for the request.
                 For example, ``{"deadline": 5}``.
-
-        Raises:
-            NotImplementedError: Always. The method has not yet been
-                implemented.
         """
-        raise NotImplementedError
+        future = self.delete_async(**options)
+        if not _transaction.in_transaction():
+            return future.result()
 
-    def delete_async(self, **ctx_options):
+    def delete_async(self, **options):
         """Schedule deletion of the entity for this key.
 
         This result of the returned a future becomes available once the
@@ -763,14 +771,10 @@ class Key:
         (i.e. there is no way to tell whether the entity existed or not).
 
         Args:
-            ctx_options (Dict[str, Any]): The context options for the request.
+            options (Dict[str, Any]): The context options for the request.
                 For example, ``{"deadline": 5}``.
-
-        Raises:
-            NotImplementedError: Always. The method has not yet been
-                implemented.
         """
-        raise NotImplementedError
+        return _datastore_api.delete(self._key, **options)
 
     @classmethod
     def from_old_key(cls, old_key):
