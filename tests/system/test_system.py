@@ -23,11 +23,20 @@ from google.cloud import ndb
 KIND = "SomeKind"
 
 
+@pytest.fixture(scope="module", autouse=True)
+def initial_clean():
+    # Make sure database is in clean state at beginning of test run
+    client = datastore.Client()
+    query = client.query(kind=KIND)
+    for entity in query.fetch():
+        client.delete(entity.key)
+
+
 @pytest.fixture
 def ds_client():
     client = datastore.Client()
 
-    # Make sure we're leaving database as clean as we found it
+    # Make sure we're leaving database as clean as we found it after each test
     query = client.query(kind=KIND)
     results = list(query.fetch())
     assert not results
