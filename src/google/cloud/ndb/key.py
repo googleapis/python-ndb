@@ -616,7 +616,7 @@ class Key:
         flat = self.flat()
         pairs = []
         for i in range(0, len(flat), 2):
-            pairs.append(flat[i: i + 2])
+            pairs.append(flat[i : i + 2])
         return tuple(pairs)
 
     def flat(self):

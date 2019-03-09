@@ -552,7 +552,7 @@ class TestKey:
         future.set_result("result")
 
         key = key_module.Key("a", "b", app="c")
-        assert key.delete() is "result"
+        assert key.delete() == "result"
         _datastore_api.delete.assert_called_once_with(key._key)
 
     @staticmethod

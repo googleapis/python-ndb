@@ -525,8 +525,9 @@ class Test_delete:
                 return self.delete == other.delete
 
         eventloop = mock.Mock(spec=("add_idle", "run"))
-        with in_context.new(eventloop=eventloop,
-                            transaction=b"tx123").use() as context:
+        with in_context.new(
+            eventloop=eventloop, transaction=b"tx123"
+        ).use() as context:
             datastore_pb2.Mutation = Mutation
 
             key1 = key_module.Key("SomeKind", 1)._key

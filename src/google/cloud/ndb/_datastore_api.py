@@ -716,7 +716,7 @@ def _datastore_allocate_ids(keys):
     )
 
     api = stub()
-    rpc =  _remote.RemoteCall(
+    rpc = _remote.RemoteCall(
         api.AllocateIds.future(request), "AllocateIds({})".format(request)
     )
     log.debug(rpc)
@@ -761,7 +761,7 @@ def _datastore_begin_transaction(read_only):
     )
 
     api = stub()
-    rpc =  _remote.RemoteCall(
+    rpc = _remote.RemoteCall(
         api.BeginTransaction.future(request),
         "BeginTransaction({})".format(request),
     )
