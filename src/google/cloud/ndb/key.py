@@ -766,7 +766,7 @@ class Key:
     def delete_async(self, **options):
         """Schedule deletion of the entity for this key.
 
-        This result of the returned a future becomes available once the
+        The result of the returned future becomes available once the
         deletion is complete. In all cases the future's result is :data:`None`
         (i.e. there is no way to tell whether the entity existed or not).
 
