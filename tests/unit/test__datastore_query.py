@@ -33,8 +33,9 @@ class Test_fetch:
             tasklet.result()
 
     @staticmethod
-    @mock.patch("google.cloud.ndb._datastore_query._process_result",
-                str.__add__)
+    @mock.patch(
+        "google.cloud.ndb._datastore_query._process_result", str.__add__
+    )
     @mock.patch("google.cloud.ndb._datastore_query._run_query")
     @mock.patch("google.cloud.ndb._datastore_query._query_to_protobuf")
     def test_success(_query_to_protobuf, _run_query):
@@ -63,9 +64,12 @@ class Test__process_result:
     def test_full_entity(model):
         model._entity_from_protobuf.return_value = "bar"
         result = mock.Mock(entity="foo", spec=("entity",))
-        assert _datastore_query._process_result(
-            _datastore_query.RESULT_TYPE_FULL,
-            result) == "bar"
+        assert (
+            _datastore_query._process_result(
+                _datastore_query.RESULT_TYPE_FULL, result
+            )
+            == "bar"
+        )
 
         model._entity_from_protobuf.assert_called_once_with("foo")
 
@@ -75,7 +79,7 @@ class Test__query_to_protobuf:
     def test_kind_only():
         query = query_module.Query(kind="Foo")
         assert _datastore_query._query_to_protobuf(query) == query_pb2.Query(
-            kind=[query_pb2.KindExpression(name="Foo")],
+            kind=[query_pb2.KindExpression(name="Foo")]
         )
 
 
@@ -108,8 +112,7 @@ class Test__run_query:
         ]
 
         datastore_pb2.RunQueryRequest.assert_called_once_with(
-            project_id="testing",
-            query=query_pb,
+            project_id="testing", query=query_pb
         )
         _datastore_api.make_call.assert_called_once_with("RunQuery", request)
 
@@ -117,22 +120,26 @@ class Test__run_query:
     @mock.patch("google.cloud.ndb._datastore_query.datastore_pb2")
     @mock.patch("google.cloud.ndb._datastore_query._datastore_api")
     def test_double_batch(_datastore_api, datastore_pb2):
-        query_pb = mock.Mock(
-            spec=("start_cursor",),
-        )
+        query_pb = mock.Mock(spec=("start_cursor",))
 
         make_call_future1 = tasklets.Future("RunQuery")
         make_call_future2 = tasklets.Future("RunQuery")
-        _datastore_api.make_call.side_effect = (make_call_future1,
-                                                make_call_future2)
+        _datastore_api.make_call.side_effect = (
+            make_call_future1,
+            make_call_future2,
+        )
 
         batch1 = mock.Mock(
             more_results=_datastore_query.MORE_RESULTS_TYPE_NOT_FINISHED,
             entity_result_type="this type",
             entity_results=["foo"],
             end_cursor=b"end",
-            spec=("more_results", "entity_result_type", "entity_results",
-                  "end_cursor"),
+            spec=(
+                "more_results",
+                "entity_result_type",
+                "entity_results",
+                "end_cursor",
+            ),
         )
         batch2 = mock.Mock(
             more_results="nope",

@@ -1069,11 +1069,13 @@ class Query:
         """
         if limit:
             raise NotImplementedError(
-                "'limit' is not implemented yet for queries")
+                "'limit' is not implemented yet for queries"
+            )
 
         if options:
             raise NotImplementedError(
-                "'options' are not implemented yet for queries")
+                "'options' are not implemented yet for queries"
+            )
 
         return _datastore_query.fetch(self)
 

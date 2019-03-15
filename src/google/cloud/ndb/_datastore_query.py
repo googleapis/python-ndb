@@ -33,10 +33,10 @@ def fetch(query):
     """Fetch query results.
 
     Args:
-        query.Query: The query.
+        query (query.Query): The query.
 
     Returns:
-        tasklets.Future: Result is List[model.Model]. The query results.
+        tasklets.Future: Result is List[model.Model]: The query results.
     """
     for name in (
         "ancestor",
@@ -50,22 +50,35 @@ def fetch(query):
     ):
         if getattr(query, name, None):
             raise NotImplementedError(
-                "{} is not yet implemented for queries.".format(name))
+                "{} is not yet implemented for queries.".format(name)
+            )
 
     query_pb = _query_to_protobuf(query)
     results = yield _run_query(query_pb)
-    return [_process_result(result_type, result)
-            for result_type, result in results]
+    return [
+        _process_result(result_type, result) for result_type, result in results
+    ]
 
 
 def _process_result(result_type, result):
-    """Process a single entity result."""
+    """Process a single entity result.
+
+    Args:
+        result_type (query_pb2.EntityResult.ResultType): The type of the result
+            (full entity, projection, or key only).
+        result (query_pb2.EntityResult): The protocol buffer representation of
+            the query result.
+
+    Returns:
+        Union[model.Model, key.Key]: The processed result.
+    """
     if result_type == RESULT_TYPE_FULL:
         return model._entity_from_protobuf(result.entity)
 
     raise NotImplementedError(
         "Processing for projection and key only entity results is not yet "
-        "implemented for queries.")
+        "implemented for queries."
+    )
 
 
 def _query_to_protobuf(query):
@@ -78,7 +91,7 @@ def _query_to_protobuf(query):
         query_pb2.Query: The protocol buffer representation of the query.
     """
     query_pb = query_pb2.Query(
-        kind=[query_pb2.KindExpression(name=query.kind)],
+        kind=[query_pb2.KindExpression(name=query.kind)]
     )
     return query_pb
 
@@ -91,9 +104,10 @@ def _run_query(query_pb):
 
     Args:
         query_pb (query_pb2.Query): The query protocol buffer representation.
+
     Returns:
         tasklets.Future: List[Tuple[query_pb2.EntityResult.ResultType,
-            query_pb2.EntityResult]]
+            query_pb2.EntityResult]]: The raw query results.
     """
     client = context_module.get_context().client
     results = []
@@ -101,13 +115,16 @@ def _run_query(query_pb):
     while True:
         # See what results we get from the backend
         request = datastore_pb2.RunQueryRequest(
-            project_id=client.project,
-            query=query_pb,
+            project_id=client.project, query=query_pb
         )
         response = yield _datastore_api.make_call("RunQuery", request)
         batch = response.batch
-        results.extend(((batch.entity_result_type, result) for result in
-                        batch.entity_results))
+        results.extend(
+            (
+                (batch.entity_result_type, result)
+                for result in batch.entity_results
+            )
+        )
 
         # Did we get all of them?
         if batch.more_results != MORE_RESULTS_TYPE_NOT_FINISHED:

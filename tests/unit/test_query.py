@@ -131,26 +131,40 @@ class TestParameter:
 class TestParameterizedFunction:
     @staticmethod
     def test_constructor():
-        query = query_module.ParameterizedFunction("user", query_module.Parameter(1))
+        query = query_module.ParameterizedFunction(
+            "user", query_module.Parameter(1)
+        )
         assert query.func == "user"
         assert query.values == query_module.Parameter(1)
 
     @staticmethod
     def test___repr__():
-        query = query_module.ParameterizedFunction("user", query_module.Parameter(1))
-        assert query.__repr__() == "ParameterizedFunction('user', Parameter(1))"
+        query = query_module.ParameterizedFunction(
+            "user", query_module.Parameter(1)
+        )
+        assert (
+            query.__repr__() == "ParameterizedFunction('user', Parameter(1))"
+        )
 
     @staticmethod
     def test___eq__parameter():
-        query = query_module.ParameterizedFunction("user", query_module.Parameter(1))
+        query = query_module.ParameterizedFunction(
+            "user", query_module.Parameter(1)
+        )
         assert (
-            query.__eq__(query_module.ParameterizedFunction("user", query_module.Parameter(1)))
+            query.__eq__(
+                query_module.ParameterizedFunction(
+                    "user", query_module.Parameter(1)
+                )
+            )
             is True
         )
 
     @staticmethod
     def test___eq__no_parameter():
-        query = query_module.ParameterizedFunction("user", query_module.Parameter(1))
+        query = query_module.ParameterizedFunction(
+            "user", query_module.Parameter(1)
+        )
         assert query.__eq__(42) is NotImplemented
 
 
@@ -415,7 +429,9 @@ class TestFilterNode:
 
         filter_node1 = query_module.FilterNode("a", "<", 2.5)
         filter_node2 = query_module.FilterNode("a", ">", 2.5)
-        assert or_node == query_module.DisjunctionNode(filter_node1, filter_node2)
+        assert or_node == query_module.DisjunctionNode(
+            filter_node1, filter_node2
+        )
 
     @staticmethod
     def test_pickling():
@@ -918,7 +934,9 @@ class TestQuery:
     @pytest.mark.usefixtures("in_context")
     def test_constructor_with_ancestor_parameterized_function():
         query = query_module.Query(
-            ancestor=query_module.ParameterizedFunction("key", query_module.Parameter(1))
+            ancestor=query_module.ParameterizedFunction(
+                "key", query_module.Parameter(1)
+            )
         )
         assert query.ancestor == query_module.ParameterizedFunction(
             "key", query_module.Parameter(1)
@@ -954,7 +972,9 @@ class TestQuery:
     @pytest.mark.usefixtures("in_context")
     @unittest.mock.patch("google.cloud.ndb.model.Model._check_properties")
     def test_constructor_with_projection_as_property(_check_props):
-        query = query_module.Query(kind="Foo", projection=[model.Property(name="X")])
+        query = query_module.Query(
+            kind="Foo", projection=[model.Property(name="X")]
+        )
         assert query.projection == ("X",)
         _check_props.assert_not_called()
 
@@ -965,7 +985,9 @@ class TestQuery:
         class Foo(model.Model):
             x = model.IntegerProperty()
 
-        query = query_module.Query(kind="Foo", projection=[model.Property(name="x")])
+        query = query_module.Query(
+            kind="Foo", projection=[model.Property(name="x")]
+        )
         assert query.projection == ("x",)
         _check_props.assert_called_once_with(["x"])
 
@@ -978,7 +1000,9 @@ class TestQuery:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_constructor_with_filters():
-        query = query_module.Query(filters=query_module.FilterNode("f", None, None))
+        query = query_module.Query(
+            filters=query_module.FilterNode("f", None, None)
+        )
         assert isinstance(query.filters, query_module.Node)
 
     @staticmethod

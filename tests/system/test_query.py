@@ -36,7 +36,7 @@ def test_fetch_all_of_a_kind(ds_entity):
     class SomeKind(ndb.Model):
         foo = ndb.IntegerProperty()
 
-    #query = SomeKind.query()  # Not implemented yet
+    # query = SomeKind.query()  # Not implemented yet
     query = ndb.Query(kind=KIND)
     results = query.fetch()
     assert len(results) == 5
@@ -62,7 +62,7 @@ def test_fetch_lots_of_a_kind(dispose_of):
     for key in make_entities().result():
         dispose_of(key._key)
 
-    #query = SomeKind.query()  # Not implemented yet
+    # query = SomeKind.query()  # Not implemented yet
     query = ndb.Query(kind=KIND)
     results = query.fetch()
     assert len(results) == n_entities
