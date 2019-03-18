@@ -92,7 +92,7 @@ def _query_to_protobuf(query):
     """
     query_args = {}
     if query.kind:
-        query_args['kind'] = [query_pb2.KindExpression(name=query.kind)]
+        query_args["kind"] = [query_pb2.KindExpression(name=query.kind)]
 
     return query_pb2.Query(**query_args)
 
