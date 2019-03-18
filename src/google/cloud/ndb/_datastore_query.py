@@ -90,10 +90,11 @@ def _query_to_protobuf(query):
     Returns:
         query_pb2.Query: The protocol buffer representation of the query.
     """
-    query_pb = query_pb2.Query(
-        kind=[query_pb2.KindExpression(name=query.kind)]
-    )
-    return query_pb
+    query_args = {}
+    if query.kind:
+        query_args['kind'] = [query_pb2.KindExpression(name=query.kind)]
+
+    return query_pb2.Query(**query_args)
 
 
 @tasklets.tasklet

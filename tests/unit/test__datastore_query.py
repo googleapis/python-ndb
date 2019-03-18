@@ -76,7 +76,12 @@ class Test__process_result:
 
 class Test__query_to_protobuf:
     @staticmethod
-    def test_kind_only():
+    def test_no_args():
+        query = query_module.Query()
+        assert _datastore_query._query_to_protobuf(query) == query_pb2.Query()
+
+    @staticmethod
+    def test_kind():
         query = query_module.Query(kind="Foo")
         assert _datastore_query._query_to_protobuf(query) == query_pb2.Query(
             kind=[query_pb2.KindExpression(name="Foo")]
