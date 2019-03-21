@@ -72,18 +72,16 @@ class QueryOptions:
     )
 
     def __init__(self, config=None, **kwargs):
-        for key, value in kwargs.items():
-            setattr(self, key, value)
         if config is not None:
             if isinstance(config, QueryOptions):
                 for key in config.__slots__:
-                    existing = getattr(self, key, None)
-                    if existing is None:
-                        default = getattr(config, key, None)
-                        if default is not None:
-                            setattr(self, key, default)
+                    default = getattr(config, key, None)
+                    if default is not None:
+                        setattr(self, key, default)
             else:
                 raise TypeError("Config must be a QueryOptions instance.")
+        for key, value in kwargs.items():
+            setattr(self, key, value)
 
     def __repr__(self):
         options = ", ".join(
@@ -952,7 +950,7 @@ class Query:
         filters (Union[Node, tuple]): Node representing a filter expression
             tree. Property filters applied by this query. The sequence
             is ``(property_name, operator, value)``.
-        orders (Union[tuple, list]): The field names used to
+        order_by (Union[tuple, list]): The field names used to
             order query results. Renamed `order` in google.cloud.datastore.
         app (str): The namespace to restrict results. If not passed, uses the
             client's value. Renamed `project` in google.cloud.datastore.
@@ -972,7 +970,7 @@ class Query:
         kind=None,
         ancestor=None,
         filters=None,
-        orders=None,
+        order_by=None,
         app=None,
         namespace=None,
         default_options=None,
@@ -1011,11 +1009,11 @@ class Query:
                     "filters must be a query Node or None; "
                     "received {}".format(filters)
                 )
-        if orders is not None:
-            if not isinstance(orders, (list, tuple)):
+        if order_by is not None:
+            if not isinstance(order_by, (list, tuple)):
                 raise TypeError(
-                    "orders must be a list, a tuple or None; "
-                    "received {}".format(orders)
+                    "order must be a list, a tuple or None; "
+                    "received {}".format(order_by)
                 )
         if default_options is not None:
             if not isinstance(default_options, QueryOptions):
@@ -1033,7 +1031,7 @@ class Query:
         self.kind = kind
         self.ancestor = ancestor
         self.filters = filters
-        self.orders = orders
+        self.order_by = self.orders = order_by
         self.app = app
         self.namespace = namespace
         self.default_options = default_options
@@ -1074,8 +1072,8 @@ class Query:
             args.append("ancestor=%r" % self.ancestor)
         if self.filters is not None:
             args.append("filters=%r" % self.filters)
-        if self.orders is not None:
-            args.append("orders=%r" % self.orders)
+        if self.order_by is not None:
+            args.append("order_by=%r" % self.order_by)
         if self.projection:
             args.append(
                 "projection=%r" % (self._to_property_names(self.projection))
@@ -1094,8 +1092,11 @@ class Query:
         filters = self.filters
         if filters is not None:
             # post_filters = self.filters._post_filters()
-            if isinstance(self.filters, DisjunctionNode) or isinstance(
-                self.filters, ConjunctionNode
+            if (
+                isinstance(self.filters, DisjunctionNode)
+                or isinstance(self.filters, ConjunctionNode)
+                or isinstance(self.filters, AND)
+                or isinstance(self.filters, OR)
             ):
                 filters = [f for f in self.filters]
             else:
@@ -1113,9 +1114,9 @@ class Query:
         projection = []
         if self.projection is not None:
             projection = self.projection
-        order = []
-        if self.orders is not None:
-            order = self.orders
+        order_by = []
+        if self.order_by is not None:
+            order_by = self.order_by
         # This is just temporary, until we have datastore query functionality
         dsquery = datastore.Query(
             client,
@@ -1124,7 +1125,7 @@ class Query:
             namespace=self.namespace,
             ancestor=self.ancestor,
             filters=filters,
-            order=order,
+            order=order_by,
             projection=projection,
             distinct_on=group_by,
         )
@@ -1140,38 +1141,48 @@ class Query:
     @property
     def is_distinct(self):
         """True if results are guaranteed to contain a unique set of property
-      values.
-      This happens when every property in the group_by is also in the projection.
-      """
+        values.
+
+        This happens when every property in the group_by is also in the projection.
+        """
         return bool(
             self.group_by
             and set(self._to_property_names(self.group_by))
             <= set(self._to_property_names(self.projection))
         )
 
-    def filter(self, *args):
-        """Return a new Query with additional filter(s) applied."""
-        if not args:
+    def filter(self, *filters):
+        """Return a new Query with additional filter(s) applied.
+
+        Args:
+            filters (list[Node]): One or more instances of Node.
+
+        Returns:
+            A new query with the new filters applied.
+
+        Raises:
+            TypeError: If one of the filters is not a Node.
+        """
+        if not filters:
             return self
-        preds = []
-        f = self.filters
-        if f:
-            preds.append(f)
-        for arg in args:
-            if not isinstance(arg, Node):
+        new_filters = []
+        if self.filters:
+            new_filters.append(self.filters)
+        for filter in filters:
+            if not isinstance(filter, Node):
                 raise TypeError(
-                    "Cannot filter a non-Node argument; received %r" % arg
+                    "Cannot filter a non-Node argument; received %r" % filter
                 )
-            preds.append(arg)
-        if len(preds) == 1:
-            pred = preds[0]
+            new_filters.append(filter)
+        if len(new_filters) == 1:
+            new_filters = new_filters[0]
         else:
-            pred = ConjunctionNode(*preds)
+            new_filters = ConjunctionNode(*new_filters)
         return self.__class__(
             kind=self.kind,
             ancestor=self.ancestor,
-            filters=pred,
-            orders=self.orders,
+            filters=new_filters,
+            order_by=self.order_by,
             app=self.app,
             namespace=self.namespace,
             default_options=self.default_options,
@@ -1179,21 +1190,28 @@ class Query:
             group_by=self.group_by,
         )
 
-    def order(self, *args):
-        """Return a new Query with additional sort order(s) applied."""
-        if not args:
+    def order(self, *names):
+        """Return a new Query with additional sort order(s) applied.
+
+        Args:
+            names (list[str]): One or more field names to sort by.
+
+        Returns:
+            A new query with the new order applied.
+        """
+        if not names:
             return self
-        orders = self.orders
-        if orders is None:
-            orders = list(args)
+        order_by = self.order_by
+        if order_by is None:
+            order_by = list(names)
         else:
-            orders = list(orders)
-            orders.extend(args)
+            order_by = list(order_by)
+            order_by.extend(names)
         return self.__class__(
             kind=self.kind,
             ancestor=self.ancestor,
             filters=self.filters,
-            orders=orders,
+            order_by=order_by,
             app=self.app,
             namespace=self.namespace,
             default_options=self.default_options,
@@ -1202,7 +1220,12 @@ class Query:
         )
 
     def analyze(self):
-        """Return a list giving the parameters required by a query."""
+        """Return a list giving the parameters required by a query.
+
+        When a query is created using gql, any bound parameters
+        are created as ParameterNode instances. This method returns
+        the names of any such parameters.
+        """
 
         class MockBindings(dict):
             def __contains__(self, key):
@@ -1219,14 +1242,29 @@ class Query:
             filters = filters.resolve(bindings, used)
         return sorted(used)  # Returns only the keys.
 
-    def bind(self, *args, **kwds):
-        """Bind parameter values.  Returns a new Query object."""
-        return self._bind(args, kwds)
+    def bind(self, *positional, **keyword):
+        """Bind parameter values.  Returns a new Query object.
 
-    def _bind(self, args, kwds):
-        """Bind parameter values.  Returns a new Query object."""
-        bindings = dict(kwds)
-        for i, arg in enumerate(args):
+        When a query is created using gql, any bound parameters
+        are created as ParameterNode instances. This method
+        receives values for both positional (:1, :2, etc.) or
+        keyword (:xyz, :abc, etc.) bound parameters, then sets the
+        values accordingly. This mechanism allows easy reuse of a
+        parameterized query, by passing the values to bind here.
+
+        Args:
+            positional (list[Any]): One or more positional values to bind.
+            keyword (dict[Any]): One or more keyword values to bind.
+
+        Returns:
+            A new query with the new bound parameter values.
+
+        Raises:
+            google.cloud.ndb.exceptions.BadArgumentError: If one of
+            the positional parameters is not used in the query.
+        """
+        bindings = dict(keyword)
+        for i, arg in enumerate(positional):
             bindings[i + 1] = arg
         used = {}
         ancestor = self.ancestor
@@ -1236,7 +1274,7 @@ class Query:
         if filters is not None:
             filters = filters.resolve(bindings, used)
         unused = []
-        for arg in args:
+        for arg in positional:
             if arg not in used:
                 unused.append(i)
         if unused:
@@ -1248,7 +1286,7 @@ class Query:
             kind=self.kind,
             ancestor=ancestor,
             filters=filters,
-            orders=self.orders,
+            order_by=self.order_by,
             app=self.app,
             namespace=self.namespace,
             default_options=self.default_options,

@@ -43,8 +43,12 @@ class TestQueryOptions:
 
     @staticmethod
     def test_constructor_with_config():
-        config = query_module.QueryOptions(kind="other", namespace="config_test")
-        options = query_module.QueryOptions(config=config, kind="test", project="app")
+        config = query_module.QueryOptions(
+            kind="other", namespace="config_test"
+        )
+        options = query_module.QueryOptions(
+            config=config, kind="test", project="app"
+        )
         assert options.kind == "test"
         assert options.project == "app"
         assert options.namespace == "config_test"
@@ -56,9 +60,9 @@ class TestQueryOptions:
 
     @staticmethod
     def test___repr__():
-        rep = "QueryOptions(kind='test', project='app')"
+        representation = "QueryOptions(kind='test', project='app')"
         options = query_module.QueryOptions(kind="test", project="app")
-        assert options.__repr__() == rep
+        assert options.__repr__() == representation
 
 
 class TestQueryOrder:
@@ -949,7 +953,7 @@ class TestQuery:
         assert query.kind == "Foo"
         assert query.ancestor is None
         assert query.filters is None
-        assert query.orders is None
+        assert query.order_by is None
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1029,8 +1033,8 @@ class TestQuery:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_constructor_with_orders():
-        query = query_module.Query(orders=[])
-        assert query.orders == []
+        query = query_module.Query(order_by=[])
+        assert query.order_by == []
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1072,7 +1076,7 @@ class TestQuery:
         with pytest.raises(TypeError):
             query_module.Query(filters=42)
         with pytest.raises(TypeError):
-            query_module.Query(orders=42)
+            query_module.Query(order_by=42)
         with pytest.raises(TypeError):
             query_module.Query(projection="")
         with pytest.raises(TypeError):
@@ -1099,12 +1103,12 @@ class TestQuery:
             projection=[model.Property(name="x")],
             filters=query_module.FilterNode("f", None, None),
             default_options=options,
-            orders=[],
+            order_by=[],
         )
         rep = (
             "Query(app='app', namespace='space', kind='Foo', ancestor="
             "Key('a', 'b', app='app', namespace='space'), filters="
-            "FilterNode('f', None, None), orders=[], projection=['x'], "
+            "FilterNode('f', None, None), order_by=[], projection=['x'], "
             "group_by=['X'], default_options=QueryOptions(kind='Bar'))"
         )
         assert query.__repr__() == rep
@@ -1129,7 +1133,7 @@ class TestQuery:
             projection=[model.Property(name="x")],
             filters=query_module.FilterNode("f", None, None),
             default_options=options,
-            orders=[],
+            order_by=[],
         )
         query2 = query.bind()
         assert query2.kind == "Foo"
@@ -1147,7 +1151,7 @@ class TestQuery:
             projection=[model.Property(name="x")],
             filters=query_module.FilterNode("f", None, None),
             default_options=options,
-            orders=[],
+            order_by=[],
         )
         key = key_module.Key("a", "b", app="app", namespace="space")
         query2 = query.bind(xyz=key)
@@ -1166,7 +1170,7 @@ class TestQuery:
             projection=[model.Property(name="x")],
             filters=query_module.FilterNode("f", None, None),
             default_options=options,
-            orders=[],
+            order_by=[],
         )
         with pytest.raises(exceptions.BadArgumentError):
             query.bind(42, "xyz", xyz="1")
@@ -1191,7 +1195,7 @@ class TestQuery:
             projection=[model.Property(name="x")],
             filters=query_module.FilterNode("f", None, None),
             default_options=options,
-            orders=[],
+            order_by=[],
         )
         datastore_query = query._get_query(context.client)
         assert isinstance(datastore_query, datastore.Query)
@@ -1213,7 +1217,7 @@ class TestQuery:
             projection=[model.Property(name="x")],
             filters=query_module.ConjunctionNode(*filters),
             default_options=options,
-            orders=[],
+            order_by=[],
         )
         datastore_query = query._get_query(context.client)
         assert isinstance(datastore_query, datastore.Query)
@@ -1228,19 +1232,25 @@ class TestQuery:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_is_distinct_true(context):
-        query = query_module.Query(group_by=["X"], projection=[model.Property(name="X")])
+        query = query_module.Query(
+            group_by=["X"], projection=[model.Property(name="X")]
+        )
         assert query.is_distinct is True
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_is_distinct_false(context):
-        query = query_module.Query(group_by=["X"], projection=[model.Property(name="y")])
+        query = query_module.Query(
+            group_by=["X"], projection=[model.Property(name="y")]
+        )
         assert query.is_distinct is False
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_filter(context):
-        query = query_module.Query(kind="Foo", filters=query_module.FilterNode("x", "=", 1))
+        query = query_module.Query(
+            kind="Foo", filters=query_module.FilterNode("x", "=", 1)
+        )
         filters = [
             query_module.FilterNode("y", ">", 0),
             query_module.FilterNode("y", "<", 1000),
@@ -1260,7 +1270,9 @@ class TestQuery:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_filter_no_args(context):
-        query = query_module.Query(kind="Foo", filters=query_module.FilterNode("x", "=", 1))
+        query = query_module.Query(
+            kind="Foo", filters=query_module.FilterNode("x", "=", 1)
+        )
         filters = []
         query = query.filter(*filters)
         assert query.filters == query_module.FilterNode("x", "=", 1)
@@ -1268,7 +1280,9 @@ class TestQuery:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_filter_bad_args(context):
-        query = query_module.Query(kind="Foo", filters=query_module.FilterNode("x", "=", 1))
+        query = query_module.Query(
+            kind="Foo", filters=query_module.FilterNode("x", "=", 1)
+        )
         filters = ["f"]
         with pytest.raises(TypeError):
             query.filter(*filters)
@@ -1294,23 +1308,23 @@ class TestQuery:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_order(context):
-        query = query_module.Query(kind="Foo", orders=["a", "b"])
+        query = query_module.Query(kind="Foo", order_by=["a", "b"])
         query = query.order("c", "d")
-        assert query.orders == ["a", "b", "c", "d"]
+        assert query.order_by == ["a", "b", "c", "d"]
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_order_no_initial_order(context):
         query = query_module.Query(kind="Foo")
         query = query.order("c", "d")
-        assert query.orders == ["c", "d"]
+        assert query.order_by == ["c", "d"]
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_order_no_args(context):
-        query = query_module.Query(kind="Foo", orders=["a", "b"])
+        query = query_module.Query(kind="Foo", order_by=["a", "b"])
         query = query.order()
-        assert query.orders == ["a", "b"]
+        assert query.order_by == ["a", "b"]
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
