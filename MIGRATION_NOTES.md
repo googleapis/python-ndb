@@ -139,6 +139,16 @@ The primary differences come from:
 -  Because google.appengine.datastore.datastore_query.Order is no longer
   available, the `order` parameter for the query.Query constructor has been
   replaced by a list or tuple.
+- Transaction propagation is no longer supported. This was a feature of the
+  older Datastore RPC library which is no longer used. Starting a new
+  transaction when a transaction is already in progress in the current context
+  will result in an error, as will passing a value for the `propagation` option
+  when starting a transaction.
+- The `xg` option for transactions is ignored. Previously, setting this to
+  `True`, allowed writes up 5 entity groups in a transaction, as opposed to
+  only being able to write to a single entity group. In Datastore, currently,
+  writing up to 25 entity groups in a transaction is supported by default and
+  there is no option to change this.
 
 ## Privatization
 
