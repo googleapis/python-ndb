@@ -971,6 +971,7 @@ class Query:
         ancestor=None,
         filters=None,
         order_by=None,
+        orders=None,
         app=None,
         namespace=None,
         default_options=None,
@@ -1009,6 +1010,13 @@ class Query:
                     "filters must be a query Node or None; "
                     "received {}".format(filters)
                 )
+        if order_by is not None and orders is not None:
+            raise TypeError(
+                "Cannot user orders and order_by, they are synonyms"
+                "(orders is deprecated now)"
+            )
+        if order_by is None and orders is not None:
+            order_by = orders
         if order_by is not None:
             if not isinstance(order_by, (list, tuple)):
                 raise TypeError(
@@ -1031,7 +1039,7 @@ class Query:
         self.kind = kind
         self.ancestor = ancestor
         self.filters = filters
-        self.order_by = self.orders = order_by
+        self.order_by = order_by
         self.app = app
         self.namespace = namespace
         self.default_options = default_options
@@ -1086,58 +1094,6 @@ class Query:
             args.append("default_options=%r" % self.default_options)
         return "%s(%s)" % (self.__class__.__name__, ", ".join(args))
 
-    def _get_query(self, client):
-        self.bind()  # Raises an exception if there are unbound parameters.
-        post_filters = None
-        filters = self.filters
-        if filters is not None:
-            # post_filters = self.filters._post_filters()
-            if (
-                isinstance(self.filters, DisjunctionNode)
-                or isinstance(self.filters, ConjunctionNode)
-                or isinstance(self.filters, AND)
-                or isinstance(self.filters, OR)
-            ):
-                filters = [f for f in self.filters]
-            else:
-                filters = [self.filters]
-            filters = [
-                (f._name, f._opsymbol, f._value)
-                for f in filters
-                if f._opsymbol is not None
-            ]
-        else:
-            filters = []
-        group_by = []
-        if self.group_by:
-            group_by = self._to_property_names(self.group_by)
-        projection = []
-        if self.projection is not None:
-            projection = self.projection
-        order_by = []
-        if self.order_by is not None:
-            order_by = self.order_by
-        # This is just temporary, until we have datastore query functionality
-        dsquery = datastore.Query(
-            client,
-            kind=self.kind,
-            project=self.app,
-            namespace=self.namespace,
-            ancestor=self.ancestor,
-            filters=filters,
-            order=order_by,
-            projection=projection,
-            distinct_on=group_by,
-        )
-        # Currently there is no Augmented Query functionality implemented
-        # in datastore. Not sure if it's planned, but we do have post
-        # filters, so maybe?
-        # if post_filters is not None:
-        #     dsquery = datastore_query._AugmentedQuery(
-        #        dsquery, in_memory_filter=post_filters._to_filter(post=True)
-        #     )
-        return dsquery
-
     @property
     def is_distinct(self):
         """True if results are guaranteed to contain a unique set of property
@@ -1158,7 +1114,7 @@ class Query:
             filters (list[Node]): One or more instances of Node.
 
         Returns:
-            A new query with the new filters applied.
+            Query: A new query with the new filters applied.
 
         Raises:
             TypeError: If one of the filters is not a Node.
@@ -1197,7 +1153,7 @@ class Query:
             names (list[str]): One or more field names to sort by.
 
         Returns:
-            A new query with the new order applied.
+            Query: A new query with the new order applied.
         """
         if not names:
             return self
@@ -1225,6 +1181,9 @@ class Query:
         When a query is created using gql, any bound parameters
         are created as ParameterNode instances. This method returns
         the names of any such parameters.
+
+        Returns:
+            list[str]: required parameter names.
         """
 
         class MockBindings(dict):
@@ -1257,11 +1216,11 @@ class Query:
             keyword (dict[Any]): One or more keyword values to bind.
 
         Returns:
-            A new query with the new bound parameter values.
+            Query: A new query with the new bound parameter values.
 
         Raises:
             google.cloud.ndb.exceptions.BadArgumentError: If one of
-            the positional parameters is not used in the query.
+                the positional parameters is not used in the query.
         """
         bindings = dict(keyword)
         for i, arg in enumerate(positional):

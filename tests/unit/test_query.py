@@ -1032,9 +1032,21 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_constructor_with_orders():
+    def test_constructor_with_order_by():
         query = query_module.Query(order_by=[])
         assert query.order_by == []
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_constructor_with_orders():
+        query = query_module.Query(orders=[])
+        assert query.order_by == []
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_constructor_with_orders_and_irder_by():
+        with pytest.raises(TypeError):
+            query_module.Query(orders=[], order_by=[])
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1181,53 +1193,6 @@ class TestQuery:
         query = query_module.Query()
         with pytest.raises(exceptions.BadArgumentError):
             query.bind(42)
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
-    def test__get_query(context):
-        options = query_module.QueryOptions(kind="Bar")
-        query = query_module.Query(
-            kind="Foo",
-            ancestor=key_module.Key("a", "b", app="app", namespace="space"),
-            namespace="space",
-            app="app",
-            group_by=["X"],
-            projection=[model.Property(name="x")],
-            filters=query_module.FilterNode("f", None, None),
-            default_options=options,
-            order_by=[],
-        )
-        datastore_query = query._get_query(context.client)
-        assert isinstance(datastore_query, datastore.Query)
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
-    def test__get_query_with_conjunction_node(context):
-        options = query_module.QueryOptions(kind="Bar")
-        filters = [
-            query_module.FilterNode("y", ">", 0),
-            query_module.FilterNode("y", "<", 1000),
-        ]
-        query = query_module.Query(
-            kind="Foo",
-            ancestor=key_module.Key("a", "b", app="app", namespace="space"),
-            namespace="space",
-            app="app",
-            group_by=["X"],
-            projection=[model.Property(name="x")],
-            filters=query_module.ConjunctionNode(*filters),
-            default_options=options,
-            order_by=[],
-        )
-        datastore_query = query._get_query(context.client)
-        assert isinstance(datastore_query, datastore.Query)
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
-    def test__get_query_no_args(context):
-        query = query_module.Query()
-        datastore_query = query._get_query(context.client)
-        assert isinstance(datastore_query, datastore.Query)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
