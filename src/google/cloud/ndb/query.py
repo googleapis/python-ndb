@@ -14,8 +14,6 @@
 
 """High-level wrapper for datastore queries."""
 
-from google.cloud import datastore
-
 from google.cloud.ndb import _datastore_query
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import model
@@ -1012,10 +1010,10 @@ class Query:
                 )
         if order_by is not None and orders is not None:
             raise TypeError(
-                "Cannot user orders and order_by, they are synonyms"
+                "Cannot use both orders and order_by, they are synonyms"
                 "(orders is deprecated now)"
             )
-        if order_by is None and orders is not None:
+        if order_by is None:
             order_by = orders
         if order_by is not None:
             if not isinstance(order_by, (list, tuple)):

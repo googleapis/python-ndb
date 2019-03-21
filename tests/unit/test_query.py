@@ -17,7 +17,6 @@ import unittest.mock
 
 import pytest
 
-from google.cloud import datastore
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import model
