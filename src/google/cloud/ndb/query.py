@@ -950,7 +950,7 @@ class Query:
             is ``(property_name, operator, value)``.
         order_by (Union[list, tuple]): The field names used to
             order query results. Renamed `order` in google.cloud.datastore.
-        orders (Union[list, tuple]): Deprecated.Synonym for order_by.
+        orders (Union[list, tuple]): Deprecated. Synonym for order_by.
         app (str): The app to restrict results. If not passed, uses the
             client's value. Renamed `project` in google.cloud.datastore.
         namespace (str): The namespace to which to restrict results.
@@ -960,7 +960,7 @@ class Query:
             query results.
         distinct_on (Union[list, tuple]): The field names used to group query
             results. Renamed distinct_on in google.cloud.datastore.
-        group_by (Union[list, tuple]): Deprecated.Synonym for distinct_on.
+        group_by (Union[list, tuple]): Deprecated. Synonym for distinct_on.
 
     Raises: TypeError if any of the arguments are invalid.
     """
