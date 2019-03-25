@@ -74,35 +74,29 @@ class TestQueryOrder:
 class TestPropertyOrder:
     @staticmethod
     def test_constructor():
-        order = query_module.PropertyOrder(
-            name="property", direction="ascending"
-        )
+        order = query_module.PropertyOrder(name="property", reverse=False)
         assert order.name == "property"
-        assert order.direction == "ascending"
-
-    @staticmethod
-    def test_constructor_with_bad_direction():
-        with pytest.raises(TypeError):
-            query_module.PropertyOrder(name="property", direction="north")
+        assert order.reverse is False
 
     @staticmethod
     def test___repr__():
-        representation = (
-            "PropertyOrder(name='property', direction='ascending')"
-        )
-        order = query_module.PropertyOrder(
-            name="property", direction="ascending"
-        )
+        representation = "PropertyOrder(name='property', reverse=False)"
+        order = query_module.PropertyOrder(name="property", reverse=False)
         assert order.__repr__() == representation
 
     @staticmethod
-    def test___neg__():
-        order = query_module.PropertyOrder(
-            name="property", direction="ascending"
-        )
-        assert order.direction == "ascending"
+    def test___neg__ascending():
+        order = query_module.PropertyOrder(name="property", reverse=False)
+        assert order.reverse is False
         new_order = -order
-        assert new_order.direction == "descending"
+        assert new_order.reverse is True
+
+    @staticmethod
+    def test___neg__descending():
+        order = query_module.PropertyOrder(name="property", reverse=True)
+        assert order.reverse is True
+        new_order = -order
+        assert new_order.reverse is False
 
 
 class TestRepeatedStructuredPropertyPredicate:
@@ -1326,13 +1320,13 @@ class TestQuery:
         query = query.order(prop3, prop4)
         assert len(query.order_by) == 4
         assert query.order_by[0].name == "prop1"
-        assert query.order_by[0].direction == "ascending"
+        assert query.order_by[0].reverse is False
         assert query.order_by[1].name == "prop2"
-        assert query.order_by[1].direction == "descending"
+        assert query.order_by[1].reverse is True
         assert query.order_by[2].name == "prop3"
-        assert query.order_by[2].direction == "ascending"
+        assert query.order_by[2].reverse is False
         assert query.order_by[3].name == "prop4"
-        assert query.order_by[3].direction == "ascending"
+        assert query.order_by[3].reverse is False
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1347,13 +1341,13 @@ class TestQuery:
         query = query.order("-prop3", Foo.prop4)
         assert len(query.order_by) == 4
         assert query.order_by[0].name == "prop1"
-        assert query.order_by[0].direction == "ascending"
+        assert query.order_by[0].reverse is False
         assert query.order_by[1].name == "prop2"
-        assert query.order_by[1].direction == "descending"
+        assert query.order_by[1].reverse is True
         assert query.order_by[2].name == "prop3"
-        assert query.order_by[2].direction == "descending"
+        assert query.order_by[2].reverse is True
         assert query.order_by[3].name == "prop4"
-        assert query.order_by[3].direction == "ascending"
+        assert query.order_by[3].reverse is False
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1364,9 +1358,9 @@ class TestQuery:
         query = query.order(prop1, -prop2)
         assert len(query.order_by) == 2
         assert query.order_by[0].name == "prop1"
-        assert query.order_by[0].direction == "ascending"
+        assert query.order_by[0].reverse is False
         assert query.order_by[1].name == "prop2"
-        assert query.order_by[1].direction == "descending"
+        assert query.order_by[1].reverse is True
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1377,9 +1371,9 @@ class TestQuery:
         query = query.order()
         assert len(query.order_by) == 2
         assert query.order_by[0].name == "prop1"
-        assert query.order_by[0].direction == "ascending"
+        assert query.order_by[0].reverse is False
         assert query.order_by[1].name == "prop2"
-        assert query.order_by[1].direction == "descending"
+        assert query.order_by[1].reverse is True
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")

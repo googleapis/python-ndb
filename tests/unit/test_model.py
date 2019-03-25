@@ -570,7 +570,9 @@ class TestProperty:
         order = -prop
         assert isinstance(order, query.PropertyOrder)
         assert order.name == "name"
-        assert order.direction == "descending"
+        assert order.reverse is True
+        order = -order
+        assert order.reverse is False
 
     @staticmethod
     def test___pos__():
@@ -578,7 +580,7 @@ class TestProperty:
         order = +prop
         assert isinstance(order, query.PropertyOrder)
         assert order.name == "name"
-        assert order.direction == "ascending"
+        assert order.reverse is False
 
     @staticmethod
     def test__do_validate():

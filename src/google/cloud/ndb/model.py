@@ -904,7 +904,7 @@ class Property(ModelAttribute):
         # Import late to avoid circular imports.
         from google.cloud.ndb import query
 
-        return query.PropertyOrder(name=self._name, direction="descending")
+        return query.PropertyOrder(name=self._name, reverse=True)
 
     def __pos__(self):
         """Return an ascending sort order on this property.
@@ -920,7 +920,7 @@ class Property(ModelAttribute):
         # Import late to avoid circular imports.
         from google.cloud.ndb import query
 
-        return query.PropertyOrder(name=self._name, direction="ascending")
+        return query.PropertyOrder(name=self._name, reverse=False)
 
     def _do_validate(self, value):
         """Call all validations on the value.

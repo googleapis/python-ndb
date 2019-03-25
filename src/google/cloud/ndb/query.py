@@ -108,32 +108,24 @@ class PropertyOrder(object):
 
        Args:
            name (str): The name of the model property to use for ordering.
-           direction (str): The sort direction. One of "ascending" (default) or
-               "descending".
-
-        Raises:
-            TypeError: if ``direction`` is not "ascending" or "descending".
-
+           reverse (bool): Whether to reverse the sort order (descending)
+               or not (ascending). Default is False.
     """
 
-    __slots__ = ["name", "direction"]
+    __slots__ = ["name", "reverse"]
 
-    def __init__(self, name, direction="ascending"):
+    def __init__(self, name, reverse=False):
         self.name = name
-        if direction != "ascending" and direction != "descending":
-            raise TypeError("Direction must be 'ascending' or 'descending'")
-        self.direction = direction
+        self.reverse = reverse
 
     def __repr__(self):
-        return "PropertyOrder(name='{}', direction='{}')".format(
-            self.name, self.direction
+        return "PropertyOrder(name='{}', reverse={})".format(
+            self.name, self.reverse
         )
 
     def __neg__(self):
-        direction = (
-            self.direction == "ascending" and "descending" or "ascending"
-        )
-        return self.__class__(name=self.name, direction=direction)
+        reverse = not self.reverse
+        return self.__class__(name=self.name, reverse=reverse)
 
 
 class RepeatedStructuredPropertyPredicate:
@@ -1194,19 +1186,19 @@ class Query:
             distinct_on=self.distinct_on,
         )
 
-    def order(self, *names):
+    def order(self, *props):
         """Return a new Query with additional sort order(s) applied.
 
         Args:
-            names (list[Union[str, google.cloud.ndb.model.Property]]): One or
+            props (list[Union[str, google.cloud.ndb.model.Property]]): One or
                 more model properties to sort by.
 
         Returns:
             Query: A new query with the new order applied.
         """
-        if not names:
+        if not props:
             return self
-        property_orders = self._to_property_orders(names)
+        property_orders = self._to_property_orders(props)
         order_by = self.order_by
         if order_by is None:
             order_by = property_orders
@@ -1327,11 +1319,11 @@ class Query:
                 orders.append(+order)
             elif isinstance(order, str):
                 name = order
-                direction = "ascending"
+                reverse = False
                 if order.startswith("-"):
                     name = order[1:]
-                    direction = "descending"
-                property_order = PropertyOrder(name, direction=direction)
+                    reverse = True
+                property_order = PropertyOrder(name, reverse=reverse)
                 orders.append(property_order)
             else:
                 raise TypeError("Order values must be properties or strings")
