@@ -567,14 +567,18 @@ class TestProperty:
     @staticmethod
     def test___neg__():
         prop = model.Property("name")
-        with pytest.raises(NotImplementedError):
-            -prop
+        order = -prop
+        assert isinstance(order, query.PropertyOrder)
+        assert order.name == "name"
+        assert order.direction == "descending"
 
     @staticmethod
     def test___pos__():
         prop = model.Property("name")
-        with pytest.raises(NotImplementedError):
-            +prop
+        order = +prop
+        assert isinstance(order, query.PropertyOrder)
+        assert order.name == "name"
+        assert order.direction == "ascending"
 
     @staticmethod
     def test__do_validate():

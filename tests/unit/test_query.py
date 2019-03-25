@@ -71,6 +71,40 @@ class TestQueryOrder:
             query_module.QueryOrder()
 
 
+class TestPropertyOrder:
+    @staticmethod
+    def test_constructor():
+        order = query_module.PropertyOrder(
+            name="property", direction="ascending"
+        )
+        assert order.name == "property"
+        assert order.direction == "ascending"
+
+    @staticmethod
+    def test_constructor_with_bad_direction():
+        with pytest.raises(TypeError):
+            query_module.PropertyOrder(name="property", direction="north")
+
+    @staticmethod
+    def test___repr__():
+        representation = (
+            "PropertyOrder(name='property', direction='ascending')"
+        )
+        order = query_module.PropertyOrder(
+            name="property", direction="ascending"
+        )
+        assert order.__repr__() == representation
+
+    @staticmethod
+    def test___neg__():
+        order = query_module.PropertyOrder(
+            name="property", direction="ascending"
+        )
+        assert order.direction == "ascending"
+        new_order = -order
+        assert new_order.direction == "descending"
+
+
 class TestRepeatedStructuredPropertyPredicate:
     @staticmethod
     def test_constructor():
@@ -1284,23 +1318,75 @@ class TestQuery:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_order(context):
-        query = query_module.Query(kind="Foo", order_by=["a", "b"])
-        query = query.order("c", "d")
-        assert query.order_by == ["a", "b", "c", "d"]
+        prop1 = model.Property(name="prop1")
+        prop2 = model.Property(name="prop2")
+        prop3 = model.Property(name="prop3")
+        prop4 = model.Property(name="prop4")
+        query = query_module.Query(kind="Foo", order_by=[prop1, -prop2])
+        query = query.order(prop3, prop4)
+        assert len(query.order_by) == 4
+        assert query.order_by[0].name == "prop1"
+        assert query.order_by[0].direction == "ascending"
+        assert query.order_by[1].name == "prop2"
+        assert query.order_by[1].direction == "descending"
+        assert query.order_by[2].name == "prop3"
+        assert query.order_by[2].direction == "ascending"
+        assert query.order_by[3].name == "prop4"
+        assert query.order_by[3].direction == "ascending"
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_order_mixed(context):
+        class Foo(model.Model):
+            prop1 = model.Property(name="prop1")
+            prop2 = model.Property(name="prop2")
+            prop3 = model.Property(name="prop3")
+            prop4 = model.Property(name="prop4")
+
+        query = query_module.Query(kind="Foo", order_by=["prop1", -Foo.prop2])
+        query = query.order("-prop3", Foo.prop4)
+        assert len(query.order_by) == 4
+        assert query.order_by[0].name == "prop1"
+        assert query.order_by[0].direction == "ascending"
+        assert query.order_by[1].name == "prop2"
+        assert query.order_by[1].direction == "descending"
+        assert query.order_by[2].name == "prop3"
+        assert query.order_by[2].direction == "descending"
+        assert query.order_by[3].name == "prop4"
+        assert query.order_by[3].direction == "ascending"
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_order_no_initial_order(context):
+        prop1 = model.Property(name="prop1")
+        prop2 = model.Property(name="prop2")
         query = query_module.Query(kind="Foo")
-        query = query.order("c", "d")
-        assert query.order_by == ["c", "d"]
+        query = query.order(prop1, -prop2)
+        assert len(query.order_by) == 2
+        assert query.order_by[0].name == "prop1"
+        assert query.order_by[0].direction == "ascending"
+        assert query.order_by[1].name == "prop2"
+        assert query.order_by[1].direction == "descending"
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_order_no_args(context):
-        query = query_module.Query(kind="Foo", order_by=["a", "b"])
+        prop1 = model.Property(name="prop1")
+        prop2 = model.Property(name="prop2")
+        query = query_module.Query(kind="Foo", order_by=[prop1, -prop2])
         query = query.order()
-        assert query.order_by == ["a", "b"]
+        assert len(query.order_by) == 2
+        assert query.order_by[0].name == "prop1"
+        assert query.order_by[0].direction == "ascending"
+        assert query.order_by[1].name == "prop2"
+        assert query.order_by[1].direction == "descending"
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_order_bad_args(context):
+        query = query_module.Query(kind="Foo")
+        with pytest.raises(TypeError):
+            query.order([5, 10])
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
