@@ -250,7 +250,7 @@ class Node:
         raise TypeError("Nodes cannot be ordered")
 
     def _to_filter(self, post=False):
-        """Helper to convert to low-level filter, or :data:`None`.
+        """Helper to convert to low-level filter.
 
         Raises:
             NotImplementedError: Always. This method is virtual.
@@ -380,7 +380,7 @@ class ParameterNode(Node):
         )
 
     def _to_filter(self, post=False):
-        """Helper to convert to low-level filter, or :data:`None`.
+        """Helper to convert to low-level filter.
 
         Args:
             post (bool): Indicates if this is a post-filter node.
@@ -511,7 +511,7 @@ class FilterNode(Node):
         )
 
     def _to_filter(self, post=False):
-        """Helper to convert to low-level filter, or :data:`None`.
+        """Helper to convert to low-level filter.
 
         Args:
             post (bool): Indicates if this is a post-filter node.
@@ -584,7 +584,7 @@ class PostFilterNode(Node):
         return self is other or self.predicate == other.predicate
 
     def _to_filter(self, post=False):
-        """Helper to convert to low-level filter, or :data:`None`.
+        """Helper to convert to low-level filter.
 
         Args:
             post (bool): Indicates if this is a post-filter node.
@@ -773,14 +773,14 @@ class ConjunctionNode(Node):
         return self._nodes == other._nodes
 
     def _to_filter(self, post=False):
-        """Helper to convert to low-level filter, or :data:`None`.
+        """Helper to convert to low-level filter.
 
         Args:
             post (bool): Indicates if this is a post-filter node.
 
         Returns:
             Optional[Node]: The single or composite filter corresponding to
-                the pre- or post-filter nodes stored.
+                the pre- or post-filter nodes stored. May return :data:`None`.
         """
         filters = []
         for node in self._nodes:
@@ -930,7 +930,7 @@ class DisjunctionNode(Node):
         return DisjunctionNode(*resolved_nodes)
 
     def _to_filter(self, post=False):
-        """Helper to convert to low-level filters, or :data:`None`.
+        """Helper to convert to low-level filters.
 
         Args:
             post (bool): Indicates if this is a post-filter node.
