@@ -1,4 +1,5 @@
 import itertools
+import time
 
 import pytest
 
@@ -11,7 +12,6 @@ from . import KIND, OTHER_NAMESPACE
 def all_entities(client):
     return itertools.chain(
         client.query(kind=KIND).fetch(),
-        client.query(namespace="folgers").fetch(),
         client.query(namespace=OTHER_NAMESPACE).fetch(),
     )
 
@@ -52,12 +52,25 @@ def ds_client(to_delete, deleted_keys):
         client.delete_multi(to_delete)
         deleted_keys.update(to_delete)
 
-    results = [
-        entity
-        for entity in all_entities(client)
-        if entity.key not in deleted_keys
-    ]
-    assert not results
+    while True:
+        # Datastore takes some time to delete entities even after it says it's
+        # deleted them. (With Firestore using the Datastore interface, an
+        # entity is deleted when you get a return from a call to delete.)
+        results = list(all_entities(client))
+        print(results)
+        if not results:
+            # all clean, yeah
+            break
+
+        # Make sure we're only waiting on entities that have been deleted
+        not_deleted = [
+            entity for entity in results if entity.key not in deleted_keys
+        ]
+        assert not not_deleted
+
+        # Give Datastore a second to find a consistent state before checking
+        # again
+        time.sleep(1)
 
 
 @pytest.fixture
