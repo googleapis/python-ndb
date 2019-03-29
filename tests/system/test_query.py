@@ -259,6 +259,7 @@ def test_order_by_descending(ds_entity):
     assert [entity.foo for entity in results] == [4, 3, 2, 1, 0]
 
 
+@pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_order_by_with_or_filter(dispose_of):
     """
