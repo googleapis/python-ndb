@@ -55,8 +55,8 @@ def ds_client(to_delete, deleted_keys):
     # Datastore takes some time to delete entities even after it says it's
     # deleted them. (With Firestore using the Datastore interface, an entity is
     # deleted when you get a return from a call to delete.) Keep checking for
-    # up to 60 seconds.
-    deadline = time.time() + 60
+    # up to 2 minutes.
+    deadline = time.time() + 120
     while True:
         results = list(all_entities(client))
         print(results)
