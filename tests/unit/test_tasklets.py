@@ -593,9 +593,14 @@ def test_set_context():
         tasklets.set_context()
 
 
+@pytest.mark.usefixtures("in_context")
 def test_synctasklet():
-    with pytest.raises(NotImplementedError):
-        tasklets.synctasklet()
+    @tasklets.synctasklet
+    def regular_function(value):
+        return value + 3
+
+    result = regular_function(8)
+    assert result == 11
 
 
 def test_toplevel():
