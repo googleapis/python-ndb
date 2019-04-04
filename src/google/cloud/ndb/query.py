@@ -1504,6 +1504,13 @@ class Query:
             tasklets.Future: Eventual result will be a List[model.Model] of the
                 results.
         """
+        if options is not None:
+            _log.warning(
+                "Deprecation warning: passing options to Query.fetch or "
+                "Query.fetch_async is deprecated. Please pass arguments "
+                "directly."
+            )
+
         keys_only = self._option("keys_only", keys_only, options)
         if keys_only:
             raise NotImplementedError(
