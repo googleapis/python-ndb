@@ -171,6 +171,8 @@ facing, private API:
   and is no longer among top level exports.
 - `tasklets.MultiFuture` has been renamed to `tasklets._MultiFuture`, removed
   from top level exports, and has a much simpler interface.
+- `Query.run_to_queue` is no longer implemented. Appears to be aimed at
+  internal usage, despite being nominally public.
 
 ## Bare Metal
 
