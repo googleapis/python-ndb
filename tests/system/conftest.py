@@ -54,7 +54,8 @@ def ds_client(namespace, to_delete, deleted_keys):
         deleted_keys.update(to_delete)
 
     not_deleted = [
-        entity for entity in all_entities(client)
+        entity
+        for entity in all_entities(client)
         if entity.key not in deleted_keys
     ]
     assert not not_deleted
