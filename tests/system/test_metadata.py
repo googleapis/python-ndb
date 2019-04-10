@@ -15,6 +15,7 @@
 """
 System tests for metadata.
 """
+import time
 
 import pytest
 
@@ -215,6 +216,22 @@ def test_get_properties_of_kind(dispose_of):
     entity1 = AnyKind(foo=1, bar="x", baz=3, qux="y")
     entity1.put()
     dispose_of(entity1.key._key)
+
+    # Datastore apparently takes some time to update the metadata
+    # before queries can be made. We'll give it a few seconds to see
+    # if the query works.
+
+    deadline = time.time() + 30
+    while True:
+        properties = get_properties_of_kind("AnyKind")
+        if properties:
+            break
+
+        assert (
+            time.time() < deadline
+        ), "Metadata was not updated in time."
+
+        time.sleep(1)
 
     properties = get_properties_of_kind("AnyKind")
     assert properties == ["bar", "baz", "foo", "qux"]
