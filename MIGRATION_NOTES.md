@@ -153,7 +153,7 @@ The primary differences come from:
   `google.cloud.ndb.metadata.EntityGroup` and
   `google.cloud.ndb.metadata.get_entity_group_version` both throw a
   `google.cloud.ndb.exceptions.NoLongerImplementedError` exception when used.
-- The `batch_size` and `prefetch_size` argumnets to `Query.fetch` and
+- The `batch_size` and `prefetch_size` arguments to `Query.fetch` and
   `Query.fetch_async` are no longer supported. These were passed through
   directly to Datastore, which no longer supports these options.
 
