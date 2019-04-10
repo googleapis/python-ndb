@@ -274,8 +274,9 @@ def test_get_representations_of_kind(dispose_of):
     entity1.put()
     dispose_of(entity1.key._key)
 
-    representations = _wait_for_metadata_update(get_representations_of_kind,
-                                                "AnyKind")
+    representations = _wait_for_metadata_update(
+        get_representations_of_kind, "AnyKind"
+    )
     assert representations == {
         "bar": ["STRING"],
         "baz": ["INT64"],
@@ -306,9 +307,7 @@ def _wait_for_metadata_update(func, arg):
         if result:
             break
 
-        assert (
-            time.time() < deadline
-        ), "Metadata was not updated in time."
+        assert time.time() < deadline, "Metadata was not updated in time."
 
         time.sleep(1)
     return result
