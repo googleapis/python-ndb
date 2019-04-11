@@ -3179,11 +3179,14 @@ def test_non_transactional():
 
 @pytest.mark.usefixtures("in_context")
 @unittest.mock.patch("google.cloud.ndb.key.Key")
-def test_get_multi(Key):
+@unittest.mock.patch("google.cloud.ndb.tasklets.Future")
+def test_get_multi(Key, Future):
     model1 = model.Model()
+    future1 = tasklets.Future()
+    future1.result.return_value = model1
 
     key1 = key_module.Key("a", "b", app="c")
-    key1.get.return_value = model1
+    key1.get_async.return_value = future1
 
     keys = [key1]
     assert model.get_multi(keys) == [model1]
@@ -3215,11 +3218,14 @@ def test_put_multi_async(Model):
 
 @pytest.mark.usefixtures("in_context")
 @unittest.mock.patch("google.cloud.ndb.model.Model")
-def test_put_multi(Model):
+@unittest.mock.patch("google.cloud.ndb.tasklets.Future")
+def test_put_multi(Model, Future):
     key1 = key_module.Key("a", "b", app="c")
+    future1 = tasklets.Future()
+    future1.result.return_value = key1
 
     model1 = model.Model()
-    model1.put.return_value = key1
+    model1.put_async.return_value = future1
 
     models = [model1]
     assert model.put_multi(models) == [key1]
@@ -3239,9 +3245,13 @@ def test_delete_multi_async(Key):
 
 @pytest.mark.usefixtures("in_context")
 @unittest.mock.patch("google.cloud.ndb.key.Key")
-def test_delete_multi(Key):
+@unittest.mock.patch("google.cloud.ndb.tasklets.Future")
+def test_delete_multi(Key, Future):
+    future1 = tasklets.Future()
+    future1.result.return_value = None
+
     key1 = key_module.Key("a", "b", app="c")
-    key1.delete.return_value = None
+    key1.delete_async.return_value = future1
 
     keys = [key1]
     assert model.delete_multi(keys) == [None]

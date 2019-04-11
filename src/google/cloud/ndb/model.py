@@ -4106,7 +4106,8 @@ def get_multi(keys, **options):
         List[Union[:class:`~google.cloud.ndb.model.Model`, :data:`None`]]: List
             containing the retrieved models or None where a key was not found.
     """
-    return [key.get(**options) for key in keys]
+    futures = [key.get_async(**options) for key in keys]
+    return [future.result() for future in futures]
 
 
 def put_multi_async(entities, **options):
@@ -4134,7 +4135,8 @@ def put_multi(entities, **options):
     Returns:
         List[:class:`~google.cloud.ndb.key.Key`]: A list with the stored keys.
     """
-    return [entity.put(**options) for entity in entities]
+    futures = [entity.put_async(**options) for entity in entities]
+    return [future.result() for future in futures]
 
 
 def delete_multi_async(keys, **options):
@@ -4161,7 +4163,8 @@ def delete_multi(keys, **options):
         List[:data:`None`]: A list whose items are all None, one per deleted
             key.
     """
-    return [key.delete(**options) for key in keys]
+    futures = [key.delete_async(**options) for key in keys]
+    return [future.result() for future in futures]
 
 
 def get_indexes_async(**options):
