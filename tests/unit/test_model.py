@@ -3177,34 +3177,74 @@ def test_non_transactional():
         model.non_transactional()
 
 
-def test_get_multi_async():
-    with pytest.raises(NotImplementedError):
-        model.get_multi_async()
+@pytest.mark.usefixtures("in_context")
+@unittest.mock.patch("google.cloud.ndb.key.Key")
+def test_get_multi(Key):
+    model1 = model.Model()
+
+    key1 = key_module.Key("a", "b", app="c")
+    key1.get.return_value = model1
+
+    keys = [key1]
+    assert model.get_multi(keys) == [model1]
 
 
-def test_get_multi():
-    with pytest.raises(NotImplementedError):
-        model.get_multi()
+@pytest.mark.usefixtures("in_context")
+@unittest.mock.patch("google.cloud.ndb.key.Key")
+def test_get_multi_async(Key):
+    future1 = tasklets.Future()
+
+    key1 = key_module.Key("a", "b", app="c")
+    key1.get_async.return_value = future1
+
+    keys = [key1]
+    assert model.get_multi_async(keys) == [future1]
 
 
-def test_put_multi_async():
-    with pytest.raises(NotImplementedError):
-        model.put_multi_async()
+@pytest.mark.usefixtures("in_context")
+@unittest.mock.patch("google.cloud.ndb.model.Model")
+def test_put_multi_async(Model):
+    future1 = tasklets.Future()
+
+    model1 = model.Model()
+    model1.put_async.return_value = future1
+
+    models = [model1]
+    assert model.put_multi_async(models) == [future1]
 
 
-def test_put_multi():
-    with pytest.raises(NotImplementedError):
-        model.put_multi()
+@pytest.mark.usefixtures("in_context")
+@unittest.mock.patch("google.cloud.ndb.model.Model")
+def test_put_multi(Model):
+    key1 = key_module.Key("a", "b", app="c")
+
+    model1 = model.Model()
+    model1.put.return_value = key1
+
+    models = [model1]
+    assert model.put_multi(models) == [key1]
 
 
-def test_delete_multi_async():
-    with pytest.raises(NotImplementedError):
-        model.delete_multi_async()
+@pytest.mark.usefixtures("in_context")
+@unittest.mock.patch("google.cloud.ndb.key.Key")
+def test_delete_multi_async(Key):
+    future1 = tasklets.Future()
+
+    key1 = key_module.Key("a", "b", app="c")
+    key1.delete_async.return_value = future1
+
+    keys = [key1]
+    assert model.delete_multi_async(keys) == [future1]
 
 
-def test_delete_multi():
-    with pytest.raises(NotImplementedError):
-        model.delete_multi()
+@pytest.mark.usefixtures("in_context")
+@unittest.mock.patch("google.cloud.ndb.key.Key")
+def test_delete_multi(Key):
+    key1 = key_module.Key("a", "b", app="c")
+    key1.delete.return_value = None
+
+    keys = [key1]
+    assert model.delete_multi(keys) == [None]
 
 
 def test_get_indexes_async():
