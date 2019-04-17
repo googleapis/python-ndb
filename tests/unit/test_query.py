@@ -30,10 +30,6 @@ def test___all__():
     tests.unit.utils.verify___all__(query_module)
 
 
-def test_Cursor():
-    assert query_module.Cursor is NotImplemented
-
-
 class TestQueryOptions:
     @staticmethod
     def test_constructor():
@@ -1551,10 +1547,14 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_fetch_async_with_produce_cursors():
+    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    def test_fetch_async_with_produce_cursors(_datastore_query):
         query = query_module.Query()
-        with pytest.raises(NotImplementedError):
-            query.fetch_async(produce_cursors=True)
+        response = _datastore_query.fetch.return_value
+        assert query.fetch_async(produce_cursors=True) is response
+        _datastore_query.fetch.assert_called_once_with(
+            query_module.QueryOptions(project="testing")
+        )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1705,10 +1705,3 @@ class TestQuery:
 def test_gql():
     with pytest.raises(NotImplementedError):
         query_module.gql()
-
-
-class TestQueryIterator:
-    @staticmethod
-    def test_constructor():
-        with pytest.raises(NotImplementedError):
-            query_module.QueryIterator()

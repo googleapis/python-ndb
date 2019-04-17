@@ -333,8 +333,16 @@ class Test_QueryIteratorImpl:
     def test_next_done():
         iterator = _datastore_query._QueryIteratorImpl("foo")
         iterator.has_next = mock.Mock(return_value=False)
+        iterator._cursor_before = b"abc"
+        iterator._cursor_after = b"bcd"
         with pytest.raises(StopIteration):
             iterator.next()
+
+        with pytest.raises(exceptions.BadArgumentError):
+            iterator.cursor_before()
+
+        with pytest.raises(exceptions.BadArgumentError):
+            iterator.cursor_after()
 
     @staticmethod
     def test_next_raw():

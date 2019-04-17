@@ -307,6 +307,7 @@ class _QueryIteratorImpl(QueryIterator):
         """Implements :meth:`QueryIterator.next`."""
         # May block
         if not self.has_next():
+            self._cursor_before = self._cursor_after = None
             raise StopIteration
 
         # Won't block

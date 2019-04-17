@@ -25,7 +25,6 @@ from google.cloud.ndb import model
 
 
 __all__ = [
-    "Cursor",
     "QueryOptions",
     "PropertyOrder",
     "RepeatedStructuredPropertyPredicate",
@@ -43,11 +42,9 @@ __all__ = [
     "OR",
     "Query",
     "gql",
-    "QueryIterator",
 ]
 
 
-Cursor = NotImplemented  # From `google.appengine.datastore.datastore_query`
 _EQ_OP = "="
 _NE_OP = "!="
 _IN_OP = "in"
@@ -1025,7 +1022,7 @@ def _query_options(wrapped):
         options = kwargs.pop("options", None)
         if options is not None:
             _log.warning(
-                "Deprecation warning: passing options to Query methods is "
+                "Deprecation warning: passing 'options' to 'Query' methods is "
                 "deprecated. Please pass arguments directly."
             )
 
@@ -1044,8 +1041,10 @@ def _query_options(wrapped):
             "produce_cursors", produce_cursors, options
         )
         if produce_cursors:
-            raise NotImplementedError(
-                "'produce_cursors' is not implemented yet for queries"
+            _log.warning(
+                "Deprecation warning: 'produce_cursors' is deprecated. "
+                "Cursors are always produced when available. This option is "
+                "ignored."
             )
 
         start_cursor = kwargs.pop("start_cursor", None)
@@ -1990,9 +1989,9 @@ class Query:
 
         To fetch the next page, you pass the cursor returned by one call to the
         next call using the `start_cursor` argument.  A common idiom is to pass
-        the cursor to the client using `Cursor.to_websafe_string` and to
-        reconstruct that cursor on a subsequent request using
-        `Cursor.from_websafe_string`.
+        the cursor to the client using :meth:`_datastore_query.Cursor.urlsafe`
+        and to reconstruct that cursor on a subsequent request using the
+        `urlsafe` argument to :class:`Cursor`.
 
         Args:
             page_size (int): The number of results per page. At most, this many
@@ -2035,10 +2034,3 @@ class Query:
 
 def gql(*args, **kwargs):
     raise NotImplementedError
-
-
-class QueryIterator:
-    __slots__ = ()
-
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError
