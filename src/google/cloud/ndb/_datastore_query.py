@@ -129,8 +129,8 @@ class QueryIterator:
     instances of either :class:`model.Model` or :class:`key.Key` depending on
     whether ``keys_only`` was specified for the query.
 
-    This is an abstract base class. Users should not all an iterator class
-    directly. Use :meth:`query.Query.iter` or ``iter(query)`` to get an
+    This is an abstract base class. Users should not instantiate an iterator
+    class directly. Use :meth:`query.Query.iter` or ``iter(query)`` to get an
     instance of :class:`QueryIterator`.
     """
 
@@ -178,8 +178,8 @@ class QueryIterator:
         result.
 
         Returns:
-            Union[model.Model, key.Key]: Depending on if the '`keys_only`'
-                is being used.
+            Union[model.Model, key.Key]: Depending on if ``keys_only=True`` was
+                passed in as an option.
         """
         raise NotImplementedError()
 
