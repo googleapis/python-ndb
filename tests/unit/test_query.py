@@ -1794,10 +1794,3 @@ class TestGQL:
         keywords = {"param1": "xxx"}
         query = query_module.gql(gql_query, *positional, **keywords)
         assert query.__repr__() == rep
-
-
-class TestQueryIterator:
-    @staticmethod
-    def test_constructor():
-        with pytest.raises(NotImplementedError):
-            query_module.QueryIterator()

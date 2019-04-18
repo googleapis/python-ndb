@@ -2052,10 +2052,3 @@ def gql(query_string, *args, **kwds):
     if args or kwds:
         query = query.bind(*args, **kwds)
     return query
-
-
-class QueryIterator:
-    __slots__ = ()
-
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError
