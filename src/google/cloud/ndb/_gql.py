@@ -1,4 +1,3 @@
-import itertools
 import re
 
 from google.cloud.ndb import exceptions
@@ -78,16 +77,16 @@ class GQL(object):
         )
     )
 
-    __ANCESTOR = -1
+    _ANCESTOR = -1
 
     _kind = None
     _keys_only = False
-    __projection = None
-    __distinct = False
-    __has_ancestor = False
-    __offset = -1
-    __limit = -1
-    __hint = ""
+    _projection = None
+    _distinct = False
+    _has_ancestor = False
+    _offset = -1
+    _limit = -1
+    _hint = ""
 
     def __init__(
         self, query_string, _app=None, _auth_domain=None, namespace=None
@@ -101,60 +100,60 @@ class GQL(object):
         Raises:
             exceptions.BadQueryError: if the query is not parsable.
         """
-        self.__app = _app
+        self._app = _app
 
-        self.__namespace = namespace
+        self._namespace = namespace
 
-        self.__auth_domain = _auth_domain
+        self._auth_domain = _auth_domain
 
-        self.__symbols = self.TOKENIZE_REGEX.findall(query_string)
-        self.__InitializeParseState()
+        self._symbols = self.TOKENIZE_REGEX.findall(query_string)
+        self._InitializeParseState()
         try:
-            self.__Select()
+            self._Select()
         except exceptions.BadQueryError as error:
             raise error
 
-    def __InitializeParseState(self):
+    def _InitializeParseState(self):
 
         self._kind = None
         self._keys_only = False
-        self.__projection = None
-        self.__distinct = False
-        self.__has_ancestor = False
-        self.__offset = -1
-        self.__limit = -1
-        self.__hint = ""
+        self._projection = None
+        self._distinct = False
+        self._has_ancestor = False
+        self._offset = -1
+        self._limit = -1
+        self._hint = ""
 
-        self.__filters = {}
+        self._filters = {}
 
-        self.__orderings = []
-        self.__next_symbol = 0
+        self._orderings = []
+        self._next_symbol = 0
 
     def filters(self):
         """Return the compiled list of filters."""
-        return self.__filters
+        return self._filters
 
     def hint(self):
         """Return the datastore hint.
 
         This is not used in NDB, but added for backwards compatibility.
         """
-        return self.__hint
+        return self._hint
 
     def limit(self):
         """Return numerical result count limit."""
-        return self.__limit
+        return self._limit
 
     def offset(self):
         """Return numerical result offset."""
-        if self.__offset == -1:
+        if self._offset == -1:
             return 0
         else:
-            return self.__offset
+            return self._offset
 
     def orderings(self):
         """Return the result ordering list."""
-        return self.__orderings
+        return self._orderings
 
     def is_keys_only(self):
         """Returns True if this query returns Keys, False if it returns Entities."""
@@ -162,11 +161,11 @@ class GQL(object):
 
     def projection(self):
         """Returns the tuple of properties in the projection, or None."""
-        return self.__projection
+        return self._projection
 
     def is_distinct(self):
         """Returns True if this query is marked as distinct."""
-        return self.__distinct
+        return self._distinct
 
     def kind(self):
         """Returns the kind for this query."""
@@ -177,20 +176,20 @@ class GQL(object):
         """Deprecated. Old way to refer to `kind`."""
         return self._kind
 
-    __result_type_regex = re.compile(r"(\*|__key__)")
-    __quoted_string_regex = re.compile(r"((?:\'[^\'\n\r]*\')+)")
-    __ordinal_regex = re.compile(r":(\d+)$")
-    __named_regex = re.compile(r":(\w+)$")
-    __identifier_regex = re.compile(r"(\w+(?:\.\w+)*)$")
+    _result_type_regex = re.compile(r"(\*|__key__)")
+    _quoted_string_regex = re.compile(r"((?:\'[^\'\n\r]*\')+)")
+    _ordinal_regex = re.compile(r":(\d+)$")
+    _named_regex = re.compile(r":(\w+)$")
+    _identifier_regex = re.compile(r"(\w+(?:\.\w+)*)$")
 
-    __quoted_identifier_regex = re.compile(r'((?:"[^"\s]+")+)$')
-    __conditions_regex = re.compile(r"(<=|>=|!=|=|<|>|is|in)$", re.IGNORECASE)
-    __number_regex = re.compile(r"(\d+)$")
-    __cast_regex = re.compile(
+    _quoted_identifier_regex = re.compile(r'((?:"[^"\s]+")+)$')
+    _conditions_regex = re.compile(r"(<=|>=|!=|=|<|>|is|in)$", re.IGNORECASE)
+    _number_regex = re.compile(r"(\d+)$")
+    _cast_regex = re.compile(
         r"(geopt|user|key|date|time|datetime)$", re.IGNORECASE
     )
 
-    def __Error(self, error_message):
+    def _Error(self, error_message):
         """Generic query error.
 
         Args:
@@ -198,27 +197,27 @@ class GQL(object):
 
         Raises:
             BadQueryError and passes on an error message from the caller. Will
-                raise BadQueryError on all calls to __Error()
+                raise BadQueryError on all calls to _Error()
         """
-        if self.__next_symbol >= len(self.__symbols):
+        if self._next_symbol >= len(self._symbols):
             raise exceptions.BadQueryError(
                 "Parse Error: %s at end of string" % error_message
             )
         else:
             raise exceptions.BadQueryError(
                 "Parse Error: %s at symbol %s"
-                % (error_message, self.__symbols[self.__next_symbol])
+                % (error_message, self._symbols[self._next_symbol])
             )
 
-    def __Accept(self, symbol_string):
+    def _Accept(self, symbol_string):
         """Advance the symbol and return true if the next symbol matches input."""
-        if self.__next_symbol < len(self.__symbols):
-            if self.__symbols[self.__next_symbol].upper() == symbol_string:
-                self.__next_symbol += 1
+        if self._next_symbol < len(self._symbols):
+            if self._symbols[self._next_symbol].upper() == symbol_string:
+                self._next_symbol += 1
                 return True
         return False
 
-    def __Expect(self, symbol_string):
+    def _Expect(self, symbol_string):
         """Require that the next symbol matches symbol_string, or emit an error.
 
         Args:
@@ -227,10 +226,10 @@ class GQL(object):
         Raises:
             BadQueryError if the next symbol doesn't match the parameter passed in.
         """
-        if not self.__Accept(symbol_string):
-            self.__Error("Unexpected Symbol: %s" % symbol_string)
+        if not self._Accept(symbol_string):
+            self._Error("Unexpected Symbol: %s" % symbol_string)
 
-    def __AcceptRegex(self, regex):
+    def _AcceptRegex(self, regex):
         """Advance and return the symbol if the next symbol matches the regex.
 
         Args:
@@ -241,18 +240,18 @@ class GQL(object):
                 to simple matches. Requires () around some objects in the regex.
                 None if no match is found.
         """
-        if self.__next_symbol < len(self.__symbols):
-            match_symbol = self.__symbols[self.__next_symbol]
+        if self._next_symbol < len(self._symbols):
+            match_symbol = self._symbols[self._next_symbol]
             match = regex.match(match_symbol)
             if match:
-                self.__next_symbol += 1
+                self._next_symbol += 1
                 matched_string = match.groups() and match.group(1) or None
 
                 return matched_string
 
         return None
 
-    def __AcceptTerminal(self):
+    def _AcceptTerminal(self):
         """Accept either a single semi-colon or an empty string.
 
         Returns:
@@ -262,13 +261,13 @@ class GQL(object):
             BadQueryError if there are unconsumed symbols in the query.
         """
 
-        self.__Accept(";")
+        self._Accept(";")
 
-        if self.__next_symbol < len(self.__symbols):
-            self.__Error("Expected no additional symbols")
+        if self._next_symbol < len(self._symbols):
+            self._Error("Expected no additional symbols")
         return True
 
-    def __Select(self):
+    def _Select(self):
         """Consume the SELECT clause and everything that follows it.
 
         Assumes SELECT * to start. Transitions to a FROM clause.
@@ -276,20 +275,20 @@ class GQL(object):
         Returns:
             True if parsing completed okay.
         """
-        self.__Expect("SELECT")
-        if self.__Accept("DISTINCT"):
-            self.__distinct = True
-        if not self.__Accept("*"):
-            props = [self.__ExpectIdentifier()]
-            while self.__Accept(","):
-                props.append(self.__ExpectIdentifier())
+        self._Expect("SELECT")
+        if self._Accept("DISTINCT"):
+            self._distinct = True
+        if not self._Accept("*"):
+            props = [self._ExpectIdentifier()]
+            while self._Accept(","):
+                props.append(self._ExpectIdentifier())
             if props == ["__key__"]:
                 self._keys_only = True
             else:
-                self.__projection = tuple(props)
-        return self.__From()
+                self._projection = tuple(props)
+        return self._From()
 
-    def __From(self):
+    def _From(self):
         """Consume the FROM clause.
 
         Assumes a single well formed entity in the clause.
@@ -298,11 +297,11 @@ class GQL(object):
         Returns:
             True: if parsing completed okay.
         """
-        if self.__Accept("FROM"):
-            self._kind = self.__ExpectIdentifier()
-        return self.__Where()
+        if self._Accept("FROM"):
+            self._kind = self._ExpectIdentifier()
+        return self._Where()
 
-    def __Where(self):
+    def _Where(self):
         """Consume the WHERE clause.
 
         These can have some recursion because of the AND symbol.
@@ -311,41 +310,39 @@ class GQL(object):
             True: if parsing the WHERE clause completed correctly, as well as
                 all subsequent clauses.
         """
-        if self.__Accept("WHERE"):
-            return self.__FilterList()
-        return self.__OrderBy()
+        if self._Accept("WHERE"):
+            return self._FilterList()
+        return self._OrderBy()
 
-    def __FilterList(self):
+    def _FilterList(self):
         """Consume the filter list (remainder of the WHERE clause)."""
-        identifier = self.__Identifier()
+        identifier = self._Identifier()
         if not identifier:
-            self.__Error("Invalid WHERE Identifier")
+            self._Error("Invalid WHERE Identifier")
 
-        condition = self.__AcceptRegex(self.__conditions_regex)
+        condition = self._AcceptRegex(self._conditions_regex)
         if not condition:
-            self.__Error("Invalid WHERE Condition")
-        self.__CheckFilterSyntax(identifier, condition)
+            self._Error("Invalid WHERE Condition")
+        self._CheckFilterSyntax(identifier, condition)
 
-        if not self.__AddSimpleFilter(
-            identifier, condition, self.__Reference()
-        ):
+        if not self._AddSimpleFilter(identifier, condition, self._Reference()):
 
-            if not self.__AddSimpleFilter(
-                identifier, condition, self.__Literal()
+            if not self._AddSimpleFilter(
+                identifier, condition, self._Literal()
             ):
 
-                type_cast = self.__TypeCast()
-                if not type_cast or not self.__AddProcessedParameterFilter(
+                type_cast = self._TypeCast()
+                if not type_cast or not self._AddProcessedParameterFilter(
                     identifier, condition, *type_cast
                 ):
-                    self.__Error("Invalid WHERE Condition")
+                    self._Error("Invalid WHERE Condition")
 
-        if self.__Accept("AND"):
-            return self.__FilterList()
+        if self._Accept("AND"):
+            return self._FilterList()
 
-        return self.__OrderBy()
+        return self._OrderBy()
 
-    def __GetValueList(self):
+    def _GetValueList(self):
         """Read in a list of parameters from the tokens and return the list.
 
         Reads in a set of tokens by consuming symbols. Only accepts literals,
@@ -357,19 +354,19 @@ class GQL(object):
         params = []
 
         while True:
-            reference = self.__Reference()
+            reference = self._Reference()
             if reference:
                 params.append(reference)
             else:
-                literal = self.__Literal()
+                literal = self._Literal()
                 params.append(literal)
 
-            if not self.__Accept(","):
+            if not self._Accept(","):
                 break
 
         return params
 
-    def __CheckFilterSyntax(self, identifier, condition):
+    def _CheckFilterSyntax(self, identifier, condition):
         """Check that filter conditions are valid and throw errors if not.
 
         Args:
@@ -379,16 +376,16 @@ class GQL(object):
         if identifier.lower() == "ancestor":
             if condition.lower() == "is":
 
-                if self.__has_ancestor:
-                    self.__Error('Only one ANCESTOR IS" clause allowed')
+                if self._has_ancestor:
+                    self._Error('Only one ANCESTOR IS" clause allowed')
             else:
-                self.__Error('"IS" expected to follow "ANCESTOR"')
+                self._Error('"IS" expected to follow "ANCESTOR"')
         elif condition.lower() == "is":
-            self.__Error(
+            self._Error(
                 '"IS" can only be used when comparing against "ANCESTOR"'
             )
 
-    def __AddProcessedParameterFilter(
+    def _AddProcessedParameterFilter(
         self, identifier, condition, operator, parameters
     ):
         """Add a filter with post-processing required.
@@ -412,19 +409,19 @@ class GQL(object):
 
         filter_rule = (identifier, condition)
         if identifier.lower() == "ancestor":
-            self.__has_ancestor = True
-            filter_rule = (self.__ANCESTOR, "is")
+            self._has_ancestor = True
+            filter_rule = (self._ANCESTOR, "is")
             assert condition.lower() == "is"
 
         if operator == "list" and condition.lower() != "in":
-            self.__Error("Only IN can process a list of values")
+            self._Error("Only IN can process a list of values")
 
-        self.__filters.setdefault(filter_rule, []).append(
+        self._filters.setdefault(filter_rule, []).append(
             (operator, parameters)
         )
         return True
 
-    def __AddSimpleFilter(self, identifier, condition, parameter):
+    def _AddSimpleFilter(self, identifier, condition, parameter):
         """Add a filter to the query being built (no post-processing on parameter).
 
         Args:
@@ -436,35 +433,35 @@ class GQL(object):
         Returns:
             bool: True if the filter could be added. False otherwise.
         """
-        return self.__AddProcessedParameterFilter(
+        return self._AddProcessedParameterFilter(
             identifier, condition, "nop", [parameter]
         )
 
-    def __Identifier(self):
+    def _Identifier(self):
         """Consume an identifier and return it.
 
         Returns:
             str: The identifier string. If quoted, the surrounding quotes are
                 stripped.
         """
-        identifier = self.__AcceptRegex(self.__identifier_regex)
+        identifier = self._AcceptRegex(self._identifier_regex)
         if identifier:
             if identifier.upper() in self.RESERVED_KEYWORDS:
-                self.__next_symbol -= 1
-                self.__Error("Identifier is a reserved keyword")
+                self._next_symbol -= 1
+                self._Error("Identifier is a reserved keyword")
         else:
-            identifier = self.__AcceptRegex(self.__quoted_identifier_regex)
+            identifier = self._AcceptRegex(self._quoted_identifier_regex)
             if identifier:
                 identifier = identifier[1:-1].replace('""', '"')
         return identifier
 
-    def __ExpectIdentifier(self):
-        id = self.__Identifier()
+    def _ExpectIdentifier(self):
+        id = self._Identifier()
         if not id:
-            self.__Error("Identifier Expected")
+            self._Error("Identifier Expected")
         return id
 
-    def __Reference(self):
+    def _Reference(self):
         """Consume a parameter reference and return it.
 
         Consumes a reference to a positional parameter (:1) or a named parameter
@@ -475,17 +472,17 @@ class GQL(object):
                 parameters or string for named parameters) to a bind-time
                 parameter.
         """
-        reference = self.__AcceptRegex(self.__ordinal_regex)
+        reference = self._AcceptRegex(self._ordinal_regex)
         if reference:
             return int(reference)
         else:
-            reference = self.__AcceptRegex(self.__named_regex)
+            reference = self._AcceptRegex(self._named_regex)
             if reference:
                 return reference
 
         return None
 
-    def __Literal(self):
+    def _Literal(self):
         """Parse literals from our token list.
 
         Returns:
@@ -495,44 +492,44 @@ class GQL(object):
 
         literal = None
 
-        if self.__next_symbol < len(self.__symbols):
+        if self._next_symbol < len(self._symbols):
             try:
-                literal = int(self.__symbols[self.__next_symbol])
+                literal = int(self._symbols[self._next_symbol])
             except ValueError:
                 pass
             else:
-                self.__next_symbol += 1
+                self._next_symbol += 1
 
             if literal is None:
                 try:
-                    literal = float(self.__symbols[self.__next_symbol])
+                    literal = float(self._symbols[self._next_symbol])
                 except ValueError:
                     pass
                 else:
-                    self.__next_symbol += 1
+                    self._next_symbol += 1
 
         if literal is None:
 
-            literal = self.__AcceptRegex(self.__quoted_string_regex)
+            literal = self._AcceptRegex(self._quoted_string_regex)
             if literal:
                 literal = literal[1:-1].replace("''", "'")
 
         if literal is None:
 
-            if self.__Accept("TRUE"):
+            if self._Accept("TRUE"):
                 literal = True
-            elif self.__Accept("FALSE"):
+            elif self._Accept("FALSE"):
                 literal = False
 
         if literal is not None:
             return Literal(literal)
 
-        if self.__Accept("NULL"):
+        if self._Accept("NULL"):
             return Literal(None)
         else:
             return None
 
-    def __TypeCast(self, can_cast_list=True):
+    def _TypeCast(self, can_cast_list=True):
         """Check if the next operation is a type-cast and return the cast if so.
 
         Casting operators look like simple function calls on their parameters.
@@ -549,79 +546,79 @@ class GQL(object):
                 Returns :data:None if there is no TypeCast function or list is
                 not allowed to be cast.
         """
-        cast_op = self.__AcceptRegex(self.__cast_regex)
+        cast_op = self._AcceptRegex(self._cast_regex)
         if not cast_op:
-            if can_cast_list and self.__Accept("("):
+            if can_cast_list and self._Accept("("):
 
                 cast_op = "list"
             else:
                 return None
         else:
             cast_op = cast_op.lower()
-            self.__Expect("(")
+            self._Expect("(")
 
-        params = self.__GetValueList()
-        self.__Expect(")")
+        params = self._GetValueList()
+        self._Expect(")")
 
         return (cast_op, params)
 
-    def __OrderBy(self):
+    def _OrderBy(self):
         """Consume the ORDER BY clause."""
-        if self.__Accept("ORDER"):
-            self.__Expect("BY")
-            return self.__OrderList()
-        return self.__Limit()
+        if self._Accept("ORDER"):
+            self._Expect("BY")
+            return self._OrderList()
+        return self._Limit()
 
-    def __OrderList(self):
+    def _OrderList(self):
         """Consume variables and sort order for ORDER BY clause."""
-        identifier = self.__Identifier()
+        identifier = self._Identifier()
         if identifier:
-            if self.__Accept("DESC"):
-                self.__orderings.append((identifier, _datastore_query.DOWN))
-            elif self.__Accept("ASC"):
-                self.__orderings.append((identifier, _datastore_query.UP))
+            if self._Accept("DESC"):
+                self._orderings.append((identifier, _datastore_query.DOWN))
+            elif self._Accept("ASC"):
+                self._orderings.append((identifier, _datastore_query.UP))
             else:
-                self.__orderings.append((identifier, _datastore_query.UP))
+                self._orderings.append((identifier, _datastore_query.UP))
         else:
-            self.__Error("Invalid ORDER BY Property")
+            self._Error("Invalid ORDER BY Property")
 
-        if self.__Accept(","):
-            return self.__OrderList()
-        return self.__Limit()
+        if self._Accept(","):
+            return self._OrderList()
+        return self._Limit()
 
-    def __Limit(self):
+    def _Limit(self):
         """Consume the LIMIT clause."""
-        if self.__Accept("LIMIT"):
+        if self._Accept("LIMIT"):
 
-            maybe_limit = self.__AcceptRegex(self.__number_regex)
+            maybe_limit = self._AcceptRegex(self._number_regex)
 
             if maybe_limit:
 
-                if self.__Accept(","):
-                    self.__offset = int(maybe_limit)
-                    maybe_limit = self.__AcceptRegex(self.__number_regex)
+                if self._Accept(","):
+                    self._offset = int(maybe_limit)
+                    maybe_limit = self._AcceptRegex(self._number_regex)
 
-                self.__limit = int(maybe_limit)
-                if self.__limit < 1:
-                    self.__Error("Bad Limit in LIMIT Value")
+                self._limit = int(maybe_limit)
+                if self._limit < 1:
+                    self._Error("Bad Limit in LIMIT Value")
             else:
-                self.__Error("Non-number limit in LIMIT clause")
+                self._Error("Non-number limit in LIMIT clause")
 
-        return self.__Offset()
+        return self._Offset()
 
-    def __Offset(self):
+    def _Offset(self):
         """Consume the OFFSET clause."""
-        if self.__Accept("OFFSET"):
-            if self.__offset != -1:
-                self.__Error("Offset already defined in LIMIT clause")
-            offset = self.__AcceptRegex(self.__number_regex)
+        if self._Accept("OFFSET"):
+            if self._offset != -1:
+                self._Error("Offset already defined in LIMIT clause")
+            offset = self._AcceptRegex(self._number_regex)
             if offset:
-                self.__offset = int(offset)
+                self._offset = int(offset)
             else:
-                self.__Error("Non-number offset in OFFSET clause")
-        return self.__Hint()
+                self._Error("Non-number offset in OFFSET clause")
+        return self._Hint()
 
-    def __Hint(self):
+    def _Hint(self):
         """Consume the HINT clause.
 
         Requires one of three options (mirroring the rest of the datastore):
@@ -634,16 +631,16 @@ class GQL(object):
             bool: True if the hint clause and later clauses all parsed
                 correctly.
         """
-        if self.__Accept("HINT"):
-            if self.__Accept("ORDER_FIRST"):
-                self.__hint = "ORDER_FIRST"
-            elif self.__Accept("FILTER_FIRST"):
-                self.__hint = "FILTER_FIRST"
-            elif self.__Accept("ANCESTOR_FIRST"):
-                self.__hint = "ANCESTOR_FIRST"
+        if self._Accept("HINT"):
+            if self._Accept("ORDER_FIRST"):
+                self._hint = "ORDER_FIRST"
+            elif self._Accept("FILTER_FIRST"):
+                self._hint = "FILTER_FIRST"
+            elif self._Accept("ANCESTOR_FIRST"):
+                self._hint = "ANCESTOR_FIRST"
             else:
-                self.__Error("Unknown HINT")
-        return self.__AcceptTerminal()
+                self._Error("Unknown HINT")
+        return self._AcceptTerminal()
 
     def _args_to_val(self, func, args):
         """Helper for GQL parsing to extract values from GQL expressions.
@@ -717,8 +714,8 @@ class GQL(object):
             offset=offset, limit=limit, keys_only=keys_only
         )
         projection = self.projection()
-        project = self.__app
-        namespace = self.__namespace
+        project = self._app
+        namespace = self._namespace
         if self.is_distinct():
             distinct_on = projection
         else:
@@ -748,11 +745,11 @@ class Literal(object):
     """
 
     def __init__(self, value):
-        self.__value = value
+        self._value = value
 
     def Get(self):
         """Return the value of the literal."""
-        return self.__value
+        return self._value
 
     def __eq__(self, other):
         """A literal is equal to another if their values are the same"""
@@ -761,4 +758,4 @@ class Literal(object):
         return self.Get() == other.Get()
 
     def __repr__(self):
-        return "Literal(%s)" % repr(self.__value)
+        return "Literal(%s)" % repr(self._value)

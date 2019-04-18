@@ -29,7 +29,7 @@ class TestLiteral:
     @staticmethod
     def test_constructor():
         literal = gql_module.Literal("abc")
-        assert literal.__dict__ == {"_Literal__value": "abc"}
+        assert literal.__dict__ == {"_value": "abc"}
 
     @staticmethod
     def test_Get():
@@ -299,7 +299,7 @@ class TestGQL:
         )
         gql = gql_module.GQL(GQL_QUERY)
         query = gql.get_query()
-        assert query.__repr__() == rep
+        assert repr(query) == rep
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
