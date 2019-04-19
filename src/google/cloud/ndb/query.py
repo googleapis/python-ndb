@@ -1714,7 +1714,7 @@ class Query:
                 values for some of these arguments.
 
         Returns:
-            QueryIterator: An iterator.
+            :class:_datastore_query.QueryIterator: An iterator.
         """
         return _datastore_query.iterate(_query_options)
 
@@ -1990,9 +1990,9 @@ class Query:
 
         To fetch the next page, you pass the cursor returned by one call to the
         next call using the `start_cursor` argument.  A common idiom is to pass
-        the cursor to the client using :meth:`_datastore_query.Cursor.urlsafe`
-        and to reconstruct that cursor on a subsequent request using the
-        `urlsafe` argument to :class:`Cursor`.
+        the cursor to the client using :meth:_datastore_query.Cursor.urlsafe and
+        to reconstruct that cursor on a subsequent request using the `urlsafe`
+        argument to :class:_datastore_query.Cursor.
 
         Args:
             page_size (int): The number of results per page. At most, this many
