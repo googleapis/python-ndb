@@ -30,6 +30,7 @@
 """
 
 
+import copy
 import datetime
 import functools
 import inspect
@@ -109,6 +110,7 @@ __all__ = [
 
 
 _MEANING_PREDEFINED_ENTITY_USER = 20
+_MEANING_URI_COMPRESSED = "ZLIB"
 _MAX_STRING_LENGTH = 1500
 Key = key_module.Key
 BlobKey = _datastore_types.BlobKey
@@ -3353,11 +3355,403 @@ class TimeProperty(DateTimeProperty):
         return datetime.datetime.utcnow().time()
 
 
-class StructuredProperty(Property):
-    __slots__ = ()
+class _NestedCounter(object):
+    """ A recursive counter for StructuredProperty deserialization.
 
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError
+    Deserialization has some complicated rules to handle StructuredPropertys
+    that may or may not be empty. The simplest case is a leaf counter, where
+    the counter will return the index of the repeated value that last had this
+    leaf property written. When a non-leaf counter requested, this will return
+    the max of all its leaf values. This is due to the fact that the next index
+    that a full non-leaf property may be written to comes after all indices that
+    have part of that property written (otherwise, a partial entity would be
+    overwritten.
+
+    Consider an evaluation of the following structure:
+
+      class B(model.Model):
+          c = model.IntegerProperty()
+          d = model.IntegerProperty()
+
+      class A(model.Model):
+          b = model.StructuredProperty(B)
+
+      class Foo(model.Model):
+          # top-level model
+          a = model.StructuredProperty(A, repeated=True)
+      Foo(a=[A(b=None),
+          A(b=B(c=1)),
+          A(b=None),
+          A(b=B(c=2, d=3))])
+
+    This will result in a serialized structure:
+
+    1) a.b   = None
+    2) a.b.c = 1
+    3) a.b.d = None
+    4) a.b   = None
+    5) a.b.c = 2
+    6) a.b.d = 3
+
+    The counter state should be the following:
+
+         a | a.b | a.b.c | a.b.d
+
+    0) -    -      -       -
+    1) @1   1      -       -
+    2) @2   @2     2       -
+    3) @2   @2     2       2
+    4) @3   @3     3       3
+    5) @4   @4     4       3
+    6) @4   @4     4       4
+
+    Here, @ indicates that this counter value is actually a calculated value.
+    It is equal to the MAX of its sub-counters.
+
+    Counter values may get incremented multiple times while deserializing a
+    property. This will happen if a child counter falls behind,
+    for example in steps 2 and 3.
+
+    During an increment of a parent node, all child nodes values are incremented
+    to match that of the parent, for example in step 4.
+    """
+
+    def __init__(self):
+        self._counter = 0
+        self._sub_counters = collections.defaultdict(_NestedCounter)
+
+    def get(self, parts=None):
+        if parts:
+            return self._sub_counters[parts[0]].get(parts[1:])
+        if self._is_parent_node():
+            return max(v.get() for v in self._sub_counters.itervalues())
+        return self._counter
+
+    def increment(self, parts=None):
+        if parts:
+            self._make_parent_node()
+            return self._sub_counters[parts[0]].increment(parts[1:])
+        if self._is_parent_node():
+            # Move all children forward
+            value = self.get() + 1
+            self._set(value)
+            return value
+        self._counter += 1
+        return self._counter
+
+    def _set(self, value):
+        """Updates all descendants to a specified value."""
+        if self._is_parent_node():
+            for child in self._sub_counters.itervalues():
+                child._set(value)
+        else:
+            self._counter = value
+
+    def _absolute_counter(self):
+        # Used only for testing.
+        return self._counter
+
+    def _is_parent_node(self):
+        return self._counter == -1
+
+    def _make_parent_node(self):
+        self._counter = -1
+
+
+class StructuredProperty(Property):
+    """A Property whose value is itself an entity.
+
+    The values of the sub-entity are indexed and can be queried.
+    See the module docstring for details.
+    """
+
+    _modelclass = None
+
+    _attributes = ['_modelclass'] + Property._attributes
+
+    def __init__(self, modelclass, name=None, **kwds):
+        super(StructuredProperty, self).__init__(name=name, **kwds)
+        if self._repeated:
+            if modelclass._has_repeated:
+                raise TypeError('This StructuredProperty cannot use repeated=True '
+                                'because its model class (%s) contains repeated '
+                                'properties (directly or indirectly).' %
+                                modelclass.__name__)
+        self._modelclass = modelclass
+
+    def _get_value(self, entity):
+        """Override _get_value() to *not* raise UnprojectedPropertyError."""
+        value = self._get_user_value(entity)
+        if value is None and entity._projection:
+            # Invoke super _get_value() to raise the proper exception.
+            return super(StructuredProperty, self)._get_value(entity)
+        return value
+
+    def _get_for_dict(self, entity):
+        value = self._get_value(entity)
+        if self._repeated:
+            value = [v._to_dict() for v in value]
+        elif value is not None:
+            value = value._to_dict()
+        return value
+
+    def __getattr__(self, attrname):
+        """Dynamically get a subproperty."""
+        # Optimistically try to use the dict key.
+        prop = self._modelclass._properties.get(attrname)
+        # We're done if we have a hit and _code_name matches.
+        if prop is None or prop._code_name != attrname:
+            # Otherwise, use linear search looking for a matching _code_name.
+            for prop in self._modelclass._properties.values():
+                if prop._code_name == attrname:
+                    break
+            else:
+                # This is executed when we never execute the above break.
+                prop = None
+        if prop is None:
+            raise AttributeError('Model subclass %s has no attribute %s' %
+                                 (self._modelclass.__name__, attrname))
+        prop_copy = copy.copy(prop)
+        prop_copy._name = self._name + '.' + prop_copy._name
+        # Cache the outcome, so subsequent requests for the same attribute
+        # name will get the copied property directly rather than going
+        # through the above motions all over again.
+        setattr(self, attrname, prop_copy)
+        return prop_copy
+
+    def _comparison(self, op, value):
+        if op != '=':
+            raise exceptions.BadFilterError(
+                'StructuredProperty filter can only use ==')
+        if not self._indexed:
+            raise exceptions.BadFilterError(
+                'Cannot query for unindexed StructuredProperty %s' % self._name)
+        # Import late to avoid circular imports.
+        from .query import ConjunctionNode, PostFilterNode
+        from .query import RepeatedStructuredPropertyPredicate
+        if value is None:
+            from .query import FilterNode  # Import late to avoid circular imports.
+            return FilterNode(self._name, op, value)
+        value = self._do_validate(value)
+        value = self._call_to_base_type(value)
+        filters = []
+        match_keys = []
+        # TODO: Why not just iterate over value._values?
+        for prop in self._modelclass._properties.itervalues():
+            vals = prop._get_base_value_unwrapped_as_list(value)
+            if prop._repeated:
+                if vals:
+                    raise exceptions.BadFilterError(
+                        'Cannot query for non-empty repeated property %s' % prop._name)
+                continue
+            assert isinstance(vals, list) and len(vals) == 1, repr(vals)
+            val = vals[0]
+            if val is not None:
+                altprop = getattr(self, prop._code_name)
+                filt = altprop._comparison(op, val)
+                filters.append(filt)
+                match_keys.append(altprop._name)
+        if not filters:
+            raise exceptions.BadFilterError(
+                'StructuredProperty filter without any values')
+        if len(filters) == 1:
+            return filters[0]
+        if self._repeated:
+            pb = value._to_pb(allow_partial=True)
+            pred = RepeatedStructuredPropertyPredicate(match_keys, pb,
+                                                       self._name + '.')
+            filters.append(PostFilterNode(pred))
+        return ConjunctionNode(*filters)
+
+    def _IN(self, value):
+        if not isinstance(value, (list, tuple, set, frozenset)):
+            raise exceptions.BadArgumentError(
+                'Expected list, tuple or set, got %r' % (value,))
+        from .query import DisjunctionNode, FalseNode
+        # Expand to a series of == filters.
+        filters = [self._comparison('=', val) for val in value]
+        if not filters:
+            # DisjunctionNode doesn't like an empty list of filters.
+            # Running the query will still fail, but this matches the
+            # behavior of IN for regular properties.
+            return FalseNode()
+        else:
+            return DisjunctionNode(*filters)
+    IN = _IN
+
+    def _validate(self, value):
+        if isinstance(value, dict):
+            # A dict is assumed to be the result of a _to_dict() call.
+            return self._modelclass(**value)
+        if not isinstance(value, self._modelclass):
+            raise exceptions.BadValueError('Expected %s instance, got %r' %
+                                                 (self._modelclass.__name__, value))
+
+    def _has_value(self, entity, rest=None):
+        # rest: optional list of attribute names to check in addition.
+        # Basically, prop._has_value(self, ent, ['x', 'y']) is similar to
+        #   (prop._has_value(ent) and
+        #    prop.x._has_value(ent.x) and
+        #    prop.x.y._has_value(ent.x.y))
+        # assuming prop.x and prop.x.y exist.
+        # NOTE: This is not particularly efficient if len(rest) > 1,
+        # but that seems a rare case, so for now I don't care.
+        ok = super(StructuredProperty, self)._has_value(entity)
+        if ok and rest:
+            lst = self._get_base_value_unwrapped_as_list(entity)
+            if len(lst) != 1:
+                raise RuntimeError('Failed to retrieve sub-entity of StructuredProperty'
+                                   ' %s' % self._name)
+            subent = lst[0]
+            if subent is None:
+                return True
+            subprop = subent._properties.get(rest[0])
+            if subprop is None:
+                ok = False
+            else:
+                ok = subprop._has_value(subent, rest[1:])
+        return ok
+
+    def _serialize(self, entity, pb, prefix='', parent_repeated=False,
+                   projection=None):
+        # entity -> pb; pb is an EntityProto message
+        values = self._get_base_value_unwrapped_as_list(entity)
+        for value in values:
+            if value is not None:
+                # TODO: Avoid re-sorting for repeated values.
+                for unused_name, prop in sorted(value._properties.iteritems()):
+                    prop._serialize(value, pb, prefix + self._name + '.',
+                                    self._repeated or parent_repeated,
+                                    projection=projection)
+            else:
+                # Serialize a single None
+                super(StructuredProperty, self)._serialize(
+                      entity, pb, prefix=prefix, parent_repeated=parent_repeated,
+                      projection=projection)
+
+    def _deserialize(self, entity, p, depth=1):
+        if not self._repeated:
+            subentity = self._retrieve_value(entity)
+            if subentity is None:
+                subentity = self._modelclass()
+                self._store_value(entity, _BaseValue(subentity))
+            cls = self._modelclass
+            if isinstance(subentity, _BaseValue):
+                # NOTE: It may not be a _BaseValue when we're deserializing a
+                # repeated structured property.
+                subentity = subentity.b_val
+            if not isinstance(subentity, cls):
+                raise RuntimeError('Cannot deserialize StructuredProperty %s; value '
+                                   'retrieved not a %s instance %r' %
+                                   (self._name, cls.__name__, subentity))
+            # _GenericProperty tries to keep compressed values as unindexed, but
+            # won't override a set argument. We need to force it at this level.
+            # TODO(pcostello): Remove this hack by passing indexed to _deserialize.
+            # This cannot happen until we version the API.
+            indexed = p.meaning_uri() != _MEANING_URI_COMPRESSED
+            prop = subentity._get_property_for(p, depth=depth, indexed=indexed)
+            if prop is None:
+                # Special case: kill subentity after all.
+                self._store_value(entity, None)
+                return
+            prop._deserialize(subentity, p, depth + 1)
+            return
+
+        # The repeated case is more complicated.
+        # TODO: Prove we won't get here for orphans.
+        name = p.name()
+        parts = name.split('.')
+        if len(parts) <= depth:
+            raise RuntimeError('StructuredProperty %s expected to find properties '
+                               'separated by periods at a depth of %i; received %r' %
+                               (self._name, depth, parts))
+        next = parts[depth]
+        rest = parts[depth + 1:]
+        prop = self._modelclass._properties.get(next)
+        prop_is_fake = False
+        if prop is None:
+            # Synthesize a fake property.  (We can't use Model._fake_property()
+            # because we need the property before we can determine the subentity.)
+            if rest:
+                # TODO: Handle this case, too.
+                return
+            # TODO: Figure out the value for indexed.  Unfortunately we'd
+            # need this passed in from _from_pb(), which would mean a
+            # signature change for _deserialize(), which might break valid
+            # end-user code that overrides it.
+            compressed = p.meaning_uri() == _MEANING_URI_COMPRESSED
+            prop = GenericProperty(next, compressed=compressed)
+            prop._code_name = next
+            prop_is_fake = True
+
+        # Find the first subentity that doesn't have a value for this
+        # property yet.
+        if not hasattr(entity, '_subentity_counter'):
+            entity._subentity_counter = _NestedCounter()
+        counter = entity._subentity_counter
+        counter_path = parts[depth - 1:]
+        next_index = counter.get(counter_path)
+        subentity = None
+        if self._has_value(entity):
+            # If an entire subentity has been set to None, we have to loop
+            # to advance until we find the next partial entity.
+            while next_index < self._get_value_size(entity):
+                subentity = self._get_base_value_at_index(entity, next_index)
+                if not isinstance(subentity, self._modelclass):
+                    raise TypeError('sub-entities must be instances '
+                                    'of their Model class.')
+                if not prop._has_value(subentity, rest):
+                    break
+                next_index = counter.increment(counter_path)
+            else:
+                subentity = None
+        # The current property is going to be populated, so advance the counter.
+        counter.increment(counter_path)
+        if not subentity:
+            # We didn't find one.  Add a new one to the underlying list of
+            # values.
+            subentity = self._modelclass()
+            values = self._retrieve_value(entity, self._default)
+            if values is None:
+                self._store_value(entity, [])
+                values = self._retrieve_value(entity, self._default)
+            values.append(_BaseValue(subentity))
+        if prop_is_fake:
+            # Add the synthetic property to the subentity's _properties
+            # dict, so that it will be correctly deserialized.
+            # (See Model._fake_property() for comparison.)
+            subentity._clone_properties()
+            subentity._properties[prop._name] = prop
+        prop._deserialize(subentity, p, depth + 1)
+
+    def _prepare_for_put(self, entity):
+        values = self._get_base_value_unwrapped_as_list(entity)
+        for value in values:
+            if value is not None:
+                value._prepare_for_put()
+
+    def _check_property(self, rest=None, require_indexed=True):
+        """Override for Property._check_property().
+        Raises:
+            InvalidPropertyError if no subproperty is specified or if something
+                is wrong with the subproperty.
+        """
+        if not rest:
+            raise InvalidPropertyError(
+                'Structured property %s requires a subproperty' % self._name)
+        self._modelclass._check_properties([rest], require_indexed=require_indexed)
+
+    def _get_base_value_at_index(self, entity, index):
+        assert self._repeated
+        value = self._retrieve_value(entity, self._default)
+        value[index] = self._opt_call_to_base_type(value[index])
+        return value[index].b_val
+
+    def _get_value_size(self, entity):
+        values = self._retrieve_value(entity, self._default)
+        if values is None:
+            return 0
+        return len(values)
 
 
 class LocalStructuredProperty(BlobProperty):
