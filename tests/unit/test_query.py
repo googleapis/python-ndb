@@ -55,6 +55,7 @@ class TestQueryOptions:
             query_module.QueryOptions(config="bad")
 
     @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test___repr__():
         representation = "QueryOptions(kind='test', project='app')"
         options = query_module.QueryOptions(kind="test", project="app")
