@@ -474,16 +474,16 @@ def _get_commit_batch(transaction, options):
     Args:
         transaction (bytes): The transaction id. Different transactions will
             have different batchs.
-        options (_options.Options): Options for the batch. Only "transaction"
-            is supported at this time.
+        options (_options.Options): Options for the batch. Not supported at
+            this time.
 
     Returns:
         _TransactionalCommitBatch: The batch.
     """
     # Support for different options will be tricky if we're in a transaction,
     # since we can only do one commit, so any options that affect that gRPC
-    # call would all need to be identical. For now, only "transaction" is
-    # supported if there is a transaction.
+    # call would all need to be identical. For now, no options are supported
+    # here.
     for key, value in options.items():
         if value:
             raise NotImplementedError("Passed bad option: {!r}".format(key))
