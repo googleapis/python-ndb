@@ -969,6 +969,14 @@ def _query_options(wrapped):
                 "deprecated. Please pass arguments directly."
             )
 
+        if kwargs.get("keys_only"):
+            if kwargs.get("projection"):
+                raise TypeError(
+                    "Cannot specify 'projection' with 'keys_only=True'"
+                )
+            kwargs["projection"] = ["__key__"]
+            del kwargs["keys_only"]
+
         # Get arguments for QueryOptions attributes
         query_arguments = {
             name: self._option(name, kwargs.pop(name, None), options)
@@ -1026,14 +1034,6 @@ class QueryOptions(_options.Options):
                 "Cursors are always produced when available. This option is "
                 "ignored."
             )
-
-        if kwargs.get("keys_only"):
-            if kwargs.get("projection"):
-                raise TypeError(
-                    "Cannot specify 'projection' with 'keys_only=True'"
-                )
-            kwargs["projection"] = ["__key__"]
-            del kwargs["keys_only"]
 
         super(QueryOptions, self).__init__(config=config, **kwargs)
 

@@ -1454,16 +1454,16 @@ class TestQuery:
         assert query.fetch_async(options=options) is response
         _datastore_query.fetch.assert_called_once_with(
             query_module.QueryOptions(
-                project="testing", projection=["__key__"]
+                project="testing", keys_only=True,
             )
         )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_fetch_async_with_keys_only_and_projection():
-        query = query_module.Query(projection=["foo", "bar"])
+        query = query_module.Query()
         with pytest.raises(TypeError):
-            query.fetch_async(keys_only=True)
+            query.fetch_async(keys_only=True, projection=["foo", "bar"])
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
