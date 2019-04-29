@@ -1453,9 +1453,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(options=options) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", keys_only=True,
-            )
+            query_module.QueryOptions(project="testing", keys_only=True)
         )
 
     @staticmethod
