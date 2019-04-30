@@ -1,0 +1,380 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>google.cloud.ndb.polymodel &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for google.cloud.ndb.polymodel</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2018 Google LLC</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     https://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Polymorphic models and queries.</span>
+
+<span class="sd">The standard NDB Model class only supports &#39;functional polymorphism&#39;.</span>
+<span class="sd">That is, you can create a subclass of Model, and then subclass that</span>
+<span class="sd">class, as many generations as necessary, and those classes will share</span>
+<span class="sd">all the same properties and behaviors of their base classes.  However,</span>
+<span class="sd">subclassing Model in this way gives each subclass its own kind.  This</span>
+<span class="sd">means that it is not possible to do &#39;polymorphic queries&#39;.  Building a</span>
+<span class="sd">query on a base class will only return entities whose kind matches</span>
+<span class="sd">that base class&#39;s kind, and exclude entities that are instances of</span>
+<span class="sd">some subclass of that base class.</span>
+
+<span class="sd">The PolyModel class defined here lets you create class hierarchies</span>
+<span class="sd">that support polymorphic queries.  Simply subclass PolyModel instead</span>
+<span class="sd">of Model.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">model</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;PolyModel&quot;</span><span class="p">]</span>
+
+<span class="n">_CLASS_KEY_PROPERTY</span> <span class="o">=</span> <span class="s2">&quot;class&quot;</span>
+
+
+<span class="k">class</span> <span class="nc">_ClassKeyProperty</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Property to store the &#39;class key&#39; of a polymorphic class.</span>
+
+<span class="sd">    The class key is a list of strings describing a polymorphic entity&#39;s</span>
+<span class="sd">    place within its class hierarchy.  This property is automatically</span>
+<span class="sd">    calculated.  For example:</span>
+
+<span class="sd">    .. testsetup:: class-key-property</span>
+
+<span class="sd">        from google.cloud import ndb</span>
+
+
+<span class="sd">        class Animal(ndb.PolyModel):</span>
+<span class="sd">            pass</span>
+
+
+<span class="sd">        class Feline(Animal):</span>
+<span class="sd">            pass</span>
+
+
+<span class="sd">        class Cat(Feline):</span>
+<span class="sd">            pass</span>
+
+<span class="sd">    .. doctest:: class-key-property</span>
+
+<span class="sd">        &gt;&gt;&gt; Animal().class_</span>
+<span class="sd">        [&#39;Animal&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; Feline().class_</span>
+<span class="sd">        [&#39;Animal&#39;, &#39;Feline&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; Cat().class_</span>
+<span class="sd">        [&#39;Animal&#39;, &#39;Feline&#39;, &#39;Cat&#39;]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">_CLASS_KEY_PROPERTY</span><span class="p">,</span> <span class="n">indexed</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor.</span>
+
+<span class="sd">        If you really want to you can give this a different datastore name</span>
+<span class="sd">        or make it unindexed.  For example:</span>
+
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            class Foo(PolyModel):</span>
+<span class="sd">                class_ = _ClassKeyProperty(indexed=False)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_ClassKeyProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">indexed</span><span class="o">=</span><span class="n">indexed</span><span class="p">,</span> <span class="n">repeated</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;The class_ property is read-only from the user&#39;s perspective.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2"> is a read-only property&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_code_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Compute and store a default value if necessary.&quot;&quot;&quot;</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">_ClassKeyProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">value</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">entity</span><span class="o">.</span><span class="n">_class_key</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_store_value</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_prepare_for_put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Ensure the class_ property is initialized before it is serialized.&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>  <span class="c1"># For its side effects.</span>
+
+
+<div class="viewcode-block" id="PolyModel"><a class="viewcode-back" href="../../../../polymodel.html#google.cloud.ndb.polymodel.PolyModel">[docs]</a><span class="k">class</span> <span class="nc">PolyModel</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base class for class hierarchies supporting polymorphic queries.</span>
+
+<span class="sd">    Use this class to build hierarchies that can be queried based on</span>
+<span class="sd">    their types.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">    Consider the following model hierarchy::</span>
+
+<span class="sd">        +------+</span>
+<span class="sd">        |Animal|</span>
+<span class="sd">        +------+</span>
+<span class="sd">          |</span>
+<span class="sd">          +-----------------+</span>
+<span class="sd">          |                 |</span>
+<span class="sd">        +------+          +------+</span>
+<span class="sd">        |Canine|          |Feline|</span>
+<span class="sd">        +------+          +------+</span>
+<span class="sd">          |                 |</span>
+<span class="sd">          +-------+         +-------+</span>
+<span class="sd">          |       |         |       |</span>
+<span class="sd">        +---+   +----+    +---+   +-------+</span>
+<span class="sd">        |Dog|   |Wolf|    |Cat|   |Panther|</span>
+<span class="sd">        +---+   +----+    +---+   +-------+</span>
+
+<span class="sd">    This class hierarchy has three levels.  The first is the `root</span>
+<span class="sd">    class`.  All models in a single class hierarchy must inherit from</span>
+<span class="sd">    this root.  All models in the hierarchy are stored as the same</span>
+<span class="sd">    kind as the root class.  For example, Panther entities when stored</span>
+<span class="sd">    to Cloud Datastore are of the kind `Animal`.  Querying against the</span>
+<span class="sd">    Animal kind will retrieve Cats, Dogs and Canines, for example,</span>
+<span class="sd">    that match your query.  Different classes stored in the `root</span>
+<span class="sd">    class` kind are identified by their class key.  When loaded from</span>
+<span class="sd">    Cloud Datastore, it is mapped to the appropriate implementation</span>
+<span class="sd">    class.</span>
+
+<span class="sd">    Polymorphic properties:</span>
+
+<span class="sd">    Properties that are defined in a given base class within a</span>
+<span class="sd">    hierarchy are stored in Cloud Datastore for all subclasses only.</span>
+<span class="sd">    So, if the Feline class had a property called `whiskers`, the Cat</span>
+<span class="sd">    and Panther enties would also have whiskers, but not Animal,</span>
+<span class="sd">    Canine, Dog or Wolf.</span>
+
+<span class="sd">    Polymorphic queries:</span>
+
+<span class="sd">    When written to Cloud Datastore, all polymorphic objects</span>
+<span class="sd">    automatically have a property called `class` that you can query</span>
+<span class="sd">    against.  Using this property it is possible to easily write a</span>
+<span class="sd">    query against any sub-hierarchy.  For example, to fetch only</span>
+<span class="sd">    Canine objects, including all Dogs and Wolves:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        Canine.query()</span>
+
+<span class="sd">    The `class` property is not meant to be used by your code other</span>
+<span class="sd">    than for queries.  Since it is supposed to represent the real</span>
+<span class="sd">    Python class it is intended to be hidden from view.  Although if</span>
+<span class="sd">    you feel the need, it is accessible as the `class_` attribute.</span>
+
+<span class="sd">    Root class:</span>
+
+<span class="sd">    The root class is the class from which all other classes of the</span>
+<span class="sd">    hierarchy inherits from.  Each hierarchy has a single root class.</span>
+<span class="sd">    A class is a root class if it is an immediate child of PolyModel.</span>
+<span class="sd">    The subclasses of the root class are all the same kind as the root</span>
+<span class="sd">    class. In other words:</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        Animal.kind() == Feline.kind() == Panther.kind() == &#39;Animal&#39;</span>
+
+<span class="sd">    Note:</span>
+
+<span class="sd">    All classes in a given hierarchy must have unique names, since</span>
+<span class="sd">    the class name is used to identify the appropriate subclass.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">class_</span> <span class="o">=</span> <span class="n">_ClassKeyProperty</span><span class="p">()</span>
+
+    <span class="n">_class_map</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># Map class key -&gt; suitable subclass.</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_update_kind_map</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Override; called by Model._fix_up_properties().</span>
+
+<span class="sd">        Update the kind map as well as the class map, except for PolyModel</span>
+<span class="sd">        itself (its class key is empty).  Note that the kind map will</span>
+<span class="sd">        contain entries for all classes in a PolyModel hierarchy; they all</span>
+<span class="sd">        have the same kind, but different class names.  PolyModel class</span>
+<span class="sd">        names, like regular Model class names, must be globally unique.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">_kind_map</span><span class="p">[</span><span class="bp">cls</span><span class="o">.</span><span class="n">_class_name</span><span class="p">()]</span> <span class="o">=</span> <span class="bp">cls</span>
+        <span class="n">class_key</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_class_key</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">class_key</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_class_map</span><span class="p">[</span><span class="nb">tuple</span><span class="p">(</span><span class="n">class_key</span><span class="p">)]</span> <span class="o">=</span> <span class="bp">cls</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_class_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the class key.</span>
+
+<span class="sd">        This is a list of class names, e.g. [&#39;Animal&#39;, &#39;Feline&#39;, &#39;Cat&#39;].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">_class_name</span><span class="p">()</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_hierarchy</span><span class="p">()]</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_get_kind</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Override.</span>
+
+<span class="sd">        Make sure that the kind returned is the root class of the</span>
+<span class="sd">        polymorphic hierarchy.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bases</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_hierarchy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">bases</span><span class="p">:</span>
+            <span class="c1"># We have to jump through some hoops to call the superclass&#39;</span>
+            <span class="c1"># _get_kind() method.  First, this is called by the metaclass</span>
+            <span class="c1"># before the PolyModel name is defined, so it can&#39;t use</span>
+            <span class="c1"># super(PolyModel, cls)._get_kind().  Second, we can&#39;t just call</span>
+            <span class="c1"># Model._get_kind() because that always returns &#39;Model&#39;.  Hence</span>
+            <span class="c1"># the &#39;__func__&#39; hack.</span>
+            <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">Model</span><span class="o">.</span><span class="n">_get_kind</span><span class="o">.</span><span class="vm">__func__</span><span class="p">(</span><span class="bp">cls</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">bases</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">_class_name</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_class_name</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the class name.</span>
+
+<span class="sd">        This overrides Model._class_name() which is an alias for _get_kind().</span>
+<span class="sd">        This is overridable in case you want to use a different class</span>
+<span class="sd">        name.  The main use case is probably to maintain backwards</span>
+<span class="sd">        compatibility with datastore contents after renaming a class.</span>
+
+<span class="sd">        NOTE: When overriding this for an intermediate class in your</span>
+<span class="sd">        hierarchy (as opposed to a leaf class), make sure to test</span>
+<span class="sd">        cls.__name__, or else all subclasses will appear to have the</span>
+<span class="sd">        same class name.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__name__</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_get_hierarchy</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Internal helper to return the list of polymorphic base classes.</span>
+<span class="sd">        This returns a list of class objects, e.g. [Animal, Feline, Cat].</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">bases</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">base</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="n">mro</span><span class="p">():</span>  <span class="c1"># pragma: no branch</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">base</span><span class="p">,</span> <span class="s2">&quot;_get_hierarchy&quot;</span><span class="p">):</span>
+                <span class="n">bases</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base</span><span class="p">)</span>
+        <span class="k">del</span> <span class="n">bases</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>  <span class="c1"># Delete PolyModel itself</span>
+        <span class="n">bases</span><span class="o">.</span><span class="n">reverse</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">bases</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_default_filters</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_hierarchy</span><span class="p">())</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">()</span>
+        <span class="k">return</span> <span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">class_</span> <span class="o">==</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_class_name</span><span class="p">(),)</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model.html">Model and Property</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tasklets.html">Tasklets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../exceptions.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../polymodel.html">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../blobstore.html">Blobstore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../metadata.html">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

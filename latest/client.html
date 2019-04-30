@@ -1,0 +1,182 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Client &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Key" href="key.html" />
+    <link rel="prev" title="ndb library for Google Cloud Datastore" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-google.cloud.ndb.client">
+<span id="client"></span><h1>Client<a class="headerlink" href="#module-google.cloud.ndb.client" title="Permalink to this headline">¶</a></h1>
+<p>A client for NDB which manages credentials, project, namespace.</p>
+<dl class="class">
+<dt id="google.cloud.ndb.client.Client">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.client.</code><code class="descname">Client</code><span class="sig-paren">(</span><em>project=None</em>, <em>namespace=None</em>, <em>credentials=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/client.html#Client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.client.Client" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://googleapis.github.io/google-cloud-python/latest/core/client.html#google.cloud.client.ClientWithProject" title="(in google-cloud)"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.client.ClientWithProject</span></code></a></p>
+<p>An NDB client.</p>
+<p>The NDB client must be created in order to use NDB, and any use of NDB must
+be within the context of a call to <a class="reference internal" href="#google.cloud.ndb.client.Client.context" title="google.cloud.ndb.client.Client.context"><code class="xref py py-meth docutils literal notranslate"><span class="pre">context()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>project</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The project to pass to proxied API methods. If
+not passed, falls back to the default inferred from the
+environment.</li>
+<li><strong>namespace</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – Namespace to pass to proxied API methods.</li>
+<li><strong>credentials</strong> (Optional[<a class="reference external" href="https://google-auth.readthedocs.io/en/latest/reference/google.auth.credentials.html#google.auth.credentials.Credentials" title="(in google-auth v1.6.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Credentials</span></code></a>]) – The OAuth2 Credentials to use for this client. If not passed, falls
+back to the default inferred from the environment.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="google.cloud.ndb.client.Client.SCOPE">
+<code class="descname">SCOPE</code><em class="property"> = ('https://www.googleapis.com/auth/datastore',)</em><a class="headerlink" href="#google.cloud.ndb.client.Client.SCOPE" title="Permalink to this definition">¶</a></dt>
+<dd><p>The scopes required for authenticating as a Cloud Datastore consumer.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.client.Client.context">
+<code class="descname">context</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/client.html#Client.context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.client.Client.context" title="Permalink to this definition">¶</a></dt>
+<dd><p>Establish a context for a set of NDB calls.</p>
+<p>This method provides a context manager which establishes the runtime
+state for using NDB.</p>
+<p>For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">google.cloud</span> <span class="kn">import</span> <span class="n">ndb</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">ndb</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">client</span><span class="o">.</span><span class="n">context</span><span class="p">():</span>
+    <span class="c1"># Use NDB for some stuff</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+<p>Use of a context is required–NDB can only be used inside a running
+context. The context is used to manage the connection to Google Cloud
+Datastore, an event loop for asynchronous API calls, runtime caching
+policy, and other essential runtime state.</p>
+<p>Code within an asynchronous context should be single threaded.
+Internally, a <a class="reference external" href="https://docs.python.org/3/library/threading.html#threading.local" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">threading.local</span></code></a> instance is used to track the
+current event loop.</p>
+<p>In a web application, it is recommended that a single context be used
+per HTTP request. This can typically be accomplished in a middleware
+layer.</p>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Model and Property</a></li>
+<li class="toctree-l1"><a class="reference internal" href="query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasklets.html">Tasklets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="polymodel.html">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="blobstore.html">Blobstore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter"><code class="docutils literal notranslate"><span class="pre">ndb</span></code> library for Google Cloud Datastore</a></li>
+      <li>Next: <a href="key.html" title="next chapter">Key</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/client.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

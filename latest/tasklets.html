@@ -1,0 +1,494 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Tasklets &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Exceptions" href="exceptions.html" />
+    <link rel="prev" title="Query" href="query.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-google.cloud.ndb.tasklets">
+<span id="tasklets"></span><h1>Tasklets<a class="headerlink" href="#module-google.cloud.ndb.tasklets" title="Permalink to this headline">¶</a></h1>
+<p>Provides a tasklet decorator and related helpers.</p>
+<p>Tasklets are a way to write concurrently running functions without
+threads.</p>
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.add_flow_exception">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">add_flow_exception</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#add_flow_exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.add_flow_exception" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.tasklets.Future">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">Future</code><span class="sig-paren">(</span><em>info='Unknown'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Represents a task to be completed at an unspecified time in the future.</p>
+<p>This is the abstract base class from which all NDB <code class="docutils literal notranslate"><span class="pre">Future</span></code> classes are
+derived. A future represents a task that is to be performed
+asynchronously with the current flow of program control.</p>
+<p>Provides interface defined by <a class="reference external" href="https://docs.python.org/3/library/concurrent.futures.html#concurrent.futures.Future" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">concurrent.futures.Future</span></code></a> as well as
+that of the legacy Google App Engine NDB <code class="docutils literal notranslate"><span class="pre">Future</span></code> class.</p>
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.add_done_callback">
+<code class="descname">add_done_callback</code><span class="sig-paren">(</span><em>callback</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.add_done_callback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.add_done_callback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Add a callback function to be run upon task completion. Will run
+immediately if task has already finished.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>callback</strong> (<em>Callable</em>) – The function to execute.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.cancel">
+<code class="descname">cancel</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.cancel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.cancel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancel the task for this future.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#NotImplementedError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">NotImplementedError</span></code></a> – Always, not supported.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.cancelled">
+<code class="descname">cancelled</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.cancelled"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.cancelled" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get whether task for this future has been cancelled.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Always.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/constants.html#False" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">False</span></code></a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.check_success">
+<code class="descname">check_success</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.check_success"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.check_success" title="Permalink to this definition">¶</a></dt>
+<dd><p>Check whether a future has completed without raising an exception.</p>
+<p>This will wait for the future to finish its task and will then raise
+the future’s exception, if there is one, or else do nothing.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.done">
+<code class="descname">done</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.done"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.done" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get whether future has finished its task.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">True if task has finished, False otherwise.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.exception">
+<code class="descname">exception</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.exception" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the exception for this future, if there is one.</p>
+<p>If the task has not yet finished, this will block until the task has
+finished. When the task has finished, this will get the exception
+raised during the task, or None, if no exception was raised.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The exception, or None.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Union[<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.7)">Exception</a>, <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.7)">None</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.get_exception">
+<code class="descname">get_exception</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.get_exception" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the exception for this future, if there is one.</p>
+<p>If the task has not yet finished, this will block until the task has
+finished. When the task has finished, this will get the exception
+raised during the task, or None, if no exception was raised.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The exception, or None.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Union[<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.7)">Exception</a>, <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.7)">None</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.get_result">
+<code class="descname">get_result</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.get_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the result of this future’s task.</p>
+<p>If the task is finished, this will return immediately. Otherwise, this
+will block until a result is ready.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The result</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Any</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.get_traceback">
+<code class="descname">get_traceback</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.get_traceback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.get_traceback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the traceback for this future, if there is one.</p>
+<p>Included for backwards compatibility with legacy NDB. If there is an
+exception for this future, this just returns the <code class="docutils literal notranslate"><span class="pre">__traceback__</span></code>
+attribute of that exception.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The traceback, or None.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Union[<a class="reference external" href="https://docs.python.org/3/library/types.html#types.TracebackType" title="(in Python v3.7)">types.TracebackType</a>, <a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.7)">None</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.result">
+<code class="descname">result</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the result of this future’s task.</p>
+<p>If the task is finished, this will return immediately. Otherwise, this
+will block until a result is ready.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The result</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Any</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.running">
+<code class="descname">running</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.running"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.running" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get whether future’s task is still running.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">False if task has finished, True otherwise.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.set_exception">
+<code class="descname">set_exception</code><span class="sig-paren">(</span><em>exception</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.set_exception"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.set_exception" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set an exception for this future.</p>
+<p>Signals that this future’s task has resulted in an exception. The
+future is considered done but has no result. Once the exception is set,
+calls to <a class="reference internal" href="#google.cloud.ndb.tasklets.Future.done" title="google.cloud.ndb.tasklets.Future.done"><code class="xref py py-meth docutils literal notranslate"><span class="pre">done()</span></code></a> will return True, and calls to <a class="reference internal" href="#google.cloud.ndb.tasklets.Future.result" title="google.cloud.ndb.tasklets.Future.result"><code class="xref py py-meth docutils literal notranslate"><span class="pre">result()</span></code></a>
+will raise the exception.</p>
+<p>Should not be called from user code.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>exception</strong> (<a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.7)"><em>Exception</em></a>) – The exception that was raised.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.set_result">
+<code class="descname">set_result</code><span class="sig-paren">(</span><em>result</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.set_result"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.set_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the result for this future.</p>
+<p>Signals that this future has completed its task and sets the result.</p>
+<p>Should not be called from user code.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.tasklets.Future.wait">
+<code class="descname">wait</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.wait"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.wait" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for this future’s task to complete.</p>
+<p>This future will be done and will have either a result or an exception
+after a call to this method.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="google.cloud.ndb.tasklets.Future.wait_all">
+<em class="property">static </em><code class="descname">wait_all</code><span class="sig-paren">(</span><em>futures</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.wait_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.wait_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls <a class="reference internal" href="#google.cloud.ndb.tasklets.wait_all" title="google.cloud.ndb.tasklets.wait_all"><code class="xref py py-func docutils literal notranslate"><span class="pre">wait_all()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="google.cloud.ndb.tasklets.Future.wait_any">
+<em class="property">static </em><code class="descname">wait_any</code><span class="sig-paren">(</span><em>futures</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Future.wait_any"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Future.wait_any" title="Permalink to this definition">¶</a></dt>
+<dd><p>Calls <a class="reference internal" href="#google.cloud.ndb.tasklets.wait_any" title="google.cloud.ndb.tasklets.wait_any"><code class="xref py py-func docutils literal notranslate"><span class="pre">wait_any()</span></code></a>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.make_context">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">make_context</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#make_context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.make_context" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.make_default_context">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">make_default_context</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#make_default_context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.make_default_context" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.tasklets.QueueFuture">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">QueueFuture</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#QueueFuture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.QueueFuture" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.tasklets.ReducingFuture">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">ReducingFuture</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#ReducingFuture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.ReducingFuture" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="google.cloud.ndb.tasklets.Return">
+<em class="property">exception </em><code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">Return</code><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#Return"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.Return" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#StopIteration" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">StopIteration</span></code></a></p>
+<p>Alias for <cite>StopIteration</cite>.</p>
+<p>Older programs written with NDB may <code class="docutils literal notranslate"><span class="pre">raise</span> <span class="pre">Return(result)</span></code> in a tasklet.
+This is no longer necessary, but it is included for backwards
+compatibility. Tasklets should simply <code class="docutils literal notranslate"><span class="pre">return</span></code> their result.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.tasklets.SerialQueueFuture">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">SerialQueueFuture</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#SerialQueueFuture"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.SerialQueueFuture" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.set_context">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">set_context</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#set_context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.set_context" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.sleep">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">sleep</code><span class="sig-paren">(</span><em>seconds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#sleep"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.sleep" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sleep some amount of time in a tasklet.
+.. rubric:: Example</p>
+<dl class="docutils">
+<dt>..code-block:: python</dt>
+<dd>yield tasklets.sleep(0.5)  # Sleep for half a second.</dd>
+</dl>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>seconds</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – Amount of time, in seconds, to sleep.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">Future will be complete after <code class="docutils literal notranslate"><span class="pre">seconds</span></code> have elapsed.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">Future</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.synctasklet">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">synctasklet</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#synctasklet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.synctasklet" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.tasklet">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">tasklet</code><span class="sig-paren">(</span><em>wrapped</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#tasklet"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.tasklet" title="Permalink to this definition">¶</a></dt>
+<dd><p>A decorator to turn a function or method into a tasklet.</p>
+<p>Calling a tasklet will return a <a class="reference internal" href="#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future"><code class="xref py py-class docutils literal notranslate"><span class="pre">Future</span></code></a> instance which can be used
+to get the eventual return value of the tasklet.</p>
+<p>For more information on tasklets and cooperative multitasking, see the main
+documentation.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>wrapped</strong> (<em>Callable</em>) – The wrapped function.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.toplevel">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">toplevel</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#toplevel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.toplevel" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.wait_all">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">wait_all</code><span class="sig-paren">(</span><em>futures</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#wait_all"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.wait_all" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for all of several futures to finish.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>futures</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.7)"><em>typing.Sequence</em></a><em>[</em><a class="reference internal" href="#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future"><em>Future</em></a><em>]</em>) – The futures to wait on.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.tasklets.wait_any">
+<code class="descclassname">google.cloud.ndb.tasklets.</code><code class="descname">wait_any</code><span class="sig-paren">(</span><em>futures</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/tasklets.html#wait_any"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.tasklets.wait_any" title="Permalink to this definition">¶</a></dt>
+<dd><p>Wait for any of several futures to finish.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>futures</strong> (<a class="reference external" href="https://docs.python.org/3/library/typing.html#typing.Sequence" title="(in Python v3.7)"><em>typing.Sequence</em></a><em>[</em><a class="reference internal" href="#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future"><em>Future</em></a><em>]</em>) – The futures to wait on.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The first future to be found to have finished.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">Future</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Model and Property</a></li>
+<li class="toctree-l1"><a class="reference internal" href="query.html">Query</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Tasklets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="polymodel.html">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="blobstore.html">Blobstore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="query.html" title="previous chapter">Query</a></li>
+      <li>Next: <a href="exceptions.html" title="next chapter">Exceptions</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/tasklets.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

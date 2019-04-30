@@ -1,0 +1,626 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>google.cloud.ndb.tasklets &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for google.cloud.ndb.tasklets</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2018 Google LLC</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     https://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Provides a tasklet decorator and related helpers.</span>
+
+<span class="sd">Tasklets are a way to write concurrently running functions without</span>
+<span class="sd">threads.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">types</span>
+
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">context</span> <span class="k">as</span> <span class="n">context_module</span>
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">_eventloop</span>
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">_remote</span>
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;add_flow_exception&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Future&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;make_context&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;make_default_context&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;QueueFuture&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ReducingFuture&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Return&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SerialQueueFuture&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;set_context&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sleep&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;synctasklet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tasklet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;toplevel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wait_all&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wait_any&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="Future"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future">[docs]</a><span class="k">class</span> <span class="nc">Future</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Represents a task to be completed at an unspecified time in the future.</span>
+
+<span class="sd">    This is the abstract base class from which all NDB ``Future`` classes are</span>
+<span class="sd">    derived. A future represents a task that is to be performed</span>
+<span class="sd">    asynchronously with the current flow of program control.</span>
+
+<span class="sd">    Provides interface defined by :class:`concurrent.futures.Future` as well as</span>
+<span class="sd">    that of the legacy Google App Engine NDB ``Future`` class.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="n">info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_done</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">(</span><span class="si">{!r}</span><span class="s2">) &lt;</span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="p">,</span> <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">))</span>
+
+<div class="viewcode-block" id="Future.done"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.done">[docs]</a>    <span class="k">def</span> <span class="nf">done</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get whether future has finished its task.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if task has finished, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span></div>
+
+<div class="viewcode-block" id="Future.running"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.running">[docs]</a>    <span class="k">def</span> <span class="nf">running</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get whether future&#39;s task is still running.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: False if task has finished, True otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span></div>
+
+<div class="viewcode-block" id="Future.wait"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.wait">[docs]</a>    <span class="k">def</span> <span class="nf">wait</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Wait for this future&#39;s task to complete.</span>
+
+<span class="sd">        This future will be done and will have either a result or an exception</span>
+<span class="sd">        after a call to this method.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">while</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">:</span>
+            <span class="n">_eventloop</span><span class="o">.</span><span class="n">run1</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Future.check_success"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.check_success">[docs]</a>    <span class="k">def</span> <span class="nf">check_success</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check whether a future has completed without raising an exception.</span>
+
+<span class="sd">        This will wait for the future to finish its task and will then raise</span>
+<span class="sd">        the future&#39;s exception, if there is one, or else do nothing.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span></div>
+
+<div class="viewcode-block" id="Future.set_result"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.set_result">[docs]</a>    <span class="k">def</span> <span class="nf">set_result</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">result</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the result for this future.</span>
+
+<span class="sd">        Signals that this future has completed its task and sets the result.</span>
+
+<span class="sd">        Should not be called from user code.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Cannot set result on future that is done.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_finish</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Future.set_exception"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.set_exception">[docs]</a>    <span class="k">def</span> <span class="nf">set_exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">exception</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set an exception for this future.</span>
+
+<span class="sd">        Signals that this future&#39;s task has resulted in an exception. The</span>
+<span class="sd">        future is considered done but has no result. Once the exception is set,</span>
+<span class="sd">        calls to :meth:`done` will return True, and calls to :meth:`result`</span>
+<span class="sd">        will raise the exception.</span>
+
+<span class="sd">        Should not be called from user code.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            exception (Exception): The exception that was raised.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Cannot set exception on future that is done.&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="n">exception</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_finish</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="nf">_finish</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Wrap up future upon completion.</span>
+
+<span class="sd">        Sets `_done` to True and calls any registered callbacks.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_done</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">for</span> <span class="n">callback</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+<div class="viewcode-block" id="Future.result"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.result">[docs]</a>    <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the result of this future&#39;s task.</span>
+
+<span class="sd">        If the task is finished, this will return immediately. Otherwise, this</span>
+<span class="sd">        will block until a result is ready.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Any: The result</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">check_success</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_result</span></div>
+
+    <span class="n">get_result</span> <span class="o">=</span> <span class="n">result</span>  <span class="c1"># Legacy NDB interface</span>
+
+<div class="viewcode-block" id="Future.exception"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.exception">[docs]</a>    <span class="k">def</span> <span class="nf">exception</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the exception for this future, if there is one.</span>
+
+<span class="sd">        If the task has not yet finished, this will block until the task has</span>
+<span class="sd">        finished. When the task has finished, this will get the exception</span>
+<span class="sd">        raised during the task, or None, if no exception was raised.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Union[Exception, None]: The exception, or None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span></div>
+
+    <span class="n">get_exception</span> <span class="o">=</span> <span class="n">exception</span>  <span class="c1"># Legacy NDB interface</span>
+
+<div class="viewcode-block" id="Future.get_traceback"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.get_traceback">[docs]</a>    <span class="k">def</span> <span class="nf">get_traceback</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get the traceback for this future, if there is one.</span>
+
+<span class="sd">        Included for backwards compatibility with legacy NDB. If there is an</span>
+<span class="sd">        exception for this future, this just returns the ``__traceback__``</span>
+<span class="sd">        attribute of that exception.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Union[types.TracebackType, None]: The traceback, or None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span><span class="o">.</span><span class="n">__traceback__</span></div>
+
+<div class="viewcode-block" id="Future.add_done_callback"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.add_done_callback">[docs]</a>    <span class="k">def</span> <span class="nf">add_done_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">callback</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Add a callback function to be run upon task completion. Will run</span>
+<span class="sd">        immediately if task has already finished.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            callback (Callable): The function to execute.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">:</span>
+            <span class="n">callback</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_callbacks</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">callback</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Future.cancel"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.cancel">[docs]</a>    <span class="k">def</span> <span class="nf">cancel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Cancel the task for this future.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: Always, not supported.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="Future.cancelled"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.cancelled">[docs]</a>    <span class="k">def</span> <span class="nf">cancelled</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get whether task for this future has been cancelled.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            :data:`False`: Always.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="Future.wait_any"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.wait_any">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">wait_any</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calls :func:`wait_any`.&quot;&quot;&quot;</span>
+        <span class="c1"># For backwards compatibility</span>
+        <span class="k">return</span> <span class="n">wait_any</span><span class="p">(</span><span class="n">futures</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Future.wait_all"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Future.wait_all">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">wait_all</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Calls :func:`wait_all`.&quot;&quot;&quot;</span>
+        <span class="c1"># For backwards compatibility</span>
+        <span class="k">return</span> <span class="n">wait_all</span><span class="p">(</span><span class="n">futures</span><span class="p">)</span></div></div>
+
+
+<span class="k">class</span> <span class="nc">_TaskletFuture</span><span class="p">(</span><span class="n">Future</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A future which waits on a tasklet.</span>
+
+<span class="sd">    A future of this type wraps a generator derived from calling a tasklet. A</span>
+<span class="sd">    tasklet&#39;s generator is expected to yield future objects, either an instance</span>
+<span class="sd">    of :class:`Future` or :class:`_remote.RemoteCall`. The result of each</span>
+<span class="sd">    yielded future is then sent back into the generator until the generator has</span>
+<span class="sd">    completed and either returned a value or raised an exception.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        typing.Generator[Union[tasklets.Future, _remote.RemoteCall], Any, Any]:</span>
+<span class="sd">            The generator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">generator</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="s2">&quot;Unknown&quot;</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_TaskletFuture</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">info</span><span class="o">=</span><span class="n">info</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generator</span> <span class="o">=</span> <span class="n">generator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">context</span>
+
+    <span class="k">def</span> <span class="nf">_advance_tasklet</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">send_value</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Advance a tasklet one step by sending in a value or error.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">context</span><span class="o">.</span><span class="n">use</span><span class="p">():</span>
+                <span class="c1"># Send the next value or exception into the generator</span>
+                <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="o">.</span><span class="n">throw</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">error</span><span class="p">),</span> <span class="n">error</span><span class="p">)</span>
+
+                <span class="c1"># send_value will be None if this is the first time</span>
+                <span class="n">yielded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">generator</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">send_value</span><span class="p">)</span>
+
+                <span class="c1"># Context may have changed in tasklet</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">context</span> <span class="o">=</span> <span class="n">context_module</span><span class="o">.</span><span class="n">get_context</span><span class="p">()</span>
+
+        <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">stop</span><span class="p">:</span>
+            <span class="c1"># Generator has signalled exit, get the return value. This tasklet</span>
+            <span class="c1"># has finished.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">_get_return_value</span><span class="p">(</span><span class="n">stop</span><span class="p">))</span>
+            <span class="k">return</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">error</span><span class="p">:</span>
+            <span class="c1"># An error has occurred in the tasklet. This tasklet has finished.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_exception</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="c1"># This tasklet has yielded a value. We expect this to be a future</span>
+        <span class="c1"># object (either NDB or gRPC) or a sequence of futures, in the case of</span>
+        <span class="c1"># parallel yield.</span>
+
+        <span class="k">def</span> <span class="nf">done_callback</span><span class="p">(</span><span class="n">yielded</span><span class="p">):</span>
+            <span class="c1"># To be called when a future dependency has completed.  Advance the</span>
+            <span class="c1"># tasklet with the yielded value or error.</span>
+            <span class="c1">#</span>
+            <span class="c1"># It was tempting to call `_advance_tasklet` (`_help_tasklet_along`</span>
+            <span class="c1"># in Legacy) directly. Doing so, it has been found, can lead to</span>
+            <span class="c1"># exceeding the maximum recursion depth. Queing it up to run on the</span>
+            <span class="c1"># event loop avoids this issue by keeping the call stack shallow.</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="n">yielded</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">error</span><span class="p">:</span>
+                <span class="n">_eventloop</span><span class="o">.</span><span class="n">call_soon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_advance_tasklet</span><span class="p">,</span> <span class="n">error</span><span class="o">=</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_eventloop</span><span class="o">.</span><span class="n">call_soon</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_advance_tasklet</span><span class="p">,</span> <span class="n">yielded</span><span class="o">.</span><span class="n">result</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">yielded</span><span class="p">,</span> <span class="n">Future</span><span class="p">):</span>
+            <span class="n">yielded</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">done_callback</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">yielded</span><span class="p">,</span> <span class="n">_remote</span><span class="o">.</span><span class="n">RemoteCall</span><span class="p">):</span>
+            <span class="n">_eventloop</span><span class="o">.</span><span class="n">queue_rpc</span><span class="p">(</span><span class="n">yielded</span><span class="p">,</span> <span class="n">done_callback</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">yielded</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="n">future</span> <span class="o">=</span> <span class="n">_MultiFuture</span><span class="p">(</span><span class="n">yielded</span><span class="p">)</span>
+            <span class="n">future</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="n">done_callback</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;A tasklet yielded an illegal value: </span><span class="si">{!r}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">yielded</span><span class="p">)</span>
+            <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_return_value</span><span class="p">(</span><span class="n">stop</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Inspect `StopIteration` instance for return value of tasklet.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        stop (StopIteration): The `StopIteration` exception for the finished</span>
+<span class="sd">            tasklet.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">stop</span><span class="o">.</span><span class="n">args</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">stop</span><span class="o">.</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">elif</span> <span class="n">stop</span><span class="o">.</span><span class="n">args</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">stop</span><span class="o">.</span><span class="n">args</span>
+
+
+<span class="k">class</span> <span class="nc">_MultiFuture</span><span class="p">(</span><span class="n">Future</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A future which depends on multiple other futures.</span>
+
+<span class="sd">    This future will be done when either all dependencies have results or when</span>
+<span class="sd">    one dependency has raised an exception.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        dependencies (typing.Sequence[tasklets.Future]): A sequence of the</span>
+<span class="sd">            futures this future depends on.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependencies</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_MultiFuture</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dependencies</span> <span class="o">=</span> <span class="n">dependencies</span>
+
+        <span class="k">for</span> <span class="n">dependency</span> <span class="ow">in</span> <span class="n">dependencies</span><span class="p">:</span>
+            <span class="n">dependency</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_dependency_done</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">(</span><span class="si">{}</span><span class="s2">) &lt;</span><span class="si">{}</span><span class="s2">&gt;&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span>
+            <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="nb">repr</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dependencies</span><span class="p">)),</span>
+            <span class="nb">id</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_dependency_done</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dependency</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_done</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="n">error</span> <span class="o">=</span> <span class="n">dependency</span><span class="o">.</span><span class="n">exception</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">error</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_exception</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">return</span>
+
+        <span class="n">all_done</span> <span class="o">=</span> <span class="nb">all</span><span class="p">((</span><span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">()</span> <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dependencies</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">all_done</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">((</span><span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span> <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dependencies</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="tasklet"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.tasklet">[docs]</a><span class="k">def</span> <span class="nf">tasklet</span><span class="p">(</span><span class="n">wrapped</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A decorator to turn a function or method into a tasklet.</span>
+
+<span class="sd">    Calling a tasklet will return a :class:`~Future` instance which can be used</span>
+<span class="sd">    to get the eventual return value of the tasklet.</span>
+
+<span class="sd">    For more information on tasklets and cooperative multitasking, see the main</span>
+<span class="sd">    documentation.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        wrapped (Callable): The wrapped function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">tasklet_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="c1"># The normal case is that the wrapped function is a generator function</span>
+        <span class="c1"># that returns a generator when called. We also support the case that</span>
+        <span class="c1"># the user has wrapped a regular function with the tasklet decorator.</span>
+        <span class="c1"># In this case, we fail to realize an actual tasklet, but we go ahead</span>
+        <span class="c1"># and create a future object and set the result to the function&#39;s</span>
+        <span class="c1"># return value so that from the user perspective there is no problem.</span>
+        <span class="c1"># This permissive behavior is inherited from legacy NDB.</span>
+        <span class="n">context</span> <span class="o">=</span> <span class="n">context_module</span><span class="o">.</span><span class="n">get_context</span><span class="p">()</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">returned</span> <span class="o">=</span> <span class="n">wrapped</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">StopIteration</span> <span class="k">as</span> <span class="n">stop</span><span class="p">:</span>
+            <span class="c1"># If wrapped  is a regular function and the function uses the</span>
+            <span class="c1"># deprecated &quot;raise Return(result)&quot; pattern rather than just</span>
+            <span class="c1"># returning the result, then we&#39;ll extract the result from the</span>
+            <span class="c1"># StopIteration exception.</span>
+            <span class="n">returned</span> <span class="o">=</span> <span class="n">_get_return_value</span><span class="p">(</span><span class="n">stop</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">returned</span><span class="p">,</span> <span class="n">types</span><span class="o">.</span><span class="n">GeneratorType</span><span class="p">):</span>
+            <span class="c1"># We have a tasklet, start it</span>
+            <span class="n">future</span> <span class="o">=</span> <span class="n">_TaskletFuture</span><span class="p">(</span><span class="n">returned</span><span class="p">,</span> <span class="n">context</span><span class="p">,</span> <span class="n">info</span><span class="o">=</span><span class="n">wrapped</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+            <span class="n">future</span><span class="o">.</span><span class="n">_advance_tasklet</span><span class="p">()</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># We don&#39;t have a tasklet, but we fake it anyway</span>
+            <span class="n">future</span> <span class="o">=</span> <span class="n">Future</span><span class="p">(</span><span class="n">info</span><span class="o">=</span><span class="n">wrapped</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+            <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">(</span><span class="n">returned</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">future</span>
+
+    <span class="k">return</span> <span class="n">tasklet_wrapper</span></div>
+
+
+<div class="viewcode-block" id="wait_any"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.wait_any">[docs]</a><span class="k">def</span> <span class="nf">wait_any</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wait for any of several futures to finish.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        futures (typing.Sequence[Future]): The futures to wait on.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Future: The first future to be found to have finished.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">futures</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">futures</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">future</span><span class="o">.</span><span class="n">done</span><span class="p">():</span>
+                <span class="k">return</span> <span class="n">future</span>
+
+        <span class="n">_eventloop</span><span class="o">.</span><span class="n">run1</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="wait_all"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.wait_all">[docs]</a><span class="k">def</span> <span class="nf">wait_all</span><span class="p">(</span><span class="n">futures</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wait for all of several futures to finish.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        futures (typing.Sequence[Future]): The futures to wait on.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">futures</span><span class="p">:</span>
+        <span class="k">return</span>
+
+    <span class="k">for</span> <span class="n">future</span> <span class="ow">in</span> <span class="n">futures</span><span class="p">:</span>
+        <span class="n">future</span><span class="o">.</span><span class="n">wait</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="Return"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.Return">[docs]</a><span class="k">class</span> <span class="nc">Return</span><span class="p">(</span><span class="ne">StopIteration</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Alias for `StopIteration`.</span>
+
+<span class="sd">    Older programs written with NDB may ``raise Return(result)`` in a tasklet.</span>
+<span class="sd">    This is no longer necessary, but it is included for backwards</span>
+<span class="sd">    compatibility. Tasklets should simply ``return`` their result.</span>
+<span class="sd">    &quot;&quot;&quot;</span></div>
+
+    <span class="c1"># For reasons I don&#39;t entirely understand, Sphinx pukes if we just assign:</span>
+    <span class="c1"># Return = StopIteration</span>
+
+
+<div class="viewcode-block" id="sleep"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.sleep">[docs]</a><span class="k">def</span> <span class="nf">sleep</span><span class="p">(</span><span class="n">seconds</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Sleep some amount of time in a tasklet.</span>
+<span class="sd">    Example:</span>
+<span class="sd">        ..code-block:: python</span>
+<span class="sd">            yield tasklets.sleep(0.5)  # Sleep for half a second.</span>
+<span class="sd">    Arguments:</span>
+<span class="sd">        seconds (float): Amount of time, in seconds, to sleep.</span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Future: Future will be complete after ``seconds`` have elapsed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">future</span> <span class="o">=</span> <span class="n">Future</span><span class="p">(</span><span class="n">info</span><span class="o">=</span><span class="s2">&quot;sleep(</span><span class="si">{}</span><span class="s2">)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">seconds</span><span class="p">))</span>
+    <span class="n">_eventloop</span><span class="o">.</span><span class="n">queue_call</span><span class="p">(</span><span class="n">seconds</span><span class="p">,</span> <span class="n">future</span><span class="o">.</span><span class="n">set_result</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">future</span></div>
+
+
+<div class="viewcode-block" id="add_flow_exception"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.add_flow_exception">[docs]</a><span class="k">def</span> <span class="nf">add_flow_exception</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="make_context"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.make_context">[docs]</a><span class="k">def</span> <span class="nf">make_context</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="make_default_context"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.make_default_context">[docs]</a><span class="k">def</span> <span class="nf">make_default_context</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="QueueFuture"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.QueueFuture">[docs]</a><span class="k">class</span> <span class="nc">QueueFuture</span><span class="p">:</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="ReducingFuture"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.ReducingFuture">[docs]</a><span class="k">class</span> <span class="nc">ReducingFuture</span><span class="p">:</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="SerialQueueFuture"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.SerialQueueFuture">[docs]</a><span class="k">class</span> <span class="nc">SerialQueueFuture</span><span class="p">:</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="set_context"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.set_context">[docs]</a><span class="k">def</span> <span class="nf">set_context</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="synctasklet"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.synctasklet">[docs]</a><span class="k">def</span> <span class="nf">synctasklet</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="toplevel"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.toplevel">[docs]</a><span class="k">def</span> <span class="nf">toplevel</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model.html">Model and Property</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tasklets.html">Tasklets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../exceptions.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../polymodel.html">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../blobstore.html">Blobstore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../metadata.html">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

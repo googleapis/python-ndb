@@ -1,0 +1,292 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>google.cloud.ndb.blobstore &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for google.cloud.ndb.blobstore</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2018 Google LLC</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     https://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Provides an ``ndb`` interface for the blob store.</span>
+
+<span class="sd">Initially, the blob store was an App Engine specific API for Google Cloud</span>
+<span class="sd">Storage.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">_datastore_types</span>
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">model</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;BLOB_INFO_KIND&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BLOB_KEY_HEADER&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BLOB_MIGRATION_KIND&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BLOB_RANGE_HEADER&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BlobFetchSizeTooLargeError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BlobInfo&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BlobInfoParseError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BlobKey&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BlobKeyProperty&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BlobNotFoundError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BlobReader&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;create_upload_url&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;create_upload_url_async&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;DataIndexOutOfRangeError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;delete&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;delete_async&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;delete_multi&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;delete_multi_async&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Error&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fetch_data&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fetch_data_async&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_async&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_multi&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;get_multi_async&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;InternalError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MAX_BLOB_FETCH_SIZE&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;parse_blob_info&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PermissionDeniedError&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;UPLOAD_INFO_CREATION_HEADER&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="n">BlobKey</span> <span class="o">=</span> <span class="n">_datastore_types</span><span class="o">.</span><span class="n">BlobKey</span>
+
+<span class="n">BLOB_INFO_KIND</span> <span class="o">=</span> <span class="s2">&quot;__BlobInfo__&quot;</span>
+<span class="n">BLOB_MIGRATION_KIND</span> <span class="o">=</span> <span class="s2">&quot;__BlobMigration__&quot;</span>
+<span class="n">BLOB_KEY_HEADER</span> <span class="o">=</span> <span class="s2">&quot;X-AppEngine-BlobKey&quot;</span>
+<span class="n">BLOB_RANGE_HEADER</span> <span class="o">=</span> <span class="s2">&quot;X-AppEngine-BlobRange&quot;</span>
+<span class="n">MAX_BLOB_FETCH_SIZE</span> <span class="o">=</span> <span class="mi">1015808</span>
+<span class="n">UPLOAD_INFO_CREATION_HEADER</span> <span class="o">=</span> <span class="s2">&quot;X-AppEngine-Upload-Creation&quot;</span>
+
+<span class="n">BlobKeyProperty</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">BlobKeyProperty</span>
+
+
+<div class="viewcode-block" id="BlobFetchSizeTooLargeError"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.BlobFetchSizeTooLargeError">[docs]</a><span class="k">class</span> <span class="nc">BlobFetchSizeTooLargeError</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="BlobInfo"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.BlobInfo">[docs]</a><span class="k">class</span> <span class="nc">BlobInfo</span><span class="p">:</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+<div class="viewcode-block" id="BlobInfo.get"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.BlobInfo.get">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="BlobInfo.get_async"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.BlobInfo.get_async">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_async</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="BlobInfo.get_multi"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.BlobInfo.get_multi">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_multi</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+<div class="viewcode-block" id="BlobInfo.get_multi_async"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.BlobInfo.get_multi_async">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">get_multi_async</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div></div>
+
+
+<div class="viewcode-block" id="BlobInfoParseError"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.BlobInfoParseError">[docs]</a><span class="k">class</span> <span class="nc">BlobInfoParseError</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="BlobNotFoundError"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.BlobNotFoundError">[docs]</a><span class="k">class</span> <span class="nc">BlobNotFoundError</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="BlobReader"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.BlobReader">[docs]</a><span class="k">class</span> <span class="nc">BlobReader</span><span class="p">:</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="create_upload_url"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.create_upload_url">[docs]</a><span class="k">def</span> <span class="nf">create_upload_url</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="create_upload_url_async"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.create_upload_url_async">[docs]</a><span class="k">def</span> <span class="nf">create_upload_url_async</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="DataIndexOutOfRangeError"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.DataIndexOutOfRangeError">[docs]</a><span class="k">class</span> <span class="nc">DataIndexOutOfRangeError</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="delete"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.delete">[docs]</a><span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="delete_async"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.delete_async">[docs]</a><span class="k">def</span> <span class="nf">delete_async</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="delete_multi"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.delete_multi">[docs]</a><span class="k">def</span> <span class="nf">delete_multi</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="delete_multi_async"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.delete_multi_async">[docs]</a><span class="k">def</span> <span class="nf">delete_multi_async</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="Error"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.Error">[docs]</a><span class="k">class</span> <span class="nc">Error</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="fetch_data"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.fetch_data">[docs]</a><span class="k">def</span> <span class="nf">fetch_data</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="fetch_data_async"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.fetch_data_async">[docs]</a><span class="k">def</span> <span class="nf">fetch_data_async</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<span class="n">get</span> <span class="o">=</span> <span class="n">BlobInfo</span><span class="o">.</span><span class="n">get</span>
+<span class="n">get_async</span> <span class="o">=</span> <span class="n">BlobInfo</span><span class="o">.</span><span class="n">get_async</span>
+<span class="n">get_multi</span> <span class="o">=</span> <span class="n">BlobInfo</span><span class="o">.</span><span class="n">get_multi</span>
+<span class="n">get_multi_async</span> <span class="o">=</span> <span class="n">BlobInfo</span><span class="o">.</span><span class="n">get_multi_async</span>
+
+
+<div class="viewcode-block" id="InternalError"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.InternalError">[docs]</a><span class="k">class</span> <span class="nc">InternalError</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="parse_blob_info"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.parse_blob_info">[docs]</a><span class="k">def</span> <span class="nf">parse_blob_info</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+
+
+<div class="viewcode-block" id="PermissionDeniedError"><a class="viewcode-back" href="../../../../blobstore.html#google.cloud.ndb.blobstore.PermissionDeniedError">[docs]</a><span class="k">class</span> <span class="nc">PermissionDeniedError</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model.html">Model and Property</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tasklets.html">Tasklets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../exceptions.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../polymodel.html">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../blobstore.html">Blobstore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../metadata.html">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

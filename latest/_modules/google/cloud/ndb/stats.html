@@ -1,0 +1,604 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>google.cloud.ndb.stats &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../../../_static/language_data.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+   
+  <link rel="stylesheet" href="../../../../_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <h1>Source code for google.cloud.ndb.stats</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2018 Google LLC</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     https://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Models for accessing datastore usage statistics.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">model</span>
+
+
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;BaseKindStatistic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;BaseStatistic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GlobalStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;KindCompositeIndexStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;KindNonRootEntityStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;KindPropertyNamePropertyTypeStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;KindPropertyNameStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;KindPropertyTypeStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;KindRootEntityStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;KindStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespaceGlobalStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespaceKindCompositeIndexStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespaceKindNonRootEntityStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespaceKindPropertyNamePropertyTypeStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespaceKindPropertyNameStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespaceKindPropertyTypeStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespaceKindRootEntityStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespaceKindStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespacePropertyTypeStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;NamespaceStat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PropertyTypeStat&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<div class="viewcode-block" id="BaseStatistic"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.BaseStatistic">[docs]</a><span class="k">class</span> <span class="nc">BaseStatistic</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base Statistic Model class.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        bytes (int): the total number of bytes taken up in Cloud Datastore for</span>
+<span class="sd">            the statistic instance.</span>
+<span class="sd">        count (int): attribute is the total number of occurrences of the</span>
+<span class="sd">            statistic in Cloud Datastore.</span>
+<span class="sd">        timestamp (datetime.datetime): the time the statistic instance was written to Cloud</span>
+<span class="sd">            Datastore.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="c1"># This is necessary for the _get_kind() classmethod override.</span>
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__BaseStatistic__&quot;</span>
+
+    <span class="nb">bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">()</span>
+
+    <span class="n">count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">()</span>
+
+    <span class="n">timestamp</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">DateTimeProperty</span><span class="p">()</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_get_kind</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Kind name override.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span></div>
+
+
+<div class="viewcode-block" id="BaseKindStatistic"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.BaseKindStatistic">[docs]</a><span class="k">class</span> <span class="nc">BaseKindStatistic</span><span class="p">(</span><span class="n">BaseStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Base Statistic Model class for stats associated with kinds.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        kind_name (str): the name of the kind associated with the statistic</span>
+<span class="sd">            instance.</span>
+<span class="sd">        entity_bytes (int): the number of bytes taken up to store the statistic</span>
+<span class="sd">            in Cloud Datastore minus the cost of storing indices.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__BaseKindStatistic__&quot;</span>
+
+    <span class="n">kind_name</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="n">entity_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="GlobalStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.GlobalStat">[docs]</a><span class="k">class</span> <span class="nc">GlobalStat</span><span class="p">(</span><span class="n">BaseStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An aggregate of all entities across the entire application.</span>
+
+<span class="sd">    This statistic only has a single instance in Cloud Datastore that contains</span>
+<span class="sd">    the total number of entities stored and the total number of bytes they take</span>
+<span class="sd">    up.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        entity_bytes (int): the number of bytes taken up to store the statistic</span>
+<span class="sd">            in Cloud Datastore minus the cost of storing indices.</span>
+<span class="sd">        builtin_index_bytes (int): the number of bytes taken up to store</span>
+<span class="sd">            built-in index entries.</span>
+<span class="sd">        builtin_index_count (int): the number of built-in index entries.</span>
+<span class="sd">        composite_index_bytes (int): the number of bytes taken up to store</span>
+<span class="sd">            composite index entries.</span>
+<span class="sd">        composite_index_count (int): the number of composite index entries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Total__&quot;</span>
+
+    <span class="n">entity_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">composite_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">composite_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="NamespaceStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespaceStat">[docs]</a><span class="k">class</span> <span class="nc">NamespaceStat</span><span class="p">(</span><span class="n">BaseStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An aggregate of all entities across an entire namespace.</span>
+
+<span class="sd">    This statistic has one instance per namespace.  The key_name is the</span>
+<span class="sd">    represented namespace. NamespaceStat entities will only be found</span>
+<span class="sd">    in the namespace &quot;&quot; (empty string). It contains the total</span>
+<span class="sd">    number of entities stored and the total number of bytes they take up.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        subject_namespace (str): the namespace associated with the statistic</span>
+<span class="sd">            instance.</span>
+<span class="sd">        entity_bytes (int): the number of bytes taken up to store the statistic</span>
+<span class="sd">            in Cloud Datastore minus the cost of storing indices.</span>
+<span class="sd">        builtin_index_bytes (int): the number of bytes taken up to store</span>
+<span class="sd">            builtin-in index entries.</span>
+<span class="sd">        builtin_index_count (int): the number of built-in index entries.</span>
+<span class="sd">        composite_index_bytes (int): the number of bytes taken up to store</span>
+<span class="sd">            composite index entries.</span>
+<span class="sd">        composite_index_count (int): the number of composite index entries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Namespace__&quot;</span>
+
+    <span class="n">subject_namespace</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="n">entity_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">composite_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">composite_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="KindStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.KindStat">[docs]</a><span class="k">class</span> <span class="nc">KindStat</span><span class="p">(</span><span class="n">BaseKindStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An aggregate of all entities at the granularity of their Kind.</span>
+
+<span class="sd">    There is an instance of the KindStat for every Kind that is in the</span>
+<span class="sd">    application&#39;s datastore.  This stat contains per-Kind statistics.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        builtin_index_bytes (int): the number of bytes taken up to store</span>
+<span class="sd">            built-in index entries.</span>
+<span class="sd">        builtin_index_count (int): the number of built-in index entries.</span>
+<span class="sd">        composite_index_bytes (int): the number of bytes taken up to store</span>
+<span class="sd">            composite index entries.</span>
+<span class="sd">        composite_index_count (int): the number of composite index entries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Kind__&quot;</span>
+
+    <span class="n">builtin_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">composite_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">composite_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="KindRootEntityStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.KindRootEntityStat">[docs]</a><span class="k">class</span> <span class="nc">KindRootEntityStat</span><span class="p">(</span><span class="n">BaseKindStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Statistics of the number of root entities in Cloud Datastore by Kind.</span>
+
+<span class="sd">    There is an instance of the KindRootEntityState for every Kind that is in</span>
+<span class="sd">    the application&#39;s datastore and has an instance that is a root entity.  This</span>
+<span class="sd">    stat contains statistics regarding these root entity instances.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Kind_IsRootEntity__&quot;</span></div>
+
+
+<div class="viewcode-block" id="KindNonRootEntityStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.KindNonRootEntityStat">[docs]</a><span class="k">class</span> <span class="nc">KindNonRootEntityStat</span><span class="p">(</span><span class="n">BaseKindStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Statistics of the number of non root entities in Cloud Datastore by Kind.</span>
+
+<span class="sd">    There is an instance of the KindNonRootEntityStat for every Kind that is in</span>
+<span class="sd">    the application&#39;s datastore that is a not a root entity.  This stat contains</span>
+<span class="sd">    statistics regarding these non root entity instances.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Kind_NotRootEntity__&quot;</span></div>
+
+
+<div class="viewcode-block" id="PropertyTypeStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.PropertyTypeStat">[docs]</a><span class="k">class</span> <span class="nc">PropertyTypeStat</span><span class="p">(</span><span class="n">BaseStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An aggregate of all properties across the entire application by type.</span>
+
+<span class="sd">    There is an instance of the PropertyTypeStat for every property type</span>
+<span class="sd">    (google.appengine.api.datastore_types._PROPERTY_TYPES) in use by the</span>
+<span class="sd">    application in its datastore.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        property_type (str): the property type associated with the statistic</span>
+<span class="sd">            instance.</span>
+<span class="sd">        entity_bytes (int): the number of bytes taken up to store the statistic</span>
+<span class="sd">            in Cloud Datastore minus the cost of storing indices.</span>
+<span class="sd">        builtin_index_bytes (int): the number of bytes taken up to store</span>
+<span class="sd">        built-in index entries.</span>
+<span class="sd">        builtin_index_count (int): the number of built-in index entries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_PropertyType__&quot;</span>
+
+    <span class="n">property_type</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="n">entity_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="KindPropertyTypeStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.KindPropertyTypeStat">[docs]</a><span class="k">class</span> <span class="nc">KindPropertyTypeStat</span><span class="p">(</span><span class="n">BaseKindStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Statistics on (kind, property_type) tuples in the app&#39;s datastore.</span>
+
+<span class="sd">    There is an instance of the KindPropertyTypeStat for every</span>
+<span class="sd">    (kind, property_type) tuple in the application&#39;s datastore.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        property_type (str): the property type associated with the statistic</span>
+<span class="sd">            instance.</span>
+<span class="sd">        builtin_index_bytes (int): the number of bytes taken up to store\</span>
+<span class="sd">            built-in index entries.</span>
+<span class="sd">        builtin_index_count (int): the number of built-in index entries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_PropertyType_Kind__&quot;</span>
+
+    <span class="n">property_type</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="n">builtin_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="KindPropertyNameStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.KindPropertyNameStat">[docs]</a><span class="k">class</span> <span class="nc">KindPropertyNameStat</span><span class="p">(</span><span class="n">BaseKindStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Statistics on (kind, property_name) tuples in the app&#39;s datastore.</span>
+
+<span class="sd">    There is an instance of the KindPropertyNameStat for every</span>
+<span class="sd">    (kind, property_name) tuple in the application&#39;s datastore.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        property_name (str): the name of the property associated with the</span>
+<span class="sd">            statistic instance.</span>
+<span class="sd">        builtin_index_bytes (int): the number of bytes taken up to store</span>
+<span class="sd">            built-in index entries.</span>
+<span class="sd">        builtin_index_count (int): the number of built-in index entries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_PropertyName_Kind__&quot;</span>
+
+    <span class="n">property_name</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="n">builtin_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="KindPropertyNamePropertyTypeStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.KindPropertyNamePropertyTypeStat">[docs]</a><span class="k">class</span> <span class="nc">KindPropertyNamePropertyTypeStat</span><span class="p">(</span><span class="n">BaseKindStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Statistic on (kind, property_name, property_type) tuples in Cloud</span>
+<span class="sd">    Datastore.</span>
+
+<span class="sd">    There is an instance of the KindPropertyNamePropertyTypeStat for every</span>
+<span class="sd">    (kind, property_name, property_type) tuple in the application&#39;s datastore.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">      property_type (str): the property type associated with the statistic</span>
+<span class="sd">          instance.</span>
+<span class="sd">      property_name (str): the name of the property associated with the</span>
+<span class="sd">          statistic instance.</span>
+<span class="sd">      builtin_index_bytes (int): the number of bytes taken up to store</span>
+<span class="sd">          built-in index entries</span>
+<span class="sd">      builtin_index_count (int): the number of built-in index entries.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_PropertyType_PropertyName_Kind__&quot;</span>
+
+    <span class="n">property_type</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="n">property_name</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+
+    <span class="n">builtin_index_bytes</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">builtin_index_count</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">(</span><span class="n">default</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="KindCompositeIndexStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.KindCompositeIndexStat">[docs]</a><span class="k">class</span> <span class="nc">KindCompositeIndexStat</span><span class="p">(</span><span class="n">BaseStatistic</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Statistic on (kind, composite_index_id) tuples in Cloud Datastore.</span>
+
+<span class="sd">    There is an instance of the KindCompositeIndexStat for every unique</span>
+<span class="sd">    (kind, composite_index_id) tuple in the application&#39;s datastore indexes.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        index_id (int): the id of the composite index associated with the</span>
+<span class="sd">            statistic instance.</span>
+<span class="sd">        kind_name (str): the name of the kind associated with the statistic</span>
+<span class="sd">            instance.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Kind_CompositeIndex__&quot;</span>
+
+    <span class="n">index_id</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">IntegerProperty</span><span class="p">()</span>
+
+    <span class="n">kind_name</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span></div>
+
+
+<span class="c1"># The following specify namespace-specific stats.</span>
+<span class="c1"># These types are specific to Cloud Datastore namespace they are located</span>
+<span class="c1"># within. These will only be produced if datastore entities exist</span>
+<span class="c1"># in a namespace other than the empty namespace (i.e. namespace=&quot;&quot;).</span>
+
+
+<div class="viewcode-block" id="NamespaceGlobalStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespaceGlobalStat">[docs]</a><span class="k">class</span> <span class="nc">NamespaceGlobalStat</span><span class="p">(</span><span class="n">GlobalStat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;GlobalStat equivalent for a specific namespace.</span>
+
+<span class="sd">    These may be found in each specific namespace and represent stats for that</span>
+<span class="sd">    particular namespace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Ns_Total__&quot;</span></div>
+
+
+<div class="viewcode-block" id="NamespaceKindStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespaceKindStat">[docs]</a><span class="k">class</span> <span class="nc">NamespaceKindStat</span><span class="p">(</span><span class="n">KindStat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;KindStat equivalent for a specific namespace.</span>
+
+<span class="sd">    These may be found in each specific namespace and represent stats for that</span>
+<span class="sd">    particular namespace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Ns_Kind__&quot;</span></div>
+
+
+<div class="viewcode-block" id="NamespaceKindRootEntityStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespaceKindRootEntityStat">[docs]</a><span class="k">class</span> <span class="nc">NamespaceKindRootEntityStat</span><span class="p">(</span><span class="n">KindRootEntityStat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;KindRootEntityStat equivalent for a specific namespace.</span>
+
+<span class="sd">    These may be found in each specific namespace and represent stats for that</span>
+<span class="sd">    particular namespace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Ns_Kind_IsRootEntity__&quot;</span></div>
+
+
+<div class="viewcode-block" id="NamespaceKindNonRootEntityStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespaceKindNonRootEntityStat">[docs]</a><span class="k">class</span> <span class="nc">NamespaceKindNonRootEntityStat</span><span class="p">(</span><span class="n">KindNonRootEntityStat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;KindNonRootEntityStat equivalent for a specific namespace.</span>
+
+<span class="sd">    These may be found in each specific namespace and represent stats for that</span>
+<span class="sd">    particular namespace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Ns_Kind_NotRootEntity__&quot;</span></div>
+
+
+<div class="viewcode-block" id="NamespacePropertyTypeStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespacePropertyTypeStat">[docs]</a><span class="k">class</span> <span class="nc">NamespacePropertyTypeStat</span><span class="p">(</span><span class="n">PropertyTypeStat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;PropertyTypeStat equivalent for a specific namespace.</span>
+
+<span class="sd">    These may be found in each specific namespace and represent stats for that</span>
+<span class="sd">    particular namespace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Ns_PropertyType__&quot;</span></div>
+
+
+<div class="viewcode-block" id="NamespaceKindPropertyTypeStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespaceKindPropertyTypeStat">[docs]</a><span class="k">class</span> <span class="nc">NamespaceKindPropertyTypeStat</span><span class="p">(</span><span class="n">KindPropertyTypeStat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;KindPropertyTypeStat equivalent for a specific namespace.</span>
+
+<span class="sd">    These may be found in each specific namespace and represent stats for that</span>
+<span class="sd">    particular namespace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Ns_PropertyType_Kind__&quot;</span></div>
+
+
+<div class="viewcode-block" id="NamespaceKindPropertyNameStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespaceKindPropertyNameStat">[docs]</a><span class="k">class</span> <span class="nc">NamespaceKindPropertyNameStat</span><span class="p">(</span><span class="n">KindPropertyNameStat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;KindPropertyNameStat equivalent for a specific namespace.</span>
+
+<span class="sd">    These may be found in each specific namespace and represent stats for that</span>
+<span class="sd">    particular namespace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Ns_PropertyName_Kind__&quot;</span></div>
+
+
+<div class="viewcode-block" id="NamespaceKindPropertyNamePropertyTypeStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespaceKindPropertyNamePropertyTypeStat">[docs]</a><span class="k">class</span> <span class="nc">NamespaceKindPropertyNamePropertyTypeStat</span><span class="p">(</span>
+    <span class="n">KindPropertyNamePropertyTypeStat</span>
+<span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;KindPropertyNamePropertyTypeStat equivalent for a specific namespace.</span>
+
+<span class="sd">    These may be found in each specific namespace and represent stats for that</span>
+<span class="sd">    particular namespace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Ns_PropertyType_PropertyName_Kind__&quot;</span></div>
+
+
+<div class="viewcode-block" id="NamespaceKindCompositeIndexStat"><a class="viewcode-back" href="../../../../stats.html#google.cloud.ndb.stats.NamespaceKindCompositeIndexStat">[docs]</a><span class="k">class</span> <span class="nc">NamespaceKindCompositeIndexStat</span><span class="p">(</span><span class="n">KindCompositeIndexStat</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;KindCompositeIndexStat equivalent for a specific namespace.</span>
+
+<span class="sd">    These may be found in each specific namespace and represent stats for that</span>
+<span class="sd">    particular namespace.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+
+    <span class="n">STORED_KIND_NAME</span> <span class="o">=</span> <span class="s2">&quot;__Stat_Ns_Kind_CompositeIndex__&quot;</span></div>
+
+
+<span class="c1"># Maps a datastore stat entity kind name to its respective model class.</span>
+<span class="c1"># NOTE: Any new stats added to this module should also be added here.</span>
+<span class="n">_DATASTORE_STATS_CLASSES_BY_KIND</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="n">GlobalStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">GlobalStat</span><span class="p">,</span>
+    <span class="n">NamespaceStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespaceStat</span><span class="p">,</span>
+    <span class="n">KindStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">KindStat</span><span class="p">,</span>
+    <span class="n">KindRootEntityStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">KindRootEntityStat</span><span class="p">,</span>
+    <span class="n">KindNonRootEntityStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">KindNonRootEntityStat</span><span class="p">,</span>
+    <span class="n">PropertyTypeStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">PropertyTypeStat</span><span class="p">,</span>
+    <span class="n">KindPropertyTypeStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">KindPropertyTypeStat</span><span class="p">,</span>
+    <span class="n">KindPropertyNameStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">KindPropertyNameStat</span><span class="p">,</span>
+    <span class="n">KindPropertyNamePropertyTypeStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">KindPropertyNamePropertyTypeStat</span><span class="p">,</span>
+    <span class="n">KindCompositeIndexStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">KindCompositeIndexStat</span><span class="p">,</span>
+    <span class="n">NamespaceGlobalStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespaceGlobalStat</span><span class="p">,</span>
+    <span class="n">NamespaceKindStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespaceKindStat</span><span class="p">,</span>
+    <span class="n">NamespaceKindRootEntityStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespaceKindRootEntityStat</span><span class="p">,</span>
+    <span class="n">NamespaceKindNonRootEntityStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespaceKindNonRootEntityStat</span><span class="p">,</span>
+    <span class="n">NamespacePropertyTypeStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespacePropertyTypeStat</span><span class="p">,</span>
+    <span class="n">NamespaceKindPropertyTypeStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespaceKindPropertyTypeStat</span><span class="p">,</span>
+    <span class="n">NamespaceKindPropertyNameStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespaceKindPropertyNameStat</span><span class="p">,</span>
+    <span class="n">NamespaceKindPropertyNamePropertyTypeStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespaceKindPropertyNamePropertyTypeStat</span><span class="p">,</span>
+    <span class="n">NamespaceKindCompositeIndexStat</span><span class="o">.</span><span class="n">STORED_KIND_NAME</span><span class="p">:</span> <span class="n">NamespaceKindCompositeIndexStat</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="../../../../index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../model.html">Model and Property</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../tasklets.html">Tasklets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../exceptions.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../polymodel.html">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../blobstore.html">Blobstore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../metadata.html">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../../../../index.html">Documentation overview</a><ul>
+  <li><a href="../../../index.html">Module code</a><ul>
+  </ul></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../../../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>

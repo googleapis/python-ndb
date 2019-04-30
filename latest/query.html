@@ -1,0 +1,1524 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Query &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Tasklets" href="tasklets.html" />
+    <link rel="prev" title="Model and Property" href="model.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-google.cloud.ndb.query">
+<span id="query"></span><h1>Query<a class="headerlink" href="#module-google.cloud.ndb.query" title="Permalink to this headline">¶</a></h1>
+<p>High-level wrapper for datastore queries.</p>
+<dl class="class">
+<dt id="google.cloud.ndb.query.QueryOptions">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">QueryOptions</code><span class="sig-paren">(</span><em>config=None</em>, <em>client=None</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#QueryOptions"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb._options.Options</span></code></p>
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.ancestor">
+<code class="descname">ancestor</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.ancestor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.QueryOptions.copy">
+<code class="descname">copy</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.copy" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.distinct_on">
+<code class="descname">distinct_on</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.distinct_on" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.end_cursor">
+<code class="descname">end_cursor</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.end_cursor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.filters">
+<code class="descname">filters</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.filters" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.force_writes">
+<code class="descname">force_writes</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.force_writes" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.group_by">
+<code class="descname">group_by</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.group_by" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.QueryOptions.items">
+<code class="descname">items</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.items" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.keys_only">
+<code class="descname">keys_only</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.keys_only" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.kind">
+<code class="descname">kind</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.kind" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.limit">
+<code class="descname">limit</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.limit" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.max_memcache_items">
+<code class="descname">max_memcache_items</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.max_memcache_items" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.memcache_timeout">
+<code class="descname">memcache_timeout</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.memcache_timeout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.namespace">
+<code class="descname">namespace</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.namespace" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.offset">
+<code class="descname">offset</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.offset" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.query.QueryOptions.options">
+<em class="property">classmethod </em><code class="descname">options</code><span class="sig-paren">(</span><em>wrapped</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.options" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.order_by">
+<code class="descname">order_by</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.order_by" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.orders">
+<code class="descname">orders</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.orders" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.project">
+<code class="descname">project</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.project" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.projection">
+<code class="descname">projection</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.projection" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.propagation">
+<code class="descname">propagation</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.propagation" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.retries">
+<code class="descname">retries</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.retries" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.query.QueryOptions.slots">
+<em class="property">classmethod </em><code class="descname">slots</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.slots" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.start_cursor">
+<code class="descname">start_cursor</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.start_cursor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.timeout">
+<code class="descname">timeout</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.timeout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.use_cache">
+<code class="descname">use_cache</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.use_cache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.use_datastore">
+<code class="descname">use_datastore</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.use_datastore" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.QueryOptions.use_memcache">
+<code class="descname">use_memcache</code><a class="headerlink" href="#google.cloud.ndb.query.QueryOptions.use_memcache" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.PropertyOrder">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">PropertyOrder</code><span class="sig-paren">(</span><em>name</em>, <em>reverse=False</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#PropertyOrder"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.PropertyOrder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>The sort order for a property name, to be used when ordering the
+results of a query.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the model property to use for ordering.</li>
+<li><strong>reverse</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether to reverse the sort order (descending)
+or not (ascending). Default is False.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.PropertyOrder.name">
+<code class="descname">name</code><a class="headerlink" href="#google.cloud.ndb.query.PropertyOrder.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.PropertyOrder.reverse">
+<code class="descname">reverse</code><a class="headerlink" href="#google.cloud.ndb.query.PropertyOrder.reverse" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.RepeatedStructuredPropertyPredicate">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">RepeatedStructuredPropertyPredicate</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#RepeatedStructuredPropertyPredicate"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.RepeatedStructuredPropertyPredicate" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.ParameterizedThing">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">ParameterizedThing</code><a class="reference internal" href="_modules/google/cloud/ndb/query.html#ParameterizedThing"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.ParameterizedThing" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Base class for <a class="reference internal" href="#google.cloud.ndb.query.Parameter" title="google.cloud.ndb.query.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> and <a class="reference internal" href="#google.cloud.ndb.query.ParameterizedFunction" title="google.cloud.ndb.query.ParameterizedFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">ParameterizedFunction</span></code></a>.</p>
+<p>This exists purely for <a class="reference external" href="https://docs.python.org/3/library/functions.html#isinstance" title="(in Python v3.7)"><code class="xref py py-func docutils literal notranslate"><span class="pre">isinstance()</span></code></a> checks.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.Parameter">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">Parameter</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Parameter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Parameter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.query.ParameterizedThing" title="google.cloud.ndb.query.ParameterizedThing"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.ParameterizedThing</span></code></a></p>
+<p>Represents a bound variable in a GQL query.</p>
+<p><code class="docutils literal notranslate"><span class="pre">Parameter(1)</span></code> corresponds to a slot labeled <code class="docutils literal notranslate"><span class="pre">:1</span></code> in a GQL query.
+<code class="docutils literal notranslate"><span class="pre">Parameter('xyz')</span></code> corresponds to a slot labeled <code class="docutils literal notranslate"><span class="pre">:xyz</span></code>.</p>
+<p>The value must be set (bound) separately.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – The parameter key.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – If the <code class="docutils literal notranslate"><span class="pre">key</span></code> is not a string or integer.</td>
+</tr>
+</tbody>
+</table>
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.Parameter.key">
+<code class="descname">key</code><a class="headerlink" href="#google.cloud.ndb.query.Parameter.key" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieve the key.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Parameter.resolve">
+<code class="descname">resolve</code><span class="sig-paren">(</span><em>bindings</em>, <em>used</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Parameter.resolve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Parameter.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resolve the current parameter from the parameter bindings.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bindings</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A mapping of parameter bindings.</li>
+<li><strong>used</strong> (<em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – A mapping of already used
+parameters. This will be modified if the current parameter
+is in <code class="docutils literal notranslate"><span class="pre">bindings</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The bound value for the current parameter.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first">Any</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference internal" href="exceptions.html#google.cloud.ndb.exceptions.BadArgumentError" title="google.cloud.ndb.exceptions.BadArgumentError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">BadArgumentError</span></code></a> – If the current parameter is not in <code class="docutils literal notranslate"><span class="pre">bindings</span></code>.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.ParameterizedFunction">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">ParameterizedFunction</code><span class="sig-paren">(</span><em>func</em>, <em>values</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#ParameterizedFunction"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.ParameterizedFunction" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.query.ParameterizedThing" title="google.cloud.ndb.query.ParameterizedThing"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.ParameterizedThing</span></code></a></p>
+<p>Represents a GQL function with parameterized arguments.</p>
+<p>For example, ParameterizedFunction(‘key’, [Parameter(1)]) stands for
+the GQL syntax KEY(:1).</p>
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.ParameterizedFunction.func">
+<code class="descname">func</code><a class="headerlink" href="#google.cloud.ndb.query.ParameterizedFunction.func" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.ParameterizedFunction.values">
+<code class="descname">values</code><a class="headerlink" href="#google.cloud.ndb.query.ParameterizedFunction.values" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.Node">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">Node</code><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Node"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Node" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Base class for filter expression tree nodes.</p>
+<p>Tree nodes are considered immutable, even though they can contain
+Parameter instances, which are not. In particular, two identical
+trees may be represented by the same Node object in different
+contexts.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – Always, only subclasses are allowed.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="google.cloud.ndb.query.Node.resolve">
+<code class="descname">resolve</code><span class="sig-paren">(</span><em>bindings</em>, <em>used</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Node.resolve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Node.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a node with parameters replaced by the selected values.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Both <code class="docutils literal notranslate"><span class="pre">bindings</span></code> and <code class="docutils literal notranslate"><span class="pre">used</span></code> are unused by this base class
+implementation.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bindings</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A mapping of parameter bindings.</li>
+<li><strong>used</strong> (<em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – A mapping of already used
+parameters. This will be modified if the current parameter
+is in <code class="docutils literal notranslate"><span class="pre">bindings</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The current node.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node">Node</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.FalseNode">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">FalseNode</code><a class="reference internal" href="_modules/google/cloud/ndb/query.html#FalseNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.FalseNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.Node</span></code></a></p>
+<p>Tree node for an always-failing filter.</p>
+<dl class="method">
+<dt id="google.cloud.ndb.query.FalseNode.__eq__">
+<code class="descname">__eq__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#FalseNode.__eq__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.FalseNode.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Equality check.</p>
+<p>An instance will always equal another <a class="reference internal" href="#google.cloud.ndb.query.FalseNode" title="google.cloud.ndb.query.FalseNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">FalseNode</span></code></a> instance. This
+is because they hold no state.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.FalseNode.resolve">
+<code class="descname">resolve</code><span class="sig-paren">(</span><em>bindings</em>, <em>used</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.query.FalseNode.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a node with parameters replaced by the selected values.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Both <code class="docutils literal notranslate"><span class="pre">bindings</span></code> and <code class="docutils literal notranslate"><span class="pre">used</span></code> are unused by this base class
+implementation.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bindings</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A mapping of parameter bindings.</li>
+<li><strong>used</strong> (<em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – A mapping of already used
+parameters. This will be modified if the current parameter
+is in <code class="docutils literal notranslate"><span class="pre">bindings</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The current node.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node">Node</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.ParameterNode">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">ParameterNode</code><a class="reference internal" href="_modules/google/cloud/ndb/query.html#ParameterNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.ParameterNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.Node</span></code></a></p>
+<p>Tree node for a parameterized filter.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>prop</strong> (<a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>Property</em></a>) – A property describing a value
+type.</li>
+<li><strong>op</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The comparison operator. One of <code class="docutils literal notranslate"><span class="pre">=</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> or <code class="docutils literal notranslate"><span class="pre">in</span></code>.</li>
+<li><strong>param</strong> (<a class="reference internal" href="#google.cloud.ndb.query.ParameterizedThing" title="google.cloud.ndb.query.ParameterizedThing"><em>ParameterizedThing</em></a>) – The parameter corresponding to the node.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – If <code class="docutils literal notranslate"><span class="pre">prop</span></code> is not a
+<a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><code class="xref py py-class docutils literal notranslate"><span class="pre">Property</span></code></a>.</li>
+<li><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – If <code class="docutils literal notranslate"><span class="pre">op</span></code> is not one of the accepted operators.</li>
+<li><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – If <code class="docutils literal notranslate"><span class="pre">param</span></code> is not a <a class="reference internal" href="#google.cloud.ndb.query.Parameter" title="google.cloud.ndb.query.Parameter"><code class="xref py py-class docutils literal notranslate"><span class="pre">Parameter</span></code></a> or
+<a class="reference internal" href="#google.cloud.ndb.query.ParameterizedFunction" title="google.cloud.ndb.query.ParameterizedFunction"><code class="xref py py-class docutils literal notranslate"><span class="pre">ParameterizedFunction</span></code></a>.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="google.cloud.ndb.query.ParameterNode.__getnewargs__">
+<code class="descname">__getnewargs__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#ParameterNode.__getnewargs__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.ParameterNode.__getnewargs__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Private API used to specify <code class="docutils literal notranslate"><span class="pre">__new__</span></code> arguments when unpickling.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method only applies if the <code class="docutils literal notranslate"><span class="pre">pickle</span></code> protocol is 2 or
+greater.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A tuple containing the internal state: the property, operation and
+parameter.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Tuple[<a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property">Property</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a>, <a class="reference internal" href="#google.cloud.ndb.query.ParameterizedThing" title="google.cloud.ndb.query.ParameterizedThing">ParameterizedThing</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.ParameterNode.resolve">
+<code class="descname">resolve</code><span class="sig-paren">(</span><em>bindings</em>, <em>used</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#ParameterNode.resolve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.ParameterNode.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a node with parameters replaced by the selected values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bindings</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A mapping of parameter bindings.</li>
+<li><strong>used</strong> (<em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – A mapping of already used
+parameters.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A node corresponding to
+the value substituted.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">Union[<a class="reference internal" href="#google.cloud.ndb.query.DisjunctionNode" title="google.cloud.ndb.query.DisjunctionNode">DisjunctionNode</a>,                 <a class="reference internal" href="#google.cloud.ndb.query.FilterNode" title="google.cloud.ndb.query.FilterNode">FilterNode</a>,                 <a class="reference internal" href="#google.cloud.ndb.query.FalseNode" title="google.cloud.ndb.query.FalseNode">FalseNode</a>]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.FilterNode">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">FilterNode</code><a class="reference internal" href="_modules/google/cloud/ndb/query.html#FilterNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.FilterNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.Node</span></code></a></p>
+<p>Tree node for a single filter expression.</p>
+<p>For example <code class="docutils literal notranslate"><span class="pre">FilterNode(&quot;a&quot;,</span> <span class="pre">&quot;&gt;&quot;,</span> <span class="pre">3)</span></code> filters for entities where the
+value <code class="docutils literal notranslate"><span class="pre">a</span></code> is greater than <code class="docutils literal notranslate"><span class="pre">3</span></code>.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>The constructor for this type may not always return a
+<a class="reference internal" href="#google.cloud.ndb.query.FilterNode" title="google.cloud.ndb.query.FilterNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">FilterNode</span></code></a>. For example:</p>
+<ul class="last simple">
+<li>The filter <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">!=</span> <span class="pre">value</span></code> is converted into
+<code class="docutils literal notranslate"><span class="pre">(name</span> <span class="pre">&gt;</span> <span class="pre">value)</span> <span class="pre">OR</span> <span class="pre">(name</span> <span class="pre">&lt;</span> <span class="pre">value)</span></code> (a <a class="reference internal" href="#google.cloud.ndb.query.DisjunctionNode" title="google.cloud.ndb.query.DisjunctionNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">DisjunctionNode</span></code></a>)</li>
+<li>The filter <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">in</span> <span class="pre">(value1,</span> <span class="pre">...,</span> <span class="pre">valueN)</span></code> is converted into
+<code class="docutils literal notranslate"><span class="pre">(name</span> <span class="pre">=</span> <span class="pre">value1)</span> <span class="pre">OR</span> <span class="pre">...</span> <span class="pre">OR</span> <span class="pre">(name</span> <span class="pre">=</span> <span class="pre">valueN)</span></code> (also a
+<a class="reference internal" href="#google.cloud.ndb.query.DisjunctionNode" title="google.cloud.ndb.query.DisjunctionNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">DisjunctionNode</span></code></a>)</li>
+<li>The filter <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">in</span> <span class="pre">()</span></code> (i.e. a property is among an empty list
+of values) is converted into a <a class="reference internal" href="#google.cloud.ndb.query.FalseNode" title="google.cloud.ndb.query.FalseNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">FalseNode</span></code></a></li>
+<li>The filter <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">in</span> <span class="pre">(value1,)</span></code> (i.e. a list with one element) is
+converted into <code class="docutils literal notranslate"><span class="pre">name</span> <span class="pre">=</span> <span class="pre">value1</span></code>, a related <a class="reference internal" href="#google.cloud.ndb.query.FilterNode" title="google.cloud.ndb.query.FilterNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">FilterNode</span></code></a>
+with a different <code class="docutils literal notranslate"><span class="pre">opsymbol</span></code> and <code class="docutils literal notranslate"><span class="pre">value</span></code> than what was passed
+to the constructor</li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The name of the property being filtered.</li>
+<li><strong>opsymbol</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The comparison operator. One of <code class="docutils literal notranslate"><span class="pre">=</span></code>, <code class="docutils literal notranslate"><span class="pre">!=</span></code>, <code class="docutils literal notranslate"><span class="pre">&lt;</span></code>,
+<code class="docutils literal notranslate"><span class="pre">&lt;=</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> or <code class="docutils literal notranslate"><span class="pre">in</span></code>.</li>
+<li><strong>value</strong> (<em>Any</em>) – The value to filter on / relative to.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – If <code class="docutils literal notranslate"><span class="pre">opsymbol</span></code> is <code class="docutils literal notranslate"><span class="pre">&quot;in&quot;</span></code> but <code class="docutils literal notranslate"><span class="pre">value</span></code> is not a
+basic container (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">list</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#set" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">set</span></code></a> or
+<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#frozenset" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">frozenset</span></code></a>)</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="google.cloud.ndb.query.FilterNode.__getnewargs__">
+<code class="descname">__getnewargs__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#FilterNode.__getnewargs__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.FilterNode.__getnewargs__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Private API used to specify <code class="docutils literal notranslate"><span class="pre">__new__</span></code> arguments when unpickling.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method only applies if the <code class="docutils literal notranslate"><span class="pre">pickle</span></code> protocol is 2 or
+greater.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A tuple containing the
+internal state: the name, <code class="docutils literal notranslate"><span class="pre">opsymbol</span></code> and value.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Tuple[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a>, Any]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.FilterNode.resolve">
+<code class="descname">resolve</code><span class="sig-paren">(</span><em>bindings</em>, <em>used</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.query.FilterNode.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a node with parameters replaced by the selected values.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Both <code class="docutils literal notranslate"><span class="pre">bindings</span></code> and <code class="docutils literal notranslate"><span class="pre">used</span></code> are unused by this base class
+implementation.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bindings</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A mapping of parameter bindings.</li>
+<li><strong>used</strong> (<em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – A mapping of already used
+parameters. This will be modified if the current parameter
+is in <code class="docutils literal notranslate"><span class="pre">bindings</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The current node.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node">Node</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.PostFilterNode">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">PostFilterNode</code><a class="reference internal" href="_modules/google/cloud/ndb/query.html#PostFilterNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.PostFilterNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.Node</span></code></a></p>
+<p>Tree node representing an in-memory filtering operation.</p>
+<p>This is used to represent filters that cannot be executed by the
+datastore, for example a query for a structured value.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>predicate</strong> (<em>Callable</em><em>[</em><em>[</em><em>Any</em><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – A filter predicate that
+takes a datastore entity (typically as a protobuf) and
+returns <a class="reference external" href="https://docs.python.org/3/library/constants.html#True" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">True</span></code></a> or <a class="reference external" href="https://docs.python.org/3/library/constants.html#False" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">False</span></code></a> if the entity matches
+the given filter.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="google.cloud.ndb.query.PostFilterNode.__getnewargs__">
+<code class="descname">__getnewargs__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#PostFilterNode.__getnewargs__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.PostFilterNode.__getnewargs__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Private API used to specify <code class="docutils literal notranslate"><span class="pre">__new__</span></code> arguments when unpickling.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method only applies if the <code class="docutils literal notranslate"><span class="pre">pickle</span></code> protocol is 2 or
+greater.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">A tuple containing a single value,
+the <code class="docutils literal notranslate"><span class="pre">predicate</span></code> attached to this node.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Tuple[Callable[[Any], <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a>],]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.PostFilterNode.predicate">
+<code class="descname">predicate</code><a class="headerlink" href="#google.cloud.ndb.query.PostFilterNode.predicate" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.PostFilterNode.resolve">
+<code class="descname">resolve</code><span class="sig-paren">(</span><em>bindings</em>, <em>used</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.query.PostFilterNode.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a node with parameters replaced by the selected values.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">Both <code class="docutils literal notranslate"><span class="pre">bindings</span></code> and <code class="docutils literal notranslate"><span class="pre">used</span></code> are unused by this base class
+implementation.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bindings</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A mapping of parameter bindings.</li>
+<li><strong>used</strong> (<em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – A mapping of already used
+parameters. This will be modified if the current parameter
+is in <code class="docutils literal notranslate"><span class="pre">bindings</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The current node.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node">Node</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.ConjunctionNode">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">ConjunctionNode</code><a class="reference internal" href="_modules/google/cloud/ndb/query.html#ConjunctionNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.ConjunctionNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.Node</span></code></a></p>
+<p>Tree node representing a boolean <code class="docutils literal notranslate"><span class="pre">AND</span></code> operator on multiple nodes.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p>The constructor for this type may not always return a
+<a class="reference internal" href="#google.cloud.ndb.query.ConjunctionNode" title="google.cloud.ndb.query.ConjunctionNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConjunctionNode</span></code></a>. For example:</p>
+<ul class="last simple">
+<li>If the passed in <code class="docutils literal notranslate"><span class="pre">nodes</span></code> has only one entry, that single node
+will be returned by the constructor</li>
+<li>If the resulting boolean expression has an <code class="docutils literal notranslate"><span class="pre">OR</span></code> in it, then a
+<a class="reference internal" href="#google.cloud.ndb.query.DisjunctionNode" title="google.cloud.ndb.query.DisjunctionNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">DisjunctionNode</span></code></a> will be returned; e.g.
+<code class="docutils literal notranslate"><span class="pre">AND(OR(A,</span> <span class="pre">B),</span> <span class="pre">C)</span></code> becomes <code class="docutils literal notranslate"><span class="pre">OR(AND(A,</span> <span class="pre">C),</span> <span class="pre">AND(B,</span> <span class="pre">C))</span></code></li>
+</ul>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>nodes</strong> (<em>Tuple</em><em>[</em><a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node"><em>Node</em></a><em>, </em><em>..</em><em>]</em>) – A list of nodes to be joined.</p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><ul class="first last simple">
+<li><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – If <code class="docutils literal notranslate"><span class="pre">nodes</span></code> is empty.</li>
+<li><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#RuntimeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">RuntimeError</span></code></a> – If the <code class="docutils literal notranslate"><span class="pre">nodes</span></code> combine to an “empty” boolean
+expression.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="google.cloud.ndb.query.ConjunctionNode.__getnewargs__">
+<code class="descname">__getnewargs__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#ConjunctionNode.__getnewargs__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.ConjunctionNode.__getnewargs__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Private API used to specify <code class="docutils literal notranslate"><span class="pre">__new__</span></code> arguments when unpickling.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method only applies if the <code class="docutils literal notranslate"><span class="pre">pickle</span></code> protocol is 2 or
+greater.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The list of stored nodes, converted to a
+<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Tuple[<a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node">Node</a>, ..]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.ConjunctionNode.resolve">
+<code class="descname">resolve</code><span class="sig-paren">(</span><em>bindings</em>, <em>used</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#ConjunctionNode.resolve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.ConjunctionNode.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a node with parameters replaced by the selected values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bindings</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A mapping of parameter bindings.</li>
+<li><strong>used</strong> (<em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – A mapping of already used
+parameters. This will be modified for each parameter found
+in <code class="docutils literal notranslate"><span class="pre">bindings</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The current node, if all nodes are already resolved.
+Otherwise returns a modifed <a class="reference internal" href="#google.cloud.ndb.query.ConjunctionNode" title="google.cloud.ndb.query.ConjunctionNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ConjunctionNode</span></code></a> with
+each individual node resolved.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node">Node</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.DisjunctionNode">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">DisjunctionNode</code><a class="reference internal" href="_modules/google/cloud/ndb/query.html#DisjunctionNode"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.DisjunctionNode" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.Node</span></code></a></p>
+<p>Tree node representing a boolean <code class="docutils literal notranslate"><span class="pre">OR</span></code> operator on multiple nodes.</p>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">This constructor may not always return a <a class="reference internal" href="#google.cloud.ndb.query.DisjunctionNode" title="google.cloud.ndb.query.DisjunctionNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">DisjunctionNode</span></code></a>.
+If the passed in <code class="docutils literal notranslate"><span class="pre">nodes</span></code> has only one entry, that single node
+will be returned by the constructor.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>nodes</strong> (<em>Tuple</em><em>[</em><a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node"><em>Node</em></a><em>, </em><em>..</em><em>]</em>) – A list of nodes to be joined.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – If <code class="docutils literal notranslate"><span class="pre">nodes</span></code> is empty.</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="google.cloud.ndb.query.DisjunctionNode.__getnewargs__">
+<code class="descname">__getnewargs__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#DisjunctionNode.__getnewargs__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.DisjunctionNode.__getnewargs__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Private API used to specify <code class="docutils literal notranslate"><span class="pre">__new__</span></code> arguments when unpickling.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method only applies if the <code class="docutils literal notranslate"><span class="pre">pickle</span></code> protocol is 2 or
+greater.</p>
+</div>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">The list of stored nodes, converted to a
+<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#tuple" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">tuple</span></code></a>.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Tuple[<a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node">Node</a>, ..]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.DisjunctionNode.resolve">
+<code class="descname">resolve</code><span class="sig-paren">(</span><em>bindings</em>, <em>used</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#DisjunctionNode.resolve"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.DisjunctionNode.resolve" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a node with parameters replaced by the selected values.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>bindings</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a>) – A mapping of parameter bindings.</li>
+<li><strong>used</strong> (<em>Dict</em><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em><em>, </em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – A mapping of already used
+parameters. This will be modified for each parameter found
+in <code class="docutils literal notranslate"><span class="pre">bindings</span></code>.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The current node, if all nodes are already resolved.
+Otherwise returns a modifed <a class="reference internal" href="#google.cloud.ndb.query.DisjunctionNode" title="google.cloud.ndb.query.DisjunctionNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">DisjunctionNode</span></code></a> with
+each individual node resolved.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node">Node</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.AND">
+<code class="descclassname">google.cloud.ndb.query.</code><code class="descname">AND</code><a class="headerlink" href="#google.cloud.ndb.query.AND" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#google.cloud.ndb.query.ConjunctionNode" title="google.cloud.ndb.query.ConjunctionNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.ConjunctionNode</span></code></a></p>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.OR">
+<code class="descclassname">google.cloud.ndb.query.</code><code class="descname">OR</code><a class="headerlink" href="#google.cloud.ndb.query.OR" title="Permalink to this definition">¶</a></dt>
+<dd><p>alias of <a class="reference internal" href="#google.cloud.ndb.query.DisjunctionNode" title="google.cloud.ndb.query.DisjunctionNode"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.query.DisjunctionNode</span></code></a></p>
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.query.Query">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.query.</code><code class="descname">Query</code><span class="sig-paren">(</span><em>kind=None</em>, <em>filters=None</em>, <em>ancestor=None</em>, <em>order_by=None</em>, <em>orders=None</em>, <em>project=None</em>, <em>app=None</em>, <em>namespace=None</em>, <em>projection=None</em>, <em>distinct_on=None</em>, <em>group_by=None</em>, <em>default_options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Query object.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kind</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The kind of entities to be queried.</li>
+<li><strong>filters</strong> (<a class="reference internal" href="#google.cloud.ndb.query.FilterNode" title="google.cloud.ndb.query.FilterNode"><em>FilterNode</em></a>) – Node representing a filter expression tree.</li>
+<li><strong>ancestor</strong> (<a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key"><em>key.Key</em></a>) – Entities returned will be descendants of
+<cite>ancestor</cite>.</li>
+<li><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – The
+model properties used to order query results.</li>
+<li><strong>orders</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – Deprecated. Synonym for <cite>order_by</cite>.</li>
+<li><strong>project</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The project to perform the query in. Also known as the
+app, in Google App Engine. If not passed, uses the client’s value.</li>
+<li><strong>app</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Deprecated. Synonym for <cite>project</cite>.</li>
+<li><strong>namespace</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The namespace to which to restrict results.
+If not passed, uses the client’s value.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the query
+results.</li>
+<li><strong>distinct_on</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The field names used to group query
+results.</li>
+<li><strong>group_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – Deprecated. Synonym for distinct_on.</li>
+<li><strong>default_options</strong> (<a class="reference internal" href="#google.cloud.ndb.query.QueryOptions" title="google.cloud.ndb.query.QueryOptions"><em>QueryOptions</em></a>) – QueryOptions object.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – If any of the arguments are invalid.</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.__iter__">
+<code class="descname">__iter__</code><span class="sig-paren">(</span><em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.query.Query.__iter__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an iterator over query results.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>keys_only</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Return keys instead of entities.</li>
+<li><strong>limit</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Maximum number of query results to return.
+If not specified, there is no limit.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the query
+results.</li>
+<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Number of query results to skip.</li>
+<li><strong>batch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Number of results to fetch in a single
+RPC call. Affects efficiency of queries only. Larger batch
+sizes use more memory but make fewer RPC calls.</li>
+<li><strong>prefetch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Overrides batch size for first batch
+returned.</li>
+<li><strong>produce_cursors</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether to generate cursors from query.</li>
+<li><strong>start_cursor</strong> – Starting point for search.</li>
+<li><strong>end_cursor</strong> – Endpoint point for search.</li>
+<li><strong>timeout</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>read_policy</strong> – Defaults to <cite>ndb.EVENTUAL</cite> for potentially faster
+query results without having to wait for Datastore to apply
+pending changes to all returned records.</li>
+<li><strong>options</strong> (<a class="reference internal" href="#google.cloud.ndb.query.QueryOptions" title="google.cloud.ndb.query.QueryOptions"><em>QueryOptions</em></a>) – DEPRECATED: An object containing options
+values for some of these arguments.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An iterator.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">QueryIterator</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.analyze">
+<code class="descname">analyze</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.analyze"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.analyze" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a list giving the parameters required by a query.</p>
+<p>When a query is created using gql, any bound parameters
+are created as ParameterNode instances. This method returns
+the names of any such parameters.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">required parameter names.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.bind">
+<code class="descname">bind</code><span class="sig-paren">(</span><em>*positional</em>, <em>**keyword</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.bind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.bind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bind parameter values.  Returns a new Query object.</p>
+<p>When a query is created using gql, any bound parameters
+are created as ParameterNode instances. This method
+receives values for both positional (:1, :2, etc.) or
+keyword (:xyz, :abc, etc.) bound parameters, then sets the
+values accordingly. This mechanism allows easy reuse of a
+parameterized query, by passing the values to bind here.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>positional</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Any</em><em>]</em>) – One or more positional values to bind.</li>
+<li><strong>keyword</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)"><em>dict</em></a><em>[</em><em>Any</em><em>]</em>) – One or more keyword values to bind.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">A new query with the new bound parameter values.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#google.cloud.ndb.query.Query" title="google.cloud.ndb.query.Query">Query</a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference internal" href="exceptions.html#google.cloud.ndb.exceptions.BadArgumentError" title="google.cloud.ndb.exceptions.BadArgumentError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">google.cloud.ndb.exceptions.BadArgumentError</span></code></a> – If one of
+the positional parameters is not used in the query.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.count">
+<code class="descname">count</code><span class="sig-paren">(</span><em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.count"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.count" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count the number of query results, up to a limit.</p>
+<p>This returns the same result as <code class="docutils literal notranslate"><span class="pre">len(q.fetch(limit))</span></code> but more
+efficiently.</p>
+<p>Note that you should pass a maximum value to limit the amount of
+work done by the query.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>keys_only</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Return keys instead of entities.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the query
+results.</li>
+<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Number of query results to skip.</li>
+<li><strong>limit</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Maximum number of query results to return.
+If not specified, there is no limit.</li>
+<li><strong>batch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Number of results to fetch in a single
+RPC call. Affects efficiency of queries only. Larger batch
+sizes use more memory but make fewer RPC calls.</li>
+<li><strong>prefetch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Overrides batch size for first batch
+returned.</li>
+<li><strong>produce_cursors</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether to generate cursors from query.</li>
+<li><strong>start_cursor</strong> – Starting point for search.</li>
+<li><strong>end_cursor</strong> – Endpoint point for search.</li>
+<li><strong>timeout</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>read_policy</strong> – Defaults to <cite>ndb.EVENTUAL</cite> for potentially faster
+query results without having to wait for Datastore to apply
+pending changes to all returned records.</li>
+<li><strong>options</strong> (<a class="reference internal" href="#google.cloud.ndb.query.QueryOptions" title="google.cloud.ndb.query.QueryOptions"><em>QueryOptions</em></a>) – DEPRECATED: An object containing options
+values for some of these arguments.</li>
+<li><strong>Returns</strong> – <dl class="docutils">
+<dt>Optional[Union[entity.Entity, key.Key]]: A single result, or</dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">None</span></code></a> if there are no results.</dd>
+</dl>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.count_async">
+<code class="descname">count_async</code><span class="sig-paren">(</span><em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.count_async"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.count_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>Count the number of query results, up to a limit.</p>
+<p>This is the asynchronous version of <a class="reference internal" href="#google.cloud.ndb.query.Query.count" title="google.cloud.ndb.query.Query.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Query.count()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">See <a class="reference internal" href="#google.cloud.ndb.query.Query.count" title="google.cloud.ndb.query.Query.count"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Query.count()</span></code></a> for eventual result.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="tasklets.html#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">tasklets.Future</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.fetch">
+<code class="descname">fetch</code><span class="sig-paren">(</span><em>limit=None</em>, <em>*</em>, <em>keys_only=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.fetch"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.fetch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a query, fetching results.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>limit</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Maximum number of results to fetch.
+data:<cite>None</cite> or data:<cite>0</cite> indicates no limit.</li>
+<li><strong>keys_only</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Return keys instead of entities.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the query
+results.</li>
+<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Number of query results to skip.</li>
+<li><strong>limit</strong> – Maximum number of query results to return.
+If not specified, there is no limit.</li>
+<li><strong>batch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Number of results to fetch in a single
+RPC call. Affects efficiency of queries only. Larger batch
+sizes use more memory but make fewer RPC calls.</li>
+<li><strong>prefetch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Overrides batch size for first batch
+returned.</li>
+<li><strong>produce_cursors</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether to generate cursors from query.</li>
+<li><strong>start_cursor</strong> – Starting point for search.</li>
+<li><strong>end_cursor</strong> – Endpoint point for search.</li>
+<li><strong>timeout</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>read_policy</strong> – Defaults to <cite>ndb.EVENTUAL</cite> for potentially faster
+query results without having to wait for Datastore to apply
+pending changes to all returned records.</li>
+<li><strong>options</strong> (<a class="reference internal" href="#google.cloud.ndb.query.QueryOptions" title="google.cloud.ndb.query.QueryOptions"><em>QueryOptions</em></a>) – DEPRECATED: An object containing options
+values for some of these arguments.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The query results.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">List([<a class="reference internal" href="model.html#google.cloud.ndb.model.Model" title="google.cloud.ndb.model.Model">model.Model</a>])</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.fetch_async">
+<code class="descname">fetch_async</code><span class="sig-paren">(</span><em>limit=None</em>, <em>*</em>, <em>keys_only=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.fetch_async"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.fetch_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a query, asynchronously fetching the results.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>keys_only</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Return keys instead of entities.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the query
+results.</li>
+<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Number of query results to skip.</li>
+<li><strong>limit</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Maximum number of query results to return.
+If not specified, there is no limit.</li>
+<li><strong>batch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Number of results to fetch in a single
+RPC call. Affects efficiency of queries only. Larger batch
+sizes use more memory but make fewer RPC calls.</li>
+<li><strong>prefetch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Overrides batch size for first batch
+returned.</li>
+<li><strong>produce_cursors</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether to generate cursors from query.</li>
+<li><strong>start_cursor</strong> – Starting point for search.</li>
+<li><strong>end_cursor</strong> – Endpoint point for search.</li>
+<li><strong>timeout</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>read_policy</strong> – Defaults to <cite>ndb.EVENTUAL</cite> for potentially faster
+query results without having to wait for Datastore to apply
+pending changes to all returned records.</li>
+<li><strong>options</strong> (<a class="reference internal" href="#google.cloud.ndb.query.QueryOptions" title="google.cloud.ndb.query.QueryOptions"><em>QueryOptions</em></a>) – DEPRECATED: An object containing options
+values for some of these arguments.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>Eventual result will be a List[model.Model] of the</dt>
+<dd><p class="first last">results.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="tasklets.html#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">tasklets.Future</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.fetch_page">
+<code class="descname">fetch_page</code><span class="sig-paren">(</span><em>page_size</em>, <em>*</em>, <em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.fetch_page"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.fetch_page" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch a page of results.</p>
+<p>This is a specialized method for use by paging user interfaces.</p>
+<p>To fetch the next page, you pass the cursor returned by one call to the
+next call using the <cite>start_cursor</cite> argument.  A common idiom is to pass
+the cursor to the client using <code class="xref py py-meth docutils literal notranslate"><span class="pre">_datastore_query.Cursor.urlsafe()</span></code>
+and to reconstruct that cursor on a subsequent request using the
+<cite>urlsafe</cite> argument to <code class="xref py py-class docutils literal notranslate"><span class="pre">Cursor</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>page_size</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – The number of results per page. At most, this many
+results will be returned.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>A tuple <cite>(results, cursor, more)</cite> where</dt>
+<dd><cite>results</cite> is a list of query results, <cite>cursor</cite> is a cursor
+pointing just after the last result returned, and <cite>more</cite>
+indicates whether there are (likely) more results after that.</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">Tuple[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)">list</a>, <a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#bytes" title="(in Python v3.7)">bytes</a>, <a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)">bool</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.fetch_page_async">
+<code class="descname">fetch_page_async</code><span class="sig-paren">(</span><em>page_size</em>, <em>*</em>, <em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.fetch_page_async"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.fetch_page_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fetch a page of results.</p>
+<p>This is the asynchronous version of <a class="reference internal" href="#google.cloud.ndb.query.Query.fetch_page" title="google.cloud.ndb.query.Query.fetch_page"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Query.fetch_page()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">See <a class="reference internal" href="#google.cloud.ndb.query.Query.fetch_page" title="google.cloud.ndb.query.Query.fetch_page"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Query.fetch_page()</span></code></a> for eventual result.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="tasklets.html#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">tasklets.Future</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.filter">
+<code class="descname">filter</code><span class="sig-paren">(</span><em>*filters</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.filter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.filter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new Query with additional filter(s) applied.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>filters</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference internal" href="#google.cloud.ndb.query.Node" title="google.cloud.ndb.query.Node"><em>Node</em></a><em>]</em>) – One or more instances of Node.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A new query with the new filters applied.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#google.cloud.ndb.query.Query" title="google.cloud.ndb.query.Query">Query</a></td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – If one of the filters is not a Node.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.get">
+<code class="descname">get</code><span class="sig-paren">(</span><em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.get"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.get" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the first query result, if any.</p>
+<p>This is equivalent to calling <code class="docutils literal notranslate"><span class="pre">q.fetch(1)</span></code> and returning the first
+result, if any.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>keys_only</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Return keys instead of entities.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the query
+results.</li>
+<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Number of query results to skip.</li>
+<li><strong>limit</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Maximum number of query results to return.
+If not specified, there is no limit.</li>
+<li><strong>batch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Number of results to fetch in a single
+RPC call. Affects efficiency of queries only. Larger batch
+sizes use more memory but make fewer RPC calls.</li>
+<li><strong>prefetch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Overrides batch size for first batch
+returned.</li>
+<li><strong>produce_cursors</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether to generate cursors from query.</li>
+<li><strong>start_cursor</strong> – Starting point for search.</li>
+<li><strong>end_cursor</strong> – Endpoint point for search.</li>
+<li><strong>timeout</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>read_policy</strong> – Defaults to <cite>ndb.EVENTUAL</cite> for potentially faster
+query results without having to wait for Datastore to apply
+pending changes to all returned records.</li>
+<li><strong>options</strong> (<a class="reference internal" href="#google.cloud.ndb.query.QueryOptions" title="google.cloud.ndb.query.QueryOptions"><em>QueryOptions</em></a>) – DEPRECATED: An object containing options
+values for some of these arguments.</li>
+<li><strong>Returns</strong> – <dl class="docutils">
+<dt>Optional[Union[entity.Entity, key.Key]]: A single result, or</dt>
+<dd><a class="reference external" href="https://docs.python.org/3/library/constants.html#None" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">None</span></code></a> if there are no results.</dd>
+</dl>
+</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.get_async">
+<code class="descname">get_async</code><span class="sig-paren">(</span><em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.get_async"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.get_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get the first query result, if any.</p>
+<p>This is the asynchronous version of <a class="reference internal" href="#google.cloud.ndb.query.Query.get" title="google.cloud.ndb.query.Query.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Query.get()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">See <a class="reference internal" href="#google.cloud.ndb.query.Query.get" title="google.cloud.ndb.query.Query.get"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Query.get()</span></code></a> for eventual result.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="tasklets.html#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">tasklets.Future</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.query.Query.is_distinct">
+<code class="descname">is_distinct</code><a class="headerlink" href="#google.cloud.ndb.query.Query.is_distinct" title="Permalink to this definition">¶</a></dt>
+<dd><p>True if results are guaranteed to contain a unique set of property
+values.</p>
+<p>This happens when every property in distinct_on is also in projection.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.iter">
+<code class="descname">iter</code><span class="sig-paren">(</span><em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.iter"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.iter" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get an iterator over query results.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>keys_only</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Return keys instead of entities.</li>
+<li><strong>limit</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Maximum number of query results to return.
+If not specified, there is no limit.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the query
+results.</li>
+<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Number of query results to skip.</li>
+<li><strong>batch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Number of results to fetch in a single
+RPC call. Affects efficiency of queries only. Larger batch
+sizes use more memory but make fewer RPC calls.</li>
+<li><strong>prefetch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Overrides batch size for first batch
+returned.</li>
+<li><strong>produce_cursors</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether to generate cursors from query.</li>
+<li><strong>start_cursor</strong> – Starting point for search.</li>
+<li><strong>end_cursor</strong> – Endpoint point for search.</li>
+<li><strong>timeout</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>read_policy</strong> – Defaults to <cite>ndb.EVENTUAL</cite> for potentially faster
+query results without having to wait for Datastore to apply
+pending changes to all returned records.</li>
+<li><strong>options</strong> (<a class="reference internal" href="#google.cloud.ndb.query.QueryOptions" title="google.cloud.ndb.query.QueryOptions"><em>QueryOptions</em></a>) – DEPRECATED: An object containing options
+values for some of these arguments.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">An iterator.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">QueryIterator</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.map">
+<code class="descname">map</code><span class="sig-paren">(</span><em>callback</em>, <em>*</em>, <em>pass_batch_into_callback=None</em>, <em>merge_future=None</em>, <em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.map"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map a callback function or tasklet over the query results.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>callback</strong> (<em>Callable</em>) – A function or tasklet to be applied to each
+result; see below.</li>
+<li><strong>merge_future</strong> – Optional <code class="docutils literal notranslate"><span class="pre">Future</span></code> subclass; see below.</li>
+<li><strong>keys_only</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Return keys instead of entities.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the query
+results.</li>
+<li><strong>offset</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Number of query results to skip.</li>
+<li><strong>limit</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Maximum number of query results to return.
+If not specified, there is no limit.</li>
+<li><strong>batch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Number of results to fetch in a single
+RPC call. Affects efficiency of queries only. Larger batch
+sizes use more memory but make fewer RPC calls.</li>
+<li><strong>prefetch_size</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Overrides batch size for first batch
+returned.</li>
+<li><strong>produce_cursors</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Whether to generate cursors from query.</li>
+<li><strong>start_cursor</strong> – Starting point for search.</li>
+<li><strong>end_cursor</strong> – Endpoint point for search.</li>
+<li><strong>timeout</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a><em>]</em>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>read_policy</strong> – Defaults to <cite>ndb.EVENTUAL</cite> for potentially faster
+query results without having to wait for Datastore to apply
+pending changes to all returned records.</li>
+<li><strong>options</strong> (<a class="reference internal" href="#google.cloud.ndb.query.QueryOptions" title="google.cloud.ndb.query.QueryOptions"><em>QueryOptions</em></a>) – DEPRECATED: An object containing options
+values for some of these arguments.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Callback signature: The callback is normally called with an entity
+as argument.  However if keys_only=True is given, it is called
+with a Key.  Also, when pass_batch_into_callback is True, it is
+called with three arguments: the current batch, the index within
+the batch, and the entity or Key at that index.  The callback can
+return whatever it wants.  If the callback is None, a trivial
+callback is assumed that just returns the entity or key passed in
+(ignoring produce_cursors).</p>
+<p>Optional merge future: The merge_future is an advanced argument
+that can be used to override how the callback results are combined
+into the overall map() return value.  By default a list of
+callback return values is produced.  By substituting one of a
+small number of specialized alternatives you can arrange
+otherwise.  See tasklets.MultiFuture for the default
+implementation and a description of the protocol the merge_future
+object must implement the default.  Alternatives from the same
+module include QueueFuture, SerialQueueFuture and ReducingFuture.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>When the query has run to completion and all callbacks have</dt>
+<dd>returned, map() returns a list of the results of all callbacks.
+(But see ‘optional merge future’ above.)</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">Any</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.map_async">
+<code class="descname">map_async</code><span class="sig-paren">(</span><em>callback</em>, <em>*</em>, <em>pass_batch_into_callback=None</em>, <em>merge_future=None</em>, <em>keys_only=None</em>, <em>limit=None</em>, <em>projection=None</em>, <em>offset=None</em>, <em>batch_size=None</em>, <em>prefetch_size=None</em>, <em>produce_cursors=False</em>, <em>start_cursor=None</em>, <em>end_cursor=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>read_policy=None</em>, <em>options=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.map_async"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.map_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>Map a callback function or tasklet over the query results.</p>
+<p>This is the asynchronous version of <a class="reference internal" href="#google.cloud.ndb.query.Query.map" title="google.cloud.ndb.query.Query.map"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Query.map()</span></code></a>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">See <a class="reference internal" href="#google.cloud.ndb.query.Query.map" title="google.cloud.ndb.query.Query.map"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Query.map()</span></code></a> for eventual result.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="tasklets.html#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">tasklets.Future</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.order">
+<code class="descname">order</code><span class="sig-paren">(</span><em>*props</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.order"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.order" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a new Query with additional sort order(s) applied.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>props</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – One or
+more model properties to sort by.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">A new query with the new order applied.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="#google.cloud.ndb.query.Query" title="google.cloud.ndb.query.Query">Query</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.query.Query.run_to_queue">
+<code class="descname">run_to_queue</code><span class="sig-paren">(</span><em>queue</em>, <em>conn</em>, <em>options=None</em>, <em>dsquery=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#Query.run_to_queue"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.Query.run_to_queue" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run this query, putting entities into the given queue.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.query.gql">
+<code class="descclassname">google.cloud.ndb.query.</code><code class="descname">gql</code><span class="sig-paren">(</span><em>query_string</em>, <em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/query.html#gql"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.query.gql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Parse a GQL query string.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>query_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Full GQL query, e.g. ‘SELECT * FROM Kind WHERE
+prop = 1 ORDER BY prop2’.</li>
+<li><strong>args</strong> – If present, used to call bind().</li>
+<li><strong>kwds</strong> – If present, used to call bind().</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">a query instance.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first"><a class="reference internal" href="#google.cloud.ndb.query.Query" title="google.cloud.ndb.query.Query">Query</a></p>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Raises:</th><td class="field-body"><p class="first last"><a class="reference internal" href="exceptions.html#google.cloud.ndb.exceptions.BadQueryError" title="google.cloud.ndb.exceptions.BadQueryError"><code class="xref py py-exc docutils literal notranslate"><span class="pre">google.cloud.ndb.exceptions.BadQueryError</span></code></a> – When bad gql is passed in.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Model and Property</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasklets.html">Tasklets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="polymodel.html">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="blobstore.html">Blobstore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="model.html" title="previous chapter">Model and Property</a></li>
+      <li>Next: <a href="tasklets.html" title="next chapter">Tasklets</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/query.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

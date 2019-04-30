@@ -1,0 +1,1095 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Datastore Metadata &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Datastore Statistics" href="stats.html" />
+    <link rel="prev" title="Blobstore" href="blobstore.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-google.cloud.ndb.metadata">
+<span id="datastore-metadata"></span><h1>Datastore Metadata<a class="headerlink" href="#module-google.cloud.ndb.metadata" title="Permalink to this headline">¶</a></h1>
+<p>Access datastore metadata.</p>
+<dl class="function">
+<dt id="google.cloud.ndb.metadata.get_entity_group_version">
+<code class="descclassname">google.cloud.ndb.metadata.</code><code class="descname">get_entity_group_version</code><span class="sig-paren">(</span><em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#get_entity_group_version"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.get_entity_group_version" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the version of the entity group containing key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><em>google.cloud.ndb.excpetions.NoLongerImplementedError. Always. This</em> – method is not supported anymore.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.metadata.get_kinds">
+<code class="descclassname">google.cloud.ndb.metadata.</code><code class="descname">get_kinds</code><span class="sig-paren">(</span><em>start=None</em>, <em>end=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#get_kinds"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.get_kinds" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all kinds in the specified range, for the current namespace.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – only return kinds &gt;= start if start is not None.</li>
+<li><strong>end</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – only return kinds &lt; end if end is not None.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">Kind names between the (optional) start and end values.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a>]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.metadata.get_namespaces">
+<code class="descclassname">google.cloud.ndb.metadata.</code><code class="descname">get_namespaces</code><span class="sig-paren">(</span><em>start=None</em>, <em>end=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#get_namespaces"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.get_namespaces" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all namespaces in the specified range.
+:param start: only return namespaces &gt;= start if start is not None.
+:type start: str
+:param end: only return namespaces &lt; end if end is not None.
+:type end: str</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">Namespace names between the (optional) start and end values.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body">List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a>]</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.metadata.get_properties_of_kind">
+<code class="descclassname">google.cloud.ndb.metadata.</code><code class="descname">get_properties_of_kind</code><span class="sig-paren">(</span><em>kind</em>, <em>start=None</em>, <em>end=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#get_properties_of_kind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.get_properties_of_kind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all properties of kind in the specified range.</p>
+<p>NOTE: This function does not return unindexed properties.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kind</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – name of kind whose properties you want.</li>
+<li><strong>start</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – only return properties &gt;= start if start is not None.</li>
+<li><strong>end</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – only return properties &lt; end if end is not None.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>Property names of kind between the (optional) start and end</dt>
+<dd><p class="first last">values.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last">List[<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a>]</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="google.cloud.ndb.metadata.get_representations_of_kind">
+<code class="descclassname">google.cloud.ndb.metadata.</code><code class="descname">get_representations_of_kind</code><span class="sig-paren">(</span><em>kind</em>, <em>start=None</em>, <em>end=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#get_representations_of_kind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.get_representations_of_kind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return all representations of properties of kind in the specified range.</p>
+<p>NOTE: This function does not return unindexed properties.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kind</strong> – name of kind whose properties you want.</li>
+<li><strong>start</strong> – only return properties &gt;= start if start is not None.</li>
+<li><strong>end</strong> – only return properties &lt; end if end is not None.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">map of property names to their list of representations.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#dict" title="(in Python v3.7)">dict</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.metadata.EntityGroup">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.metadata.</code><code class="descname">EntityGroup</code><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#EntityGroup"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.EntityGroup" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/functions.html#object" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></a></p>
+<p>Model for __entity_group__ metadata. No longer supported by datastore.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.metadata.Kind">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.metadata.</code><code class="descname">Kind</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Kind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Kind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.metadata._BaseMetadata</span></code></p>
+<p>Model for __kind__ metadata query results.</p>
+<p>override to prevent instantiation</p>
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Kind.__eq__">
+<code class="descname">__eq__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two entities of the same class for equality.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Kind.__ge__">
+<code class="descname">__ge__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.__ge__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Kind.__gt__">
+<code class="descname">__gt__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.__gt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Kind.__hash__">
+<code class="descname">__hash__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not implemented hash function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – Always, to emphasize that entities are mutable.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Kind.__le__">
+<code class="descname">__le__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.__le__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Kind.__lt__">
+<code class="descname">__lt__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.__lt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="google.cloud.ndb.metadata.Kind.__new__">
+<em class="property">static </em><code class="descname">__new__</code><span class="sig-paren">(</span><em>cls</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.__new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>override to prevent instantiation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Kind.__repr__">
+<code class="descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an unambiguous string representation of an entity.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Kind.gql">
+<em class="property">classmethod </em><code class="descname">gql</code><span class="sig-paren">(</span><em>query_string</em>, <em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.gql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a GQL query using this model as the FROM entity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>query_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The WHERE part of a GQL query (including the
+WHERE kwyword).</li>
+<li><strong>args</strong> – if present, used to call bind() on the query.</li>
+<li><strong>kwds</strong> – if present, used to call bind() on the query.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">class:query.Query: A query instance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Kind.key_for_kind">
+<em class="property">classmethod </em><code class="descname">key_for_kind</code><span class="sig-paren">(</span><em>kind</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Kind.key_for_kind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.key_for_kind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the __kind__ key for kind.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kind</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – kind whose key is requested.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">key for kind.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key">key.Key</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Kind.key_to_kind">
+<em class="property">classmethod </em><code class="descname">key_to_kind</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Kind.key_to_kind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.key_to_kind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the kind specified by a given __kind__ key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key"><em>key.Key</em></a>) – key whose name is requested.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The kind specified by key.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.metadata.Kind.kind_name">
+<code class="descname">kind_name</code><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.kind_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the kind name specified by this entity’s key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">the kind name.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Kind.put">
+<code class="descname">put</code><span class="sig-paren">(</span><em>retries=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>force_writes=None</em>, <em>use_cache=None</em>, <em>use_memcache=None</em>, <em>use_datastore=None</em>, <em>memcache_timeout=None</em>, <em>max_memcache_items=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Synchronously write this entity to Cloud Datastore.</p>
+<p>If the operation creates or completes a key, the entity’s key
+attribute is set to the new, complete key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>force_writes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether a write request should
+succeed even if the app is read-only. (This only applies to
+user controlled read-only periods.)</li>
+<li><strong>use_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in in-process
+cache; overrides in-process cache policy for this operation.</li>
+<li><strong>use_memcache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+memcache; overrides memcache policy for this operation.</li>
+<li><strong>use_datastore</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+Datastore; overrides Datastore policy for this operation.</li>
+<li><strong>memcache_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum lifetime for entities in memcache;
+overrides memcache timeout policy for this operation.</li>
+<li><strong>max_memcache_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum batch size for the auto-batching
+feature of the Context memcache methods. For example, with the
+default size of max_memcache_items (100), up to 100 memcache
+set operations will be combined into a single set_multi
+operation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The key for the entity. This is always a complete key.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key">key.Key</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Kind.put_async">
+<code class="descname">put_async</code><span class="sig-paren">(</span><em>retries=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>force_writes=None</em>, <em>use_cache=None</em>, <em>use_memcache=None</em>, <em>use_datastore=None</em>, <em>memcache_timeout=None</em>, <em>max_memcache_items=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.put_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>Asynchronously write this entity to Cloud Datastore.</p>
+<p>If the operation creates or completes a key, the entity’s key
+attribute is set to the new, complete key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>force_writes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether a write request should
+succeed even if the app is read-only. (This only applies to
+user controlled read-only periods.)</li>
+<li><strong>use_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in in-process
+cache; overrides in-process cache policy for this operation.</li>
+<li><strong>use_memcache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+memcache; overrides memcache policy for this operation.</li>
+<li><strong>use_datastore</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+Datastore; overrides Datastore policy for this operation.</li>
+<li><strong>memcache_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum lifetime for entities in memcache;
+overrides memcache timeout policy for this operation.</li>
+<li><strong>max_memcache_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum batch size for the auto-batching
+feature of the Context memcache methods. For example, with the
+default size of max_memcache_items (100), up to 100 memcache
+set operations will be combined into a single set_multi
+operation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>The eventual result will be the key for the</dt>
+<dd><p class="first last">entity. This is always a complete key.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="tasklets.html#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">tasklets.Future</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Kind.query">
+<em class="property">classmethod </em><code class="descname">query</code><span class="sig-paren">(</span><em>*filters</em>, <em>distinct=False</em>, <em>ancestor=None</em>, <em>order_by=None</em>, <em>orders=None</em>, <em>project=None</em>, <em>app=None</em>, <em>namespace=None</em>, <em>projection=None</em>, <em>distinct_on=None</em>, <em>group_by=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Kind.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a query for this class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>*filters</strong> (<a class="reference internal" href="query.html#google.cloud.ndb.query.FilterNode" title="google.cloud.ndb.query.FilterNode"><em>query.FilterNode</em></a>) – Filters to apply to this query.</li>
+<li><strong>distinct</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – Setting this to <a class="reference external" href="https://docs.python.org/3/library/constants.html#True" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">True</span></code></a> is
+shorthand for setting <cite>distinct_on</cite> to <cite>projection</cite>.</li>
+<li><strong>ancestor</strong> (<a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key"><em>key.Key</em></a>) – Entities returned will be descendants of
+<cite>ancestor</cite>.</li>
+<li><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – The model properties used to order query results.</li>
+<li><strong>orders</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – Deprecated. Synonym for <cite>order_by</cite>.</li>
+<li><strong>project</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The project to perform the query in. Also known as
+the app, in Google App Engine. If not passed, uses the
+client’s value.</li>
+<li><strong>app</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Deprecated. Synonym for <cite>project</cite>.</li>
+<li><strong>namespace</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The namespace to which to restrict results.
+If not passed, uses the client’s value.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the
+query results.</li>
+<li><strong>distinct_on</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The field names used to group query
+results.</li>
+<li><strong>group_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – Deprecated. Synonym for distinct_on.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.metadata.Namespace">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.metadata.</code><code class="descname">Namespace</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Namespace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.metadata._BaseMetadata</span></code></p>
+<p>Model for __namespace__ metadata query results.</p>
+<p>override to prevent instantiation</p>
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Namespace.__eq__">
+<code class="descname">__eq__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two entities of the same class for equality.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Namespace.__ge__">
+<code class="descname">__ge__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.__ge__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Namespace.__gt__">
+<code class="descname">__gt__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.__gt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Namespace.__hash__">
+<code class="descname">__hash__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not implemented hash function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – Always, to emphasize that entities are mutable.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Namespace.__le__">
+<code class="descname">__le__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.__le__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Namespace.__lt__">
+<code class="descname">__lt__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.__lt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="google.cloud.ndb.metadata.Namespace.__new__">
+<em class="property">static </em><code class="descname">__new__</code><span class="sig-paren">(</span><em>cls</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.__new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>override to prevent instantiation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Namespace.__repr__">
+<code class="descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an unambiguous string representation of an entity.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Namespace.gql">
+<em class="property">classmethod </em><code class="descname">gql</code><span class="sig-paren">(</span><em>query_string</em>, <em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.gql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a GQL query using this model as the FROM entity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>query_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The WHERE part of a GQL query (including the
+WHERE kwyword).</li>
+<li><strong>args</strong> – if present, used to call bind() on the query.</li>
+<li><strong>kwds</strong> – if present, used to call bind() on the query.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">class:query.Query: A query instance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Namespace.key_for_namespace">
+<em class="property">classmethod </em><code class="descname">key_for_namespace</code><span class="sig-paren">(</span><em>namespace</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Namespace.key_for_namespace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.key_for_namespace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the Key for a namespace.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>namespace</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – A string giving the namespace whose key is
+requested.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The Key for the namespace.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key">key.Key</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Namespace.key_to_namespace">
+<em class="property">classmethod </em><code class="descname">key_to_namespace</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Namespace.key_to_namespace"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.key_to_namespace" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the namespace specified by a given __namespace__ key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key"><em>key.Key</em></a>) – key whose name is requested.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The namespace specified by key.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.metadata.Namespace.namespace_name">
+<code class="descname">namespace_name</code><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.namespace_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the namespace name specified by this entity’s key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">the namespace name.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Namespace.put">
+<code class="descname">put</code><span class="sig-paren">(</span><em>retries=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>force_writes=None</em>, <em>use_cache=None</em>, <em>use_memcache=None</em>, <em>use_datastore=None</em>, <em>memcache_timeout=None</em>, <em>max_memcache_items=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Synchronously write this entity to Cloud Datastore.</p>
+<p>If the operation creates or completes a key, the entity’s key
+attribute is set to the new, complete key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>force_writes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether a write request should
+succeed even if the app is read-only. (This only applies to
+user controlled read-only periods.)</li>
+<li><strong>use_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in in-process
+cache; overrides in-process cache policy for this operation.</li>
+<li><strong>use_memcache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+memcache; overrides memcache policy for this operation.</li>
+<li><strong>use_datastore</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+Datastore; overrides Datastore policy for this operation.</li>
+<li><strong>memcache_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum lifetime for entities in memcache;
+overrides memcache timeout policy for this operation.</li>
+<li><strong>max_memcache_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum batch size for the auto-batching
+feature of the Context memcache methods. For example, with the
+default size of max_memcache_items (100), up to 100 memcache
+set operations will be combined into a single set_multi
+operation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The key for the entity. This is always a complete key.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key">key.Key</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Namespace.put_async">
+<code class="descname">put_async</code><span class="sig-paren">(</span><em>retries=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>force_writes=None</em>, <em>use_cache=None</em>, <em>use_memcache=None</em>, <em>use_datastore=None</em>, <em>memcache_timeout=None</em>, <em>max_memcache_items=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.put_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>Asynchronously write this entity to Cloud Datastore.</p>
+<p>If the operation creates or completes a key, the entity’s key
+attribute is set to the new, complete key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>force_writes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether a write request should
+succeed even if the app is read-only. (This only applies to
+user controlled read-only periods.)</li>
+<li><strong>use_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in in-process
+cache; overrides in-process cache policy for this operation.</li>
+<li><strong>use_memcache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+memcache; overrides memcache policy for this operation.</li>
+<li><strong>use_datastore</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+Datastore; overrides Datastore policy for this operation.</li>
+<li><strong>memcache_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum lifetime for entities in memcache;
+overrides memcache timeout policy for this operation.</li>
+<li><strong>max_memcache_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum batch size for the auto-batching
+feature of the Context memcache methods. For example, with the
+default size of max_memcache_items (100), up to 100 memcache
+set operations will be combined into a single set_multi
+operation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>The eventual result will be the key for the</dt>
+<dd><p class="first last">entity. This is always a complete key.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="tasklets.html#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">tasklets.Future</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Namespace.query">
+<em class="property">classmethod </em><code class="descname">query</code><span class="sig-paren">(</span><em>*filters</em>, <em>distinct=False</em>, <em>ancestor=None</em>, <em>order_by=None</em>, <em>orders=None</em>, <em>project=None</em>, <em>app=None</em>, <em>namespace=None</em>, <em>projection=None</em>, <em>distinct_on=None</em>, <em>group_by=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Namespace.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a query for this class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>*filters</strong> (<a class="reference internal" href="query.html#google.cloud.ndb.query.FilterNode" title="google.cloud.ndb.query.FilterNode"><em>query.FilterNode</em></a>) – Filters to apply to this query.</li>
+<li><strong>distinct</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – Setting this to <a class="reference external" href="https://docs.python.org/3/library/constants.html#True" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">True</span></code></a> is
+shorthand for setting <cite>distinct_on</cite> to <cite>projection</cite>.</li>
+<li><strong>ancestor</strong> (<a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key"><em>key.Key</em></a>) – Entities returned will be descendants of
+<cite>ancestor</cite>.</li>
+<li><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – The model properties used to order query results.</li>
+<li><strong>orders</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – Deprecated. Synonym for <cite>order_by</cite>.</li>
+<li><strong>project</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The project to perform the query in. Also known as
+the app, in Google App Engine. If not passed, uses the
+client’s value.</li>
+<li><strong>app</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Deprecated. Synonym for <cite>project</cite>.</li>
+<li><strong>namespace</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The namespace to which to restrict results.
+If not passed, uses the client’s value.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the
+query results.</li>
+<li><strong>distinct_on</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The field names used to group query
+results.</li>
+<li><strong>group_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – Deprecated. Synonym for distinct_on.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="google.cloud.ndb.metadata.Property">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.metadata.</code><code class="descname">Property</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Property"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.metadata._BaseMetadata</span></code></p>
+<p>Model for __property__ metadata query results.</p>
+<p>override to prevent instantiation</p>
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Property.__eq__">
+<code class="descname">__eq__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/model.html#Property.__eq__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two entities of the same class for equality.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Property.__ge__">
+<code class="descname">__ge__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/model.html#Property.__ge__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.__ge__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Property.__gt__">
+<code class="descname">__gt__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/model.html#Property.__gt__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.__gt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Property.__hash__">
+<code class="descname">__hash__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Property.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not implemented hash function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – Always, to emphasize that entities are mutable.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Property.__le__">
+<code class="descname">__le__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/model.html#Property.__le__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.__le__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Property.__lt__">
+<code class="descname">__lt__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/model.html#Property.__lt__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.__lt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="staticmethod">
+<dt id="google.cloud.ndb.metadata.Property.__new__">
+<em class="property">static </em><code class="descname">__new__</code><span class="sig-paren">(</span><em>cls</em>, <em>*args</em>, <em>**kwargs</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Property.__new__" title="Permalink to this definition">¶</a></dt>
+<dd><p>override to prevent instantiation</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Property.__repr__">
+<code class="descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/model.html#Property.__repr__"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an unambiguous string representation of an entity.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Property.gql">
+<em class="property">classmethod </em><code class="descname">gql</code><span class="sig-paren">(</span><em>query_string</em>, <em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Property.gql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a GQL query using this model as the FROM entity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>query_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The WHERE part of a GQL query (including the
+WHERE kwyword).</li>
+<li><strong>args</strong> – if present, used to call bind() on the query.</li>
+<li><strong>kwds</strong> – if present, used to call bind() on the query.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">class:query.Query: A query instance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Property.key_for_kind">
+<em class="property">classmethod </em><code class="descname">key_for_kind</code><span class="sig-paren">(</span><em>kind</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Property.key_for_kind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.key_for_kind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the __property__ key for kind.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>kind</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – kind whose key is requested.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The parent key for __property__ keys of kind.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key">key.Key</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Property.key_for_property">
+<em class="property">classmethod </em><code class="descname">key_for_property</code><span class="sig-paren">(</span><em>kind</em>, <em>property</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Property.key_for_property"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.key_for_property" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the __property__ key for property of kind.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>kind</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – kind whose key is requested.</li>
+<li><strong>property</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – property whose key is requested.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The key for property of kind.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key">key.Key</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Property.key_to_kind">
+<em class="property">classmethod </em><code class="descname">key_to_kind</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Property.key_to_kind"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.key_to_kind" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the kind specified by a given __property__ key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key"><em>key.Key</em></a>) – key whose kind name is requested.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">The kind specified by key.</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Property.key_to_property">
+<em class="property">classmethod </em><code class="descname">key_to_property</code><span class="sig-paren">(</span><em>key</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/metadata.html#Property.key_to_property"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.metadata.Property.key_to_property" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the property specified by a given __property__ key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>key</strong> (<a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key"><em>key.Key</em></a>) – key whose property name is requested.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><dl class="docutils">
+<dt>property specified by key, or None if the key specified</dt>
+<dd>only a kind.</dd>
+</dl>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.metadata.Property.kind_name">
+<code class="descname">kind_name</code><a class="headerlink" href="#google.cloud.ndb.metadata.Property.kind_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the kind name specified by this entity’s key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">the kind name.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="attribute">
+<dt id="google.cloud.ndb.metadata.Property.property_name">
+<code class="descname">property_name</code><a class="headerlink" href="#google.cloud.ndb.metadata.Property.property_name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the property name specified by this entity’s key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">the property name.</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Return type:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)">str</a></td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Property.put">
+<code class="descname">put</code><span class="sig-paren">(</span><em>retries=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>force_writes=None</em>, <em>use_cache=None</em>, <em>use_memcache=None</em>, <em>use_datastore=None</em>, <em>memcache_timeout=None</em>, <em>max_memcache_items=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Property.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Synchronously write this entity to Cloud Datastore.</p>
+<p>If the operation creates or completes a key, the entity’s key
+attribute is set to the new, complete key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>force_writes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether a write request should
+succeed even if the app is read-only. (This only applies to
+user controlled read-only periods.)</li>
+<li><strong>use_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in in-process
+cache; overrides in-process cache policy for this operation.</li>
+<li><strong>use_memcache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+memcache; overrides memcache policy for this operation.</li>
+<li><strong>use_datastore</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+Datastore; overrides Datastore policy for this operation.</li>
+<li><strong>memcache_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum lifetime for entities in memcache;
+overrides memcache timeout policy for this operation.</li>
+<li><strong>max_memcache_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum batch size for the auto-batching
+feature of the Context memcache methods. For example, with the
+default size of max_memcache_items (100), up to 100 memcache
+set operations will be combined into a single set_multi
+operation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The key for the entity. This is always a complete key.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key">key.Key</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.metadata.Property.put_async">
+<code class="descname">put_async</code><span class="sig-paren">(</span><em>retries=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>force_writes=None</em>, <em>use_cache=None</em>, <em>use_memcache=None</em>, <em>use_datastore=None</em>, <em>memcache_timeout=None</em>, <em>max_memcache_items=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Property.put_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>Asynchronously write this entity to Cloud Datastore.</p>
+<p>If the operation creates or completes a key, the entity’s key
+attribute is set to the new, complete key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>force_writes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether a write request should
+succeed even if the app is read-only. (This only applies to
+user controlled read-only periods.)</li>
+<li><strong>use_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in in-process
+cache; overrides in-process cache policy for this operation.</li>
+<li><strong>use_memcache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+memcache; overrides memcache policy for this operation.</li>
+<li><strong>use_datastore</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+Datastore; overrides Datastore policy for this operation.</li>
+<li><strong>memcache_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum lifetime for entities in memcache;
+overrides memcache timeout policy for this operation.</li>
+<li><strong>max_memcache_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum batch size for the auto-batching
+feature of the Context memcache methods. For example, with the
+default size of max_memcache_items (100), up to 100 memcache
+set operations will be combined into a single set_multi
+operation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>The eventual result will be the key for the</dt>
+<dd><p class="first last">entity. This is always a complete key.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="tasklets.html#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">tasklets.Future</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.metadata.Property.query">
+<em class="property">classmethod </em><code class="descname">query</code><span class="sig-paren">(</span><em>*filters</em>, <em>distinct=False</em>, <em>ancestor=None</em>, <em>order_by=None</em>, <em>orders=None</em>, <em>project=None</em>, <em>app=None</em>, <em>namespace=None</em>, <em>projection=None</em>, <em>distinct_on=None</em>, <em>group_by=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.metadata.Property.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a query for this class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>*filters</strong> (<a class="reference internal" href="query.html#google.cloud.ndb.query.FilterNode" title="google.cloud.ndb.query.FilterNode"><em>query.FilterNode</em></a>) – Filters to apply to this query.</li>
+<li><strong>distinct</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – Setting this to <a class="reference external" href="https://docs.python.org/3/library/constants.html#True" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">True</span></code></a> is
+shorthand for setting <cite>distinct_on</cite> to <cite>projection</cite>.</li>
+<li><strong>ancestor</strong> (<a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key"><em>key.Key</em></a>) – Entities returned will be descendants of
+<cite>ancestor</cite>.</li>
+<li><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – The model properties used to order query results.</li>
+<li><strong>orders</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – Deprecated. Synonym for <cite>order_by</cite>.</li>
+<li><strong>project</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The project to perform the query in. Also known as
+the app, in Google App Engine. If not passed, uses the
+client’s value.</li>
+<li><strong>app</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Deprecated. Synonym for <cite>project</cite>.</li>
+<li><strong>namespace</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The namespace to which to restrict results.
+If not passed, uses the client’s value.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the
+query results.</li>
+<li><strong>distinct_on</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The field names used to group query
+results.</li>
+<li><strong>group_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – Deprecated. Synonym for distinct_on.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Model and Property</a></li>
+<li class="toctree-l1"><a class="reference internal" href="query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasklets.html">Tasklets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="polymodel.html">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="blobstore.html">Blobstore</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="blobstore.html" title="previous chapter">Blobstore</a></li>
+      <li>Next: <a href="stats.html" title="next chapter">Datastore Statistics</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/metadata.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

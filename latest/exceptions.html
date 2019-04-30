@@ -1,0 +1,185 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Exceptions &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Polymorphic Models and Queries" href="polymodel.html" />
+    <link rel="prev" title="Tasklets" href="tasklets.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-google.cloud.ndb.exceptions">
+<span id="exceptions"></span><h1>Exceptions<a class="headerlink" href="#module-google.cloud.ndb.exceptions" title="Permalink to this headline">¶</a></h1>
+<p>Classes representing legacy Google App Engine exceptions.</p>
+<p>Unless otherwise noted, these are meant to act as shims for the exception
+types defined in the <code class="docutils literal notranslate"><span class="pre">google.appengine.api.datastore_errors</span></code> module in
+legacy Google App Engine runtime.</p>
+<dl class="exception">
+<dt id="google.cloud.ndb.exceptions.Error">
+<em class="property">exception </em><code class="descclassname">google.cloud.ndb.exceptions.</code><code class="descname">Error</code><a class="reference internal" href="_modules/google/cloud/ndb/exceptions.html#Error"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.exceptions.Error" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference external" href="https://docs.python.org/3/library/exceptions.html#Exception" title="(in Python v3.7)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Exception</span></code></a></p>
+<p>Base datastore error type.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="google.cloud.ndb.exceptions.ContextError">
+<em class="property">exception </em><code class="descclassname">google.cloud.ndb.exceptions.</code><code class="descname">ContextError</code><a class="reference internal" href="_modules/google/cloud/ndb/exceptions.html#ContextError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.exceptions.ContextError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.exceptions.Error" title="google.cloud.ndb.exceptions.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.exceptions.Error</span></code></a></p>
+<p>Indicates an NDB call being made without a context.</p>
+<p>Raised whenever an NDB call is made outside of a context
+established by <a class="reference internal" href="client.html#google.cloud.ndb.client.Client.context" title="google.cloud.ndb.client.Client.context"><code class="xref py py-meth docutils literal notranslate"><span class="pre">google.cloud.ndb.client.Client.context()</span></code></a>.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="google.cloud.ndb.exceptions.BadValueError">
+<em class="property">exception </em><code class="descclassname">google.cloud.ndb.exceptions.</code><code class="descname">BadValueError</code><a class="reference internal" href="_modules/google/cloud/ndb/exceptions.html#BadValueError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.exceptions.BadValueError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.exceptions.Error" title="google.cloud.ndb.exceptions.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.exceptions.Error</span></code></a></p>
+<p>Indicates a property value or filter value is invalid.</p>
+<p>Raised by <code class="docutils literal notranslate"><span class="pre">Entity.__setitem__()</span></code>, <code class="docutils literal notranslate"><span class="pre">Query.__setitem__()</span></code>, <code class="docutils literal notranslate"><span class="pre">Get()</span></code>,
+and others.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="google.cloud.ndb.exceptions.BadArgumentError">
+<em class="property">exception </em><code class="descclassname">google.cloud.ndb.exceptions.</code><code class="descname">BadArgumentError</code><a class="reference internal" href="_modules/google/cloud/ndb/exceptions.html#BadArgumentError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.exceptions.BadArgumentError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.exceptions.Error" title="google.cloud.ndb.exceptions.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.exceptions.Error</span></code></a></p>
+<p>Indicates an invalid argument was passed.</p>
+<p>Raised by <code class="docutils literal notranslate"><span class="pre">Query.Order()</span></code>, <code class="docutils literal notranslate"><span class="pre">Iterator.Next()</span></code>, and others.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="google.cloud.ndb.exceptions.Rollback">
+<em class="property">exception </em><code class="descclassname">google.cloud.ndb.exceptions.</code><code class="descname">Rollback</code><a class="reference internal" href="_modules/google/cloud/ndb/exceptions.html#Rollback"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.exceptions.Rollback" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.exceptions.Error" title="google.cloud.ndb.exceptions.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.exceptions.Error</span></code></a></p>
+<p>Allows a transaction to be rolled back instead of committed.</p>
+<p>Note that <em>any</em> exception raised by a transaction function will cause a
+rollback. Hence, this exception type is purely for convenience.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="google.cloud.ndb.exceptions.BadQueryError">
+<em class="property">exception </em><code class="descclassname">google.cloud.ndb.exceptions.</code><code class="descname">BadQueryError</code><a class="reference internal" href="_modules/google/cloud/ndb/exceptions.html#BadQueryError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.exceptions.BadQueryError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.exceptions.Error" title="google.cloud.ndb.exceptions.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.exceptions.Error</span></code></a></p>
+<p>Raised by Query when a query or query string is invalid.</p>
+</dd></dl>
+
+<dl class="exception">
+<dt id="google.cloud.ndb.exceptions.BadFilterError">
+<em class="property">exception </em><code class="descclassname">google.cloud.ndb.exceptions.</code><code class="descname">BadFilterError</code><span class="sig-paren">(</span><em>filter</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/exceptions.html#BadFilterError"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.exceptions.BadFilterError" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#google.cloud.ndb.exceptions.Error" title="google.cloud.ndb.exceptions.Error"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.exceptions.Error</span></code></a></p>
+<p>Indicates a filter value is invalid.</p>
+<p>Raised by <code class="docutils literal notranslate"><span class="pre">Query.__setitem__()</span></code> and <code class="docutils literal notranslate"><span class="pre">Query.Run()</span></code> when a filter string
+is invalid.</p>
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Model and Property</a></li>
+<li class="toctree-l1"><a class="reference internal" href="query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasklets.html">Tasklets</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Exceptions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="polymodel.html">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="blobstore.html">Blobstore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="tasklets.html" title="previous chapter">Tasklets</a></li>
+      <li>Next: <a href="polymodel.html" title="next chapter">Polymorphic Models and Queries</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/exceptions.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>

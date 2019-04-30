@@ -1,0 +1,401 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Polymorphic Models and Queries &#8212; ndb 0.0.1.dev1 documentation</title>
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="_static/language_data.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Django Middleware" href="django-middleware.html" />
+    <link rel="prev" title="Exceptions" href="exceptions.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-google.cloud.ndb.polymodel">
+<span id="polymorphic-models-and-queries"></span><h1>Polymorphic Models and Queries<a class="headerlink" href="#module-google.cloud.ndb.polymodel" title="Permalink to this headline">¶</a></h1>
+<p>Polymorphic models and queries.</p>
+<p>The standard NDB Model class only supports ‘functional polymorphism’.
+That is, you can create a subclass of Model, and then subclass that
+class, as many generations as necessary, and those classes will share
+all the same properties and behaviors of their base classes.  However,
+subclassing Model in this way gives each subclass its own kind.  This
+means that it is not possible to do ‘polymorphic queries’.  Building a
+query on a base class will only return entities whose kind matches
+that base class’s kind, and exclude entities that are instances of
+some subclass of that base class.</p>
+<p>The PolyModel class defined here lets you create class hierarchies
+that support polymorphic queries.  Simply subclass PolyModel instead
+of Model.</p>
+<dl class="class">
+<dt id="google.cloud.ndb.polymodel.PolyModel">
+<em class="property">class </em><code class="descclassname">google.cloud.ndb.polymodel.</code><code class="descname">PolyModel</code><span class="sig-paren">(</span><em>**kwargs</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/polymodel.html#PolyModel"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="model.html#google.cloud.ndb.model.Model" title="google.cloud.ndb.model.Model"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.ndb.model.Model</span></code></a></p>
+<p>Base class for class hierarchies supporting polymorphic queries.</p>
+<p>Use this class to build hierarchies that can be queried based on
+their types.</p>
+<p>Example:</p>
+<p>Consider the following model hierarchy:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">+------+</span>
+<span class="o">|</span><span class="n">Animal</span><span class="o">|</span>
+<span class="o">+------+</span>
+  <span class="o">|</span>
+  <span class="o">+-----------------+</span>
+  <span class="o">|</span>                 <span class="o">|</span>
+<span class="o">+------+</span>          <span class="o">+------+</span>
+<span class="o">|</span><span class="n">Canine</span><span class="o">|</span>          <span class="o">|</span><span class="n">Feline</span><span class="o">|</span>
+<span class="o">+------+</span>          <span class="o">+------+</span>
+  <span class="o">|</span>                 <span class="o">|</span>
+  <span class="o">+-------+</span>         <span class="o">+-------+</span>
+  <span class="o">|</span>       <span class="o">|</span>         <span class="o">|</span>       <span class="o">|</span>
+<span class="o">+---+</span>   <span class="o">+----+</span>    <span class="o">+---+</span>   <span class="o">+-------+</span>
+<span class="o">|</span><span class="n">Dog</span><span class="o">|</span>   <span class="o">|</span><span class="n">Wolf</span><span class="o">|</span>    <span class="o">|</span><span class="n">Cat</span><span class="o">|</span>   <span class="o">|</span><span class="n">Panther</span><span class="o">|</span>
+<span class="o">+---+</span>   <span class="o">+----+</span>    <span class="o">+---+</span>   <span class="o">+-------+</span>
+</pre></div>
+</div>
+<p>This class hierarchy has three levels.  The first is the <cite>root
+class</cite>.  All models in a single class hierarchy must inherit from
+this root.  All models in the hierarchy are stored as the same
+kind as the root class.  For example, Panther entities when stored
+to Cloud Datastore are of the kind <cite>Animal</cite>.  Querying against the
+Animal kind will retrieve Cats, Dogs and Canines, for example,
+that match your query.  Different classes stored in the <cite>root
+class</cite> kind are identified by their class key.  When loaded from
+Cloud Datastore, it is mapped to the appropriate implementation
+class.</p>
+<p>Polymorphic properties:</p>
+<p>Properties that are defined in a given base class within a
+hierarchy are stored in Cloud Datastore for all subclasses only.
+So, if the Feline class had a property called <cite>whiskers</cite>, the Cat
+and Panther enties would also have whiskers, but not Animal,
+Canine, Dog or Wolf.</p>
+<p>Polymorphic queries:</p>
+<p>When written to Cloud Datastore, all polymorphic objects
+automatically have a property called <cite>class</cite> that you can query
+against.  Using this property it is possible to easily write a
+query against any sub-hierarchy.  For example, to fetch only
+Canine objects, including all Dogs and Wolves:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Canine</span><span class="o">.</span><span class="n">query</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>The <cite>class</cite> property is not meant to be used by your code other
+than for queries.  Since it is supposed to represent the real
+Python class it is intended to be hidden from view.  Although if
+you feel the need, it is accessible as the <cite>class_</cite> attribute.</p>
+<p>Root class:</p>
+<p>The root class is the class from which all other classes of the
+hierarchy inherits from.  Each hierarchy has a single root class.
+A class is a root class if it is an immediate child of PolyModel.
+The subclasses of the root class are all the same kind as the root
+class. In other words:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">Animal</span><span class="o">.</span><span class="n">kind</span><span class="p">()</span> <span class="o">==</span> <span class="n">Feline</span><span class="o">.</span><span class="n">kind</span><span class="p">()</span> <span class="o">==</span> <span class="n">Panther</span><span class="o">.</span><span class="n">kind</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;Animal&#39;</span>
+</pre></div>
+</div>
+<p>Note:</p>
+<p>All classes in a given hierarchy must have unique names, since
+the class name is used to identify the appropriate subclass.</p>
+<dl class="method">
+<dt id="google.cloud.ndb.polymodel.PolyModel.__eq__">
+<code class="descname">__eq__</code><span class="sig-paren">(</span><em>other</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.__eq__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compare two entities of the same class for equality.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.polymodel.PolyModel.__ge__">
+<code class="descname">__ge__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.__ge__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.polymodel.PolyModel.__gt__">
+<code class="descname">__gt__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.__gt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&gt;</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.polymodel.PolyModel.__hash__">
+<code class="descname">__hash__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.__hash__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Not implemented hash function.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Raises:</th><td class="field-body"><a class="reference external" href="https://docs.python.org/3/library/exceptions.html#TypeError" title="(in Python v3.7)"><code class="xref py py-exc docutils literal notranslate"><span class="pre">TypeError</span></code></a> – Always, to emphasize that entities are mutable.</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.polymodel.PolyModel.__le__">
+<code class="descname">__le__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.__le__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&lt;=</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.polymodel.PolyModel.__lt__">
+<code class="descname">__lt__</code><span class="sig-paren">(</span><em>value</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.__lt__" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <code class="docutils literal notranslate"><span class="pre">&lt;</span></code> comparison is not well-defined.</p>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.polymodel.PolyModel.__repr__">
+<code class="descname">__repr__</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.__repr__" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return an unambiguous string representation of an entity.</p>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.polymodel.PolyModel.gql">
+<em class="property">classmethod </em><code class="descname">gql</code><span class="sig-paren">(</span><em>query_string</em>, <em>*args</em>, <em>**kwds</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.gql" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a GQL query using this model as the FROM entity.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>query_string</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The WHERE part of a GQL query (including the
+WHERE kwyword).</li>
+<li><strong>args</strong> – if present, used to call bind() on the query.</li>
+<li><strong>kwds</strong> – if present, used to call bind() on the query.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">class:query.Query: A query instance.</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.polymodel.PolyModel.put">
+<code class="descname">put</code><span class="sig-paren">(</span><em>retries=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>force_writes=None</em>, <em>use_cache=None</em>, <em>use_memcache=None</em>, <em>use_datastore=None</em>, <em>memcache_timeout=None</em>, <em>max_memcache_items=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.put" title="Permalink to this definition">¶</a></dt>
+<dd><p>Synchronously write this entity to Cloud Datastore.</p>
+<p>If the operation creates or completes a key, the entity’s key
+attribute is set to the new, complete key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>force_writes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether a write request should
+succeed even if the app is read-only. (This only applies to
+user controlled read-only periods.)</li>
+<li><strong>use_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in in-process
+cache; overrides in-process cache policy for this operation.</li>
+<li><strong>use_memcache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+memcache; overrides memcache policy for this operation.</li>
+<li><strong>use_datastore</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+Datastore; overrides Datastore policy for this operation.</li>
+<li><strong>memcache_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum lifetime for entities in memcache;
+overrides memcache timeout policy for this operation.</li>
+<li><strong>max_memcache_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum batch size for the auto-batching
+feature of the Context memcache methods. For example, with the
+default size of max_memcache_items (100), up to 100 memcache
+set operations will be combined into a single set_multi
+operation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">The key for the entity. This is always a complete key.</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key">key.Key</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="google.cloud.ndb.polymodel.PolyModel.put_async">
+<code class="descname">put_async</code><span class="sig-paren">(</span><em>retries=None</em>, <em>timeout=None</em>, <em>deadline=None</em>, <em>force_writes=None</em>, <em>use_cache=None</em>, <em>use_memcache=None</em>, <em>use_datastore=None</em>, <em>memcache_timeout=None</em>, <em>max_memcache_items=None</em>, <em>_options=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.put_async" title="Permalink to this definition">¶</a></dt>
+<dd><p>Asynchronously write this entity to Cloud Datastore.</p>
+<p>If the operation creates or completes a key, the entity’s key
+attribute is set to the new, complete key.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – Override the gRPC timeout, in seconds.</li>
+<li><strong>deadline</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#float" title="(in Python v3.7)"><em>float</em></a>) – DEPRECATED: Synonym for <code class="docutils literal notranslate"><span class="pre">timeout</span></code>.</li>
+<li><strong>force_writes</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether a write request should
+succeed even if the app is read-only. (This only applies to
+user controlled read-only periods.)</li>
+<li><strong>use_cache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in in-process
+cache; overrides in-process cache policy for this operation.</li>
+<li><strong>use_memcache</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+memcache; overrides memcache policy for this operation.</li>
+<li><strong>use_datastore</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a>) – Specifies whether to store entities in
+Datastore; overrides Datastore policy for this operation.</li>
+<li><strong>memcache_timeout</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum lifetime for entities in memcache;
+overrides memcache timeout policy for this operation.</li>
+<li><strong>max_memcache_items</strong> (<a class="reference external" href="https://docs.python.org/3/library/functions.html#int" title="(in Python v3.7)"><em>int</em></a>) – Maximum batch size for the auto-batching
+feature of the Context memcache methods. For example, with the
+default size of max_memcache_items (100), up to 100 memcache
+set operations will be combined into a single set_multi
+operation.</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first"><dl class="docutils">
+<dt>The eventual result will be the key for the</dt>
+<dd><p class="first last">entity. This is always a complete key.</p>
+</dd>
+</dl>
+</p>
+</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body"><p class="first last"><a class="reference internal" href="tasklets.html#google.cloud.ndb.tasklets.Future" title="google.cloud.ndb.tasklets.Future">tasklets.Future</a></p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="classmethod">
+<dt id="google.cloud.ndb.polymodel.PolyModel.query">
+<em class="property">classmethod </em><code class="descname">query</code><span class="sig-paren">(</span><em>*filters</em>, <em>distinct=False</em>, <em>ancestor=None</em>, <em>order_by=None</em>, <em>orders=None</em>, <em>project=None</em>, <em>app=None</em>, <em>namespace=None</em>, <em>projection=None</em>, <em>distinct_on=None</em>, <em>group_by=None</em><span class="sig-paren">)</span><a class="headerlink" href="#google.cloud.ndb.polymodel.PolyModel.query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Generate a query for this class.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>*filters</strong> (<a class="reference internal" href="query.html#google.cloud.ndb.query.FilterNode" title="google.cloud.ndb.query.FilterNode"><em>query.FilterNode</em></a>) – Filters to apply to this query.</li>
+<li><strong>distinct</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/functions.html#bool" title="(in Python v3.7)"><em>bool</em></a><em>]</em>) – Setting this to <a class="reference external" href="https://docs.python.org/3/library/constants.html#True" title="(in Python v3.7)"><code class="xref py py-data docutils literal notranslate"><span class="pre">True</span></code></a> is
+shorthand for setting <cite>distinct_on</cite> to <cite>projection</cite>.</li>
+<li><strong>ancestor</strong> (<a class="reference internal" href="key.html#google.cloud.ndb.key.Key" title="google.cloud.ndb.key.Key"><em>key.Key</em></a>) – Entities returned will be descendants of
+<cite>ancestor</cite>.</li>
+<li><strong>order_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – The model properties used to order query results.</li>
+<li><strong>orders</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><em>Union</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>, </em><a class="reference internal" href="model.html#google.cloud.ndb.model.Property" title="google.cloud.ndb.model.Property"><em>google.cloud.ndb.model.Property</em></a><em>]</em><em>]</em>) – Deprecated. Synonym for <cite>order_by</cite>.</li>
+<li><strong>project</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The project to perform the query in. Also known as
+the app, in Google App Engine. If not passed, uses the
+client’s value.</li>
+<li><strong>app</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – Deprecated. Synonym for <cite>project</cite>.</li>
+<li><strong>namespace</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a>) – The namespace to which to restrict results.
+If not passed, uses the client’s value.</li>
+<li><strong>projection</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The fields to return as part of the
+query results.</li>
+<li><strong>distinct_on</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The field names used to group query
+results.</li>
+<li><strong>group_by</strong> (<a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#list" title="(in Python v3.7)"><em>list</em></a><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – Deprecated. Synonym for distinct_on.</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">ndb</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="client.html">Client</a></li>
+<li class="toctree-l1"><a class="reference internal" href="key.html">Key</a></li>
+<li class="toctree-l1"><a class="reference internal" href="model.html">Model and Property</a></li>
+<li class="toctree-l1"><a class="reference internal" href="query.html">Query</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tasklets.html">Tasklets</a></li>
+<li class="toctree-l1"><a class="reference internal" href="exceptions.html">Exceptions</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Polymorphic Models and Queries</a></li>
+<li class="toctree-l1"><a class="reference internal" href="django-middleware.html">Django Middleware</a></li>
+<li class="toctree-l1"><a class="reference internal" href="msgprop.html">ProtoRPC Message Properties</a></li>
+<li class="toctree-l1"><a class="reference internal" href="blobstore.html">Blobstore</a></li>
+<li class="toctree-l1"><a class="reference internal" href="metadata.html">Datastore Metadata</a></li>
+<li class="toctree-l1"><a class="reference internal" href="stats.html">Datastore Statistics</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="exceptions.html" title="previous chapter">Exceptions</a></li>
+      <li>Next: <a href="django-middleware.html" title="next chapter">Django Middleware</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2018, Google.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/polymodel.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
