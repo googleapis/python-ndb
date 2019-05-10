@@ -4347,7 +4347,7 @@ class Model(metaclass=MetaModel):
                 operation.
 
         Returns:
-            Optional[Model]: The retreived entity, if one is found.
+            Optional[Model]: The retrieved entity, if one is found.
         """
         return cls._get_by_id_async(
             id,
@@ -4430,7 +4430,7 @@ class Model(metaclass=MetaModel):
                 operation.
 
         Returns:
-            tasklets.Future: Optional[Model]: The retreived entity, if one is
+            tasklets.Future: Optional[Model]: The retrieved entity, if one is
                 found.
         """
         if app:
@@ -4538,7 +4538,7 @@ class Model(metaclass=MetaModel):
                 operation.
 
         Returns:
-            Model: The entity that was either just retreived or created.
+            Model: The entity that was either just retrieved or created.
         """
         return cls._get_or_insert_async(
             name,
@@ -4628,7 +4628,7 @@ class Model(metaclass=MetaModel):
                 operation.
 
         Returns:
-            tasklets.Future: Model: The entity that was either just retreived
+            tasklets.Future: Model: The entity that was either just retrieved
                 or created.
         """
         if not isinstance(name, str):
