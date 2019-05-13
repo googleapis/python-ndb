@@ -297,6 +297,15 @@ class ModelAdapter:
 
 
 def _entity_from_ds_entity(ds_entity, model_class=None):
+    """Create an entity from a datastore entity.
+
+    Args:
+        ds_entity (google.cloud.datastore_v1.types.Entity): An entity to be
+        deserialized.
+
+    Returns:
+        .Model: The deserialized entity.
+    """
     model_class = model_class or Model._lookup_model(ds_entity.kind)
     entity = model_class()
     if ds_entity.key:
@@ -3419,7 +3428,7 @@ class LocalStructuredProperty(BlobProperty):
         """
         if not isinstance(value, self._kls):
             raise TypeError(
-                "Cannot convert to datetime expected {} value; "
+                "Cannot convert to bytes expected {} value; "
                 "received {}".format(self._kls.__name__, value)
             )
         pb = _entity_to_protobuf(value, set_key=self._keep_keys)
