@@ -505,8 +505,7 @@ def set_context(*args, **kwargs):
 
 
 def synctasklet(wrapped):
-    """
-    A decorator to run a function as a tasklet when called.
+    """A decorator to run a tasklet as a function when called.
 
     Use this to wrap a request handler function that will be called by some
     web application framework (e.g. a Django view function or a

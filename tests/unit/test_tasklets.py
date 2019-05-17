@@ -596,10 +596,13 @@ def test_set_context():
 @pytest.mark.usefixtures("in_context")
 def test_synctasklet():
     @tasklets.synctasklet
-    def regular_function(value):
-        return value + 3
+    def generator_function(value):
+        future = tasklets.Future(value)
+        future.set_result(value)
+        x = yield future
+        return x + 3
 
-    result = regular_function(8)
+    result = generator_function(8)
     assert result == 11
 
 
