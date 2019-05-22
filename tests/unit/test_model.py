@@ -2634,7 +2634,10 @@ class TestStructuredProperty:
         mine = Mine(foo="Foo")
         minetoo = MineToo()
         minetoo.bar = [mine, mine]
-        assert MineToo.bar._get_for_dict(minetoo) == [{"foo": "Foo"}, {"foo": "Foo"}]
+        assert MineToo.bar._get_for_dict(minetoo) == [
+            {"foo": "Foo"},
+            {"foo": "Foo"},
+        ]
 
     @staticmethod
     def test__get_for_dict_no_value():
@@ -2644,7 +2647,6 @@ class TestStructuredProperty:
         class MineToo(model.Model):
             bar = model.StructuredProperty(Mine)
 
-        mine = Mine(foo="Foo")
         minetoo = MineToo()
         minetoo.bar = None
         assert MineToo.bar._get_for_dict(minetoo) is None
@@ -2676,7 +2678,9 @@ class TestStructuredProperty:
         prop = model.StructuredProperty(Mine)
         prop._name = "bar"
         mine = Mine(foo="baz")
-        assert prop._comparison("=", mine) == query_module.FilterNode("bar.foo", "=", "baz")
+        assert prop._comparison("=", mine) == query_module.FilterNode(
+            "bar.foo", "=", "baz"
+        )
 
     @staticmethod
     def test__comparison_other():
@@ -2705,7 +2709,9 @@ class TestStructuredProperty:
 
         prop = model.StructuredProperty(Mine)
         prop._name = "bar"
-        assert prop._comparison("=", None) == query_module.FilterNode("bar", "=", None)
+        assert prop._comparison("=", None) == query_module.FilterNode(
+            "bar", "=", None
+        )
 
     @staticmethod
     def test__comparison_repeated():
@@ -2716,7 +2722,9 @@ class TestStructuredProperty:
         prop = model.StructuredProperty(Mine)
         prop._name = "baz"
         mine = Mine(bar="x")
-        assert prop._comparison("=", mine) == query_module.FilterNode("baz.bar", "=", "x")
+        assert prop._comparison("=", mine) == query_module.FilterNode(
+            "baz.bar", "=", "x"
+        )
 
     @staticmethod
     def test__comparison_repeated_no_filters():
@@ -2741,6 +2749,17 @@ class TestStructuredProperty:
             prop._comparison("=", mine)
 
     @staticmethod
+    def test__comparison_repeated_empty():
+        class Mine(model.Model):
+            foo = model.StringProperty(repeated=True)
+
+        prop = model.StructuredProperty(Mine)
+        prop._name = "bar"
+        mine = Mine(foo=[])
+        with pytest.raises(exceptions.BadFilterError):
+            prop._comparison("=", mine)
+
+    @staticmethod
     def test__comparison_multiple():
         class Mine(model.Model):
             foo = model.StringProperty()
@@ -2751,7 +2770,7 @@ class TestStructuredProperty:
         mine = Mine(foo="x", bar="y")
         assert prop._comparison("=", mine) == query_module.AND(
             query_module.FilterNode("baz.bar", "=", "y"),
-            query_module.FilterNode("baz.foo", "=", "x")
+            query_module.FilterNode("baz.foo", "=", "x"),
         )
 
     @staticmethod
@@ -2787,8 +2806,6 @@ class TestStructuredProperty:
 
         prop = model.StructuredProperty(Mine)
         prop._name = "baz"
-        mine = Mine(foo="x")
-        minetoo = Mine(foo="y")
         assert prop.IN([]) == query_module.FalseNode()
 
     @staticmethod
@@ -2824,6 +2841,31 @@ class TestStructuredProperty:
         mine = Mine(foo="Foo")
         minetoo = MineToo(bar=mine)
         assert MineToo.bar._has_value(minetoo, rest=["foo"]) is True
+
+    @staticmethod
+    def test__has_value_with_rest_subent_none():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.StructuredProperty(Mine)
+
+        minetoo = MineToo(bar=None)
+        assert MineToo.bar._has_value(minetoo, rest=["foo"]) is True
+
+    @staticmethod
+    def test__has_value_with_rest_repeated_none():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.StructuredProperty(Mine, repeated=True)
+
+        mine = Mine(foo="x")
+        mine2 = Mine(foo="y")
+        minetoo = MineToo(bar=[mine, mine2])
+        with pytest.raises(RuntimeError):
+            MineToo.bar._has_value(minetoo, rest=["foo"])
 
     @staticmethod
     def test__has_value_with_rest_subprop_none():
@@ -2863,6 +2905,18 @@ class TestStructuredProperty:
         assert MineToo.bar._get_value_size(minetoo) == 1
 
     @staticmethod
+    def test__get_value_size_list():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.StructuredProperty(Mine, repeated=True)
+
+        mine = Mine(foo="Foo")
+        minetoo = MineToo(bar=[mine])
+        assert MineToo.bar._get_value_size(minetoo) == 1
+
+    @staticmethod
     def test__get_value_size_none():
         class Mine(model.Model):
             foo = model.StringProperty()
@@ -2870,7 +2924,6 @@ class TestStructuredProperty:
         class MineToo(model.Model):
             bar = model.StructuredProperty(Mine)
 
-        mine = Mine(foo="Foo")
         minetoo = MineToo(bar=None)
         assert MineToo.bar._get_value_size(minetoo) == 0
 
@@ -2991,7 +3044,9 @@ class TestGenericProperty:
     @staticmethod
     def test_constructor_compressed_and_indexed():
         with pytest.raises(NotImplementedError):
-            model.GenericProperty(name="generic", compressed=True, indexed=True)
+            model.GenericProperty(
+                name="generic", compressed=True, indexed=True
+            )
 
     @staticmethod
     def test__db_get_value():
@@ -3041,7 +3096,7 @@ class TestGenericProperty:
 
     @staticmethod
     def test__validate():
-        prop = model.GenericProperty(name="generic")
+        prop = model.GenericProperty(name="generic", indexed=False)
         assert prop._validate(b"abc") is None
 
     @staticmethod
@@ -3070,20 +3125,20 @@ class TestComputedProperty:
     @staticmethod
     def test_constructor():
         def lower_name(self):
-            return self.lower() # pragma: NO COVER
+            return self.lower()  # pragma: NO COVER
 
         prop = model.ComputedProperty(lower_name)
         assert prop._func == lower_name
 
     @staticmethod
     def test__set_value():
-        prop = model.ComputedProperty(lambda self: self) # pragma: NO COVER
+        prop = model.ComputedProperty(lambda self: self)  # pragma: NO COVER
         with pytest.raises(model.ComputedPropertyError):
             prop._set_value(None, None)
 
     @staticmethod
     def test__delete_value():
-        prop = model.ComputedProperty(lambda self: self) # pragma: NO COVER
+        prop = model.ComputedProperty(lambda self: self)  # pragma: NO COVER
         with pytest.raises(model.ComputedPropertyError):
             prop._delete_value(None)
 
@@ -3097,9 +3152,13 @@ class TestComputedProperty:
 
     @staticmethod
     def test__get_value_with_projection():
-        prop = model.ComputedProperty(lambda self: 42, name="computed") # pragma: NO COVER
+        prop = model.ComputedProperty(
+            lambda self: 42, name="computed"
+        )  # pragma: NO COVER
         entity = unittest.mock.Mock(
-            _projection=['computed'], _values={"computed": 84}, spec=("_projection", "_values")
+            _projection=["computed"],
+            _values={"computed": 84},
+            spec=("_projection", "_values"),
         )
         assert prop._get_value(entity) == 84
 

@@ -47,6 +47,7 @@ from google.cloud.ndb import _datastore_types
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import _options
+from google.cloud.ndb import query as query_module
 from google.cloud.ndb import _transaction
 from google.cloud.ndb import tasklets
 
@@ -3367,10 +3368,12 @@ class StructuredProperty(Property):
         super(StructuredProperty, self).__init__(name=name, **kwargs)
         if self._repeated:
             if modelclass._has_repeated:
-                raise TypeError('This StructuredProperty cannot use repeated=True '
-                                'because its model class (%s) contains repeated '
-                                'properties (directly or indirectly).' %
-                                modelclass.__name__)
+                raise TypeError(
+                    "This StructuredProperty cannot use repeated=True "
+                    "because its model class (%s) contains repeated "
+                    "properties (directly or indirectly)."
+                    % modelclass.__name__
+                )
         self._modelclass = modelclass
 
     def _get_value(self, entity):
@@ -3393,12 +3396,13 @@ class StructuredProperty(Property):
         """Dynamically get a subproperty."""
         # Optimistically try to use the dict key.
         prop = self._modelclass._properties.get(attrname)
-        # We're done if we have a hit and _code_name matches.
         if prop is None:
-            raise AttributeError('Model subclass %s has no attribute %s' %
-                                 (self._modelclass.__name__, attrname))
+            raise AttributeError(
+                "Model subclass %s has no attribute %s"
+                % (self._modelclass.__name__, attrname)
+            )
         prop_copy = copy.copy(prop)
-        prop_copy._name = self._name + '.' + prop_copy._name
+        prop_copy._name = self._name + "." + prop_copy._name
         # Cache the outcome, so subsequent requests for the same attribute
         # name will get the copied property directly rather than going
         # through the above motions all over again.
@@ -3406,17 +3410,23 @@ class StructuredProperty(Property):
         return prop_copy
 
     def _comparison(self, op, value):
-        if op != '=':
+        if op != query_module._EQ_OP:
             raise exceptions.BadFilterError(
-                'StructuredProperty filter can only use ==')
+                "StructuredProperty filter can only use =="
+            )
         if not self._indexed:
             raise exceptions.BadFilterError(
-                'Cannot query for unindexed StructuredProperty %s' % self._name)
+                "Cannot query for unindexed StructuredProperty %s" % self._name
+            )
         # Import late to avoid circular imports.
         from .query import ConjunctionNode, PostFilterNode
         from .query import RepeatedStructuredPropertyPredicate
+
         if value is None:
-            from .query import FilterNode  # Import late to avoid circular imports.
+            from .query import (
+                FilterNode,
+            )  # Import late to avoid circular imports.
+
             return FilterNode(self._name, op, value)
         value = self._do_validate(value)
         value = self._call_to_base_type(value)
@@ -3425,20 +3435,22 @@ class StructuredProperty(Property):
         for prop in self._modelclass._properties.values():
             vals = prop._get_base_value_unwrapped_as_list(value)
             if prop._repeated:
-                if vals:
+                if vals:  # pragma: no branch
                     raise exceptions.BadFilterError(
-                        'Cannot query for non-empty repeated property %s' % prop._name)
-                continue
-            assert isinstance(vals, list) and len(vals) == 1, repr(vals)
+                        "Cannot query for non-empty repeated property %s"
+                        % prop._name
+                    )
+                continue  # pragma: NO COVER
             val = vals[0]
-            if val is not None:
+            if val is not None:  # pragma: no branch
                 altprop = getattr(self, prop._code_name)
                 filt = altprop._comparison(op, val)
                 filters.append(filt)
                 match_keys.append(altprop._name)
         if not filters:
             raise exceptions.BadFilterError(
-                'StructuredProperty filter without any values')
+                "StructuredProperty filter without any values"
+            )
         if len(filters) == 1:
             return filters[0]
         if self._repeated:
@@ -3452,10 +3464,12 @@ class StructuredProperty(Property):
     def _IN(self, value):
         if not isinstance(value, (list, tuple, set, frozenset)):
             raise exceptions.BadArgumentError(
-                'Expected list, tuple or set, got %r' % (value,))
+                "Expected list, tuple or set, got %r" % (value,)
+            )
         from .query import DisjunctionNode, FalseNode
+
         # Expand to a series of == filters.
-        filters = [self._comparison('=', val) for val in value]
+        filters = [self._comparison(query_module._EQ_OP, val) for val in value]
         if not filters:
             # DisjunctionNode doesn't like an empty list of filters.
             # Running the query will still fail, but this matches the
@@ -3463,6 +3477,7 @@ class StructuredProperty(Property):
             return FalseNode()
         else:
             return DisjunctionNode(*filters)
+
     IN = _IN
 
     def _validate(self, value):
@@ -3470,24 +3485,33 @@ class StructuredProperty(Property):
             # A dict is assumed to be the result of a _to_dict() call.
             return self._modelclass(**value)
         if not isinstance(value, self._modelclass):
-            raise exceptions.BadValueError('Expected %s instance, got %s' %
-                                                 (self._modelclass.__name__, value.__class__))
+            raise exceptions.BadValueError(
+                "Expected %s instance, got %s"
+                % (self._modelclass.__name__, value.__class__)
+            )
 
     def _has_value(self, entity, rest=None):
-        # rest: optional list of attribute names to check in addition.
-        # Basically, prop._has_value(self, ent, ['x', 'y']) is similar to
-        #   (prop._has_value(ent) and
-        #    prop.x._has_value(ent.x) and
-        #    prop.x.y._has_value(ent.x.y))
-        # assuming prop.x and prop.x.y exist.
-        # NOTE: This is not particularly efficient if len(rest) > 1,
-        # but that seems a rare case, so for now I don't care.
+        """Check if entity has a value for this property.
+
+        Basically, prop._has_value(self, ent, ['x', 'y']) is similar to
+          (prop._has_value(ent) and prop.x._has_value(ent.x) and
+           prop.x.y._has_value(ent.x.y)), assuming prop.x and prop.x.y exist.
+
+        Args:
+            entity (ndb.Model): An instance of a model.
+            rest (list[str]): optional list of attribute names to check in addition.
+
+        Returns:
+            bool: True if the entity has a value for that property.
+        """
         ok = super(StructuredProperty, self)._has_value(entity)
         if ok and rest:
             lst = self._get_base_value_unwrapped_as_list(entity)
             if len(lst) != 1:
-                raise RuntimeError('Failed to retrieve sub-entity of StructuredProperty'
-                                   ' %s' % self._name)
+                raise RuntimeError(
+                    "Failed to retrieve sub-entity of StructuredProperty"
+                    " %s" % self._name
+                )
             subent = lst[0]
             if subent is None:
                 return True
@@ -3497,23 +3521,6 @@ class StructuredProperty(Property):
             else:
                 ok = subprop._has_value(subent, rest[1:])
         return ok
-
-    def _prepare_for_put(self, entity):
-        values = self._get_base_value_unwrapped_as_list(entity)
-        for value in values:
-            if value is not None:
-                value._prepare_for_put()
-
-    def _check_property(self, rest=None, require_indexed=True):
-        """Override for Property._check_property().
-        Raises:
-            InvalidPropertyError if no subproperty is specified or if something
-                is wrong with the subproperty.
-        """
-        if not rest:
-            raise InvalidPropertyError(
-                'Structured property %s requires a subproperty' % self._name)
-        self._modelclass._check_properties([rest], require_indexed=require_indexed)
 
     def _get_base_value_at_index(self, entity, index):
         assert self._repeated
@@ -3635,13 +3642,14 @@ class GenericProperty(Property):
 
     def __init__(self, name=None, compressed=False, **kwargs):
         if compressed:  # Compressed implies unindexed.
-            kwargs.setdefault('indexed', False)
+            kwargs.setdefault("indexed", False)
         super(GenericProperty, self).__init__(name=name, **kwargs)
         self._compressed = compressed
         if compressed and self._indexed:
-            # TODO: Allow this, but only allow == and IN comparisons?
-            raise NotImplementedError('GenericProperty %s cannot be compressed and '
-                                      'indexed at the same time.' % self._name)
+            raise NotImplementedError(
+                "GenericProperty %s cannot be compressed and "
+                "indexed at the same time." % self._name
+            )
 
     def _to_base_type(self, value):
         if self._compressed and isinstance(value, bytes):
@@ -3655,8 +3663,9 @@ class GenericProperty(Property):
         if self._indexed:
             if isinstance(value, bytes) and len(value) > _MAX_STRING_LENGTH:
                 raise exceptions.BadValueError(
-                    'Indexed value %s must be at most %d bytes' %
-                    (self._name, _MAX_STRING_LENGTH))
+                    "Indexed value %s must be at most %d bytes"
+                    % (self._name, _MAX_STRING_LENGTH)
+                )
 
     def _db_get_value(self, v, unused_p):
         """Helper for :meth:`_deserialize`.
@@ -3688,32 +3697,37 @@ class ComputedProperty(GenericProperty):
 
     Example:
 
-    >>> class DatastoreFile(Model):
-    ...   name = StringProperty()
-    ...   name_lower = ComputedProperty(lambda self: self.name.lower())
+    >>> class DatastoreFile(ndb.Model):
+    ...   name = ndb.model.StringProperty()
+    ...   name_lower = ndb.model.ComputedProperty(lambda self: self.name.lower())
     ...
-    ...   data = BlobProperty()
+    ...   data = ndb.model.BlobProperty()
     ...
-    ...   @ComputedProperty
+    ...   @ndb.model.ComputedProperty
     ...   def size(self):
     ...     return len(self.data)
     ...
     ...   def _compute_hash(self):
     ...     return hashlib.sha1(self.data).hexdigest()
-    ...   hash = ComputedProperty(_compute_hash, name='sha1')
+    ...   hash = ndb.model.ComputedProperty(_compute_hash, name='sha1')
     """
 
-    def __init__(self, func, name=None, indexed=None,
-               repeated=None, verbose_name=None):
+    def __init__(
+        self, func, name=None, indexed=None, repeated=None, verbose_name=None
+    ):
         """Constructor.
+
         Args:
 
         func: A function that takes one argument, the model instance, and returns
             a calculated value.
         """
-        super(ComputedProperty, self).__init__(name=name, indexed=indexed,
-                                               repeated=repeated,
-                                               verbose_name=verbose_name)
+        super(ComputedProperty, self).__init__(
+            name=name,
+            indexed=indexed,
+            repeated=repeated,
+            verbose_name=verbose_name,
+        )
         self._func = func
 
     def _set_value(self, entity, value):
