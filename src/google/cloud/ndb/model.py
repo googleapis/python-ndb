@@ -4901,20 +4901,115 @@ class Expando(Model):
         raise NotImplementedError
 
 
-def transactional(*args, **kwargs):
-    raise NotImplementedError
+def transactional(**options):
+    """A decorator to run a function automatically in a transaction.
+
+    Usage example:
+
+    @transactional(retries=1, read_only=False)
+    def callback(args):
+        ...
+    
+    See google.cloud.ndb.transaction above for available options.
+    """
+
+    def transactional_wrapper(wrapped):
+        @functools.wraps(wrapped)
+        def transactional_inner_wrapper(*args, **kwargs):
+            def callback():
+                wrapped(*args, **kwargs)
+
+            return _transaction.transaction(callback, **options)
+
+        return transactional_inner_wrapper
+
+    return transactional_wrapper
 
 
-def transactional_async(*args, **kwargs):
-    raise NotImplementedError
+def transactional_async(**options):
+    """A decorator to run a function automatically in an asynchronous
+       transaction.
+    
+    Usage example:
+
+    @transactional_async(retries=1, read_only=False)
+    def callback(args):
+        ...
+    
+    See google.cloud.ndb.transaction above for available options.
+    """
+
+    def transactional_async_wrapper(wrapped):
+        @functools.wraps(wrapped)
+        def transactional_async_inner_wrapper(*args, **kwargs):
+            def callback():
+                wrapped(*args, **kwargs)
+
+            return _transaction.transaction_async(callback, **options)
+
+        return transactional_async_inner_wrapper
+
+    return transactional_async_wrapper
 
 
-def transactional_tasklet(*args, **kwargs):
-    raise NotImplementedError
+def transactional_tasklet(**options):
+    """A decorator that turns a function into a tasklet and runs it
+       automatically in an asynchronous transaction.
+
+    Wrapped function returns a Future.
+    
+    See google.cloud.ndb.transaction above for available options.
+    """
+
+    def transactional_tasklet_wrapper(wrapped):
+        @functools.wraps(wrapped)
+        def transactional_tasklet_inner_wrapper(*args, **kwargs):
+            def callback():
+                tasklet = tasklets.tasklet(wrapped)
+                tasklet(*args, **kwargs)
+
+            return _transaction.transaction_async(callback, **options)
+
+        return transactional_tasklet_inner_wrapper
+
+    return transactional_tasklet_wrapper
 
 
-def non_transactional(*args, **kwargs):
-    raise NotImplementedError
+def non_transactional(allow_existing=True):
+    """A decorator that ensures a function is run outside a transaction.
+
+    If there is an existing transaction (and allow_existing=True), the existing
+    transaction is paused while the function is executed.
+
+    Args:
+        allow_existing: If false, an exception will be thrown when called from
+            within a transaction. If true, a new non-transactional context will
+            be created for running the function; the original transactional
+            context will be saved and then restored after the function is
+            executed. Defaults to True.
+    """
+
+    def non_transactional_wrapper(wrapped):
+        @functools.wraps(wrapped)
+        def non_transactional_inner_wrapper(*args, **kwargs):
+            from . import context
+
+            ctx = context.get_context()
+            if not ctx.in_transaction():
+                return wrapped(*args, **kwargs)
+            if not allow_existing:
+                raise exceptions.BadRequestError(
+                    "{} cannot be called within a transaction".format(
+                        wrapped.__name__
+                    )
+                )
+            new_ctx = context.Context(ctx.client)
+            with new_ctx.use():
+                return wrapped(*args, **kwargs)
+
+        return non_transactional_inner_wrapper
+
+    return non_transactional_wrapper
 
 
 @_options.ReadOptions.options

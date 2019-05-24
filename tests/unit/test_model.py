@@ -3754,24 +3754,52 @@ class TestExpando:
             model.Expando()
 
 
-def test_transactional():
-    with pytest.raises(NotImplementedError):
-        model.transactional()
+@pytest.mark.usefixtures("in_context")
+@unittest.mock.patch("google.cloud.ndb._transaction.transaction")
+def test_transactional(transaction):
+    @model.transactional()
+    def simple_function(a, b):
+        return a + b
+
+    transaction.return_value = 142
+    res = simple_function(100, 42)
+    assert res == 142
+
+@pytest.mark.usefixtures("in_context")
+@unittest.mock.patch("google.cloud.ndb._transaction.transaction_async")
+def test_transactional_async(transaction_async):
+    @model.transactional_async()
+    def simple_function(a, b):
+        return a + b
+
+    transaction_async.return_value.result.return_value = 142
+    res = simple_function(100, 42)
+    assert res.result() == 142
+
+@pytest.mark.usefixtures("in_context")
+@unittest.mock.patch("google.cloud.ndb._transaction.transaction_async")
+def test_transactional_tasklet(transaction_async):
+    @model.transactional_tasklet()
+    def generator_function(dependency):
+        value = yield dependency
+        return value + 42
+    
+    transaction_async.return_value.result.return_value = 142
+
+    dependency = tasklets.Future()
+    dependency.set_result(100)
+    res = generator_function(dependency)
+    assert res.result() == 142
 
 
-def test_transactional_async():
-    with pytest.raises(NotImplementedError):
-        model.transactional_async()
-
-
-def test_transactional_tasklet():
-    with pytest.raises(NotImplementedError):
-        model.transactional_tasklet()
-
-
+@pytest.mark.usefixtures("in_context")
 def test_non_transactional():
-    with pytest.raises(NotImplementedError):
-        model.non_transactional()
+    @model.non_transactional()
+    def simple_function(a, b):
+        return a + b
+    
+    res = simple_function(100, 42)
+    assert res == 142
 
 
 @pytest.mark.usefixtures("in_context")
