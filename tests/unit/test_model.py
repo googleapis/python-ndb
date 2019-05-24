@@ -2880,6 +2880,51 @@ class TestStructuredProperty:
         assert MineToo.bar._has_value(minetoo, rest=[None]) is False
 
     @staticmethod
+    def test__check_property():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.StructuredProperty(Mine)
+
+        assert MineToo.bar._check_property("foo") is None
+
+    @staticmethod
+    def test__check_property_with_sub():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.StructuredProperty(Mine)
+
+        class MineThree(model.Model):
+            baz = model.StructuredProperty(MineToo)
+
+        assert MineThree.baz._check_property("bar.foo") is None
+
+    @staticmethod
+    def test__check_property_invalid():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.StructuredProperty(Mine)
+
+        with pytest.raises(model.InvalidPropertyError):
+            MineToo.bar._check_property("baz")
+
+    @staticmethod
+    def test__check_property_no_rest():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.StructuredProperty(Mine)
+
+        with pytest.raises(model.InvalidPropertyError):
+            MineToo.bar._check_property()
+
+    @staticmethod
     def test__get_base_value_at_index():
         class Mine(model.Model):
             foo = model.StringProperty()

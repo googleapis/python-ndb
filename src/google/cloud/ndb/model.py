@@ -3377,7 +3377,14 @@ class StructuredProperty(Property):
         self._modelclass = modelclass
 
     def _get_value(self, entity):
-        """Override _get_value() to *not* raise UnprojectedPropertyError."""
+        """Override _get_value() to *not* raise UnprojectedPropertyError.
+
+        This is necessary because the projection must include both the sub-entity and
+        the property name that is projected (e.g. 'foo.bar' instead of only 'foo'). In
+        that case the original code would fail, because it only looks for the property
+        name ('foo'). Here we check for a value, and only call the original code if the
+        value is None.
+        """
         value = self._get_user_value(entity)
         if value is None and entity._projection:
             # Invoke super _get_value() to raise the proper exception.
@@ -3521,6 +3528,21 @@ class StructuredProperty(Property):
             else:
                 ok = subprop._has_value(subent, rest[1:])
         return ok
+
+    def _check_property(self, rest=None, require_indexed=True):
+        """Override for Property._check_property().
+
+        Raises:
+            InvalidPropertyError if no subproperty is specified or if something
+            is wrong with the subproperty.
+        """
+        if not rest:
+            raise InvalidPropertyError(
+                "Structured property %s requires a subproperty" % self._name
+            )
+        self._modelclass._check_properties(
+            [rest], require_indexed=require_indexed
+        )
 
     def _get_base_value_at_index(self, entity, index):
         assert self._repeated
