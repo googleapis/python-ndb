@@ -5274,7 +5274,7 @@ class Expando(Model):
         else:
             prop = GenericProperty(
                 name,
-                repeated=isinstance(value, list),
+                repeated=isinstance(value, (list, tuple)),
                 indexed=self._default_indexed,
                 write_empty_list=self._write_empty_list_for_dynamic_properties,
             )
