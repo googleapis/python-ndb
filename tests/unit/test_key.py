@@ -667,7 +667,8 @@ class TestKey:
     @staticmethod
     @unittest.mock.patch("google.cloud.ndb.key._datastore_api")
     def test_delete_in_transaction(_datastore_api, in_context):
-        _datastore_api.delete.return_value = object()
+        future = tasklets.Future()
+        _datastore_api.delete.return_value = future
 
         with in_context.new(transaction=b"tx123").use():
             key = key_module.Key("a", "b", app="c")
@@ -681,12 +682,17 @@ class TestKey:
     @unittest.mock.patch("google.cloud.ndb.key._datastore_api")
     def test_delete_async(_datastore_api):
         key = key_module.Key("a", "b", app="c")
-        future = key.delete_async()
+
+        future = tasklets.Future()
+        _datastore_api.delete.return_value = future
+        future.set_result("result")
+
+        result = key.delete_async().get_result()
 
         _datastore_api.delete.assert_called_once_with(
             key._key, _options.Options()
         )
-        assert future is _datastore_api.delete.return_value
+        assert result == "result"
 
     @staticmethod
     def test_from_old_key():

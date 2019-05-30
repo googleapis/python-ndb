@@ -70,8 +70,9 @@ class TestContext:
 
     def test_clear_cache(self):
         context = self._make_one()
-        with pytest.raises(NotImplementedError):
-            context.clear_cache()
+        context.cache["testkey"] = "testdata"
+        context.clear_cache()
+        assert not context.cache
 
     def test_flush(self):
         context = self._make_one()
