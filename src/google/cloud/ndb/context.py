@@ -85,19 +85,16 @@ class _Cache(collections.UserDict):
        returning a result, in order to handle cases where the entity's key was
        modified but the cache's key was not updated."""
 
-    def __getitem__(self, key):
+    def safe_getitem(self, key):
+        """Verify that the entity's key has not changed since it was added
+           to the cache. If it has changed, consider this a cache miss.
+           See issue 13.  http://goo.gl/jxjOP"""
         entity = self.data[key]  # May be None, meaning "doesn't exist".
         if entity is None or entity._key == key:
-            # Verify that the entity's key has not changed since it was added
-            # to the cache. If it has changed, consider this a cache miss.
-            # See issue 13.  http://goo.gl/jxjOP
             return entity
         else:
             raise KeyError(key)
 
-    def clear(self):
-        # Bypass custom __getitem__, which will be activated clear otherwise.
-        self.data.clear()
 
 class _Context(_ContextTuple):
     """Current runtime state.
@@ -138,6 +135,9 @@ class _Context(_ContextTuple):
         if commit_batches is None:
             commit_batches = {}
 
+        if cache is None:
+            cache = _Cache()
+
         return super(_Context, cls).__new__(
             cls,
             client=client,
@@ -146,7 +146,7 @@ class _Context(_ContextTuple):
             batches=batches,
             commit_batches=commit_batches,
             transaction=transaction,
-            cache=_Cache(),
+            cache=cache,
         )
 
     def new(self, **kwargs):

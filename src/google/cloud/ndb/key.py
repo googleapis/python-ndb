@@ -846,7 +846,8 @@ class Key:
             if use_cache:
                 try:
                     # This result may be None even on a cache hit.
-                    return context_module.get_context().cache[self._key]
+                    return context_module.get_context().cache.safe_getitem(
+                        self._key)
                 except KeyError:
                     pass
 
