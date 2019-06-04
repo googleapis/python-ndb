@@ -349,4 +349,6 @@ def test_insert_entity_with_structured_property(dispose_of):
     assert retrieved.bar.one == "hi"
     assert retrieved.bar.two == "mom"
 
+    assert isinstance(retrieved.bar, OtherKind)
+
     dispose_of(key._key)
