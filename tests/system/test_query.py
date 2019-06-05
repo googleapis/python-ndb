@@ -525,6 +525,7 @@ def test_fetch_page(dispose_of):
     assert not more
 
 
+@pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_query_repeated_property(ds_entity):
     entity_id = test_utils.system.unique_resource_id()
