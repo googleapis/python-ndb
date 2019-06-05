@@ -554,7 +554,6 @@ def test_query_repeated_property(ds_entity):
 @pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_query_structured_property(dispose_of):
-
     class OtherKind(ndb.Model):
         one = ndb.StringProperty()
         two = ndb.StringProperty()
@@ -566,18 +565,21 @@ def test_query_structured_property(dispose_of):
 
     @ndb.synctasklet
     def make_entities():
-        entity1 = SomeKind(foo=1, bar=OtherKind(
-            one="pish", two="posh", three="pash"
-        ))
-        entity2 = SomeKind(foo=2, bar=OtherKind(
-            one="pish", two="posh", three="push"
-        ))
-        entity3 = SomeKind(foo=3, bar=OtherKind(
-            one="pish", two="moppish", three="pass the peas"
-        ))
+        entity1 = SomeKind(
+            foo=1, bar=OtherKind(one="pish", two="posh", three="pash")
+        )
+        entity2 = SomeKind(
+            foo=2, bar=OtherKind(one="pish", two="posh", three="push")
+        )
+        entity3 = SomeKind(
+            foo=3,
+            bar=OtherKind(one="pish", two="moppish", three="pass the peas"),
+        )
 
         keys = yield (
-            entity1.put_async(), entity2.put_async(), entity3.put_async()
+            entity1.put_async(),
+            entity2.put_async(),
+            entity3.put_async(),
         )
         return keys
 
@@ -586,10 +588,11 @@ def test_query_structured_property(dispose_of):
     for key in keys:
         dispose_of(key._key)
 
-    query = SomeKind.query().filter(
-        SomeKind.bar.one == "pish",
-        SomeKind.bar.two == "posh"
-    ).order(SomeKind.foo)
+    query = (
+        SomeKind.query()
+        .filter(SomeKind.bar.one == "pish", SomeKind.bar.two == "posh")
+        .order(SomeKind.foo)
+    )
 
     results = query.fetch()
     assert len(results) == 2
@@ -600,7 +603,6 @@ def test_query_structured_property(dispose_of):
 @pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_query_repeated_structured_property_with_properties(dispose_of):
-
     class OtherKind(ndb.Model):
         one = ndb.StringProperty()
         two = ndb.StringProperty()
@@ -612,21 +614,32 @@ def test_query_repeated_structured_property_with_properties(dispose_of):
 
     @ndb.synctasklet
     def make_entities():
-        entity1 = SomeKind(foo=1, bar=[
-            OtherKind(one="pish", two="posh", three="pash"),
-            OtherKind(one="bish", two="bosh", three="bash"),
-        ])
-        entity2 = SomeKind(foo=2, bar=[
-            OtherKind(one="pish", two="bosh", three="bass"),
-            OtherKind(one="bish", two="posh", three="pass"),
-        ])
-        entity3 = SomeKind(foo=3, bar=[
-            OtherKind(one="fish", two="fosh", three="fash"),
-            OtherKind(one="bish", two="bosh", three="bash"),
-        ])
+        entity1 = SomeKind(
+            foo=1,
+            bar=[
+                OtherKind(one="pish", two="posh", three="pash"),
+                OtherKind(one="bish", two="bosh", three="bash"),
+            ],
+        )
+        entity2 = SomeKind(
+            foo=2,
+            bar=[
+                OtherKind(one="pish", two="bosh", three="bass"),
+                OtherKind(one="bish", two="posh", three="pass"),
+            ],
+        )
+        entity3 = SomeKind(
+            foo=3,
+            bar=[
+                OtherKind(one="fish", two="fosh", three="fash"),
+                OtherKind(one="bish", two="bosh", three="bash"),
+            ],
+        )
 
         keys = yield (
-            entity1.put_async(), entity2.put_async(), entity3.put_async()
+            entity1.put_async(),
+            entity2.put_async(),
+            entity3.put_async(),
         )
         return keys
 
@@ -635,10 +648,11 @@ def test_query_repeated_structured_property_with_properties(dispose_of):
     for key in keys:
         dispose_of(key._key)
 
-    query = SomeKind.query().filter(
-        SomeKind.bar.one == "pish",
-        SomeKind.bar.two == "posh"
-    ).order(SomeKind.foo)
+    query = (
+        SomeKind.query()
+        .filter(SomeKind.bar.one == "pish", SomeKind.bar.two == "posh")
+        .order(SomeKind.foo)
+    )
 
     results = query.fetch()
     assert len(results) == 2
@@ -649,7 +663,6 @@ def test_query_repeated_structured_property_with_properties(dispose_of):
 @pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_query_repeated_structured_property_with_entity_twice(dispose_of):
-
     class OtherKind(ndb.Model):
         one = ndb.StringProperty()
         two = ndb.StringProperty()
@@ -661,21 +674,32 @@ def test_query_repeated_structured_property_with_entity_twice(dispose_of):
 
     @ndb.synctasklet
     def make_entities():
-        entity1 = SomeKind(foo=1, bar=[
-            OtherKind(one="pish", two="posh", three="pash"),
-            OtherKind(one="bish", two="bosh", three="bash"),
-        ])
-        entity2 = SomeKind(foo=2, bar=[
-            OtherKind(one="bish", two="bosh", three="bass"),
-            OtherKind(one="pish", two="posh", three="pass"),
-        ])
-        entity3 = SomeKind(foo=3, bar=[
-            OtherKind(one="pish", two="fosh", three="fash"),
-            OtherKind(one="bish", two="posh", three="bash"),
-        ])
+        entity1 = SomeKind(
+            foo=1,
+            bar=[
+                OtherKind(one="pish", two="posh", three="pash"),
+                OtherKind(one="bish", two="bosh", three="bash"),
+            ],
+        )
+        entity2 = SomeKind(
+            foo=2,
+            bar=[
+                OtherKind(one="bish", two="bosh", three="bass"),
+                OtherKind(one="pish", two="posh", three="pass"),
+            ],
+        )
+        entity3 = SomeKind(
+            foo=3,
+            bar=[
+                OtherKind(one="pish", two="fosh", three="fash"),
+                OtherKind(one="bish", two="posh", three="bash"),
+            ],
+        )
 
         keys = yield (
-            entity1.put_async(), entity2.put_async(), entity3.put_async()
+            entity1.put_async(),
+            entity2.put_async(),
+            entity3.put_async(),
         )
         return keys
 
@@ -684,10 +708,14 @@ def test_query_repeated_structured_property_with_entity_twice(dispose_of):
     for key in keys:
         dispose_of(key._key)
 
-    query = SomeKind.query().filter(
-        SomeKind.bar == OtherKind(one="pish", two="posh"),
-        SomeKind.bar == OtherKind(two="posh", three="pash")
-    ).order(SomeKind.foo)
+    query = (
+        SomeKind.query()
+        .filter(
+            SomeKind.bar == OtherKind(one="pish", two="posh"),
+            SomeKind.bar == OtherKind(two="posh", three="pash"),
+        )
+        .order(SomeKind.foo)
+    )
 
     results = query.fetch()
     assert len(results) == 1

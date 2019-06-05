@@ -502,9 +502,7 @@ class _MultiQueryIteratorImpl(QueryIterator):
             query.copy(filters=node, offset=None, limit=None)
             for node in query.filters._nodes
         ]
-        self._result_sets = [
-            iterate(query, raw=True) for query in queries
-        ]
+        self._result_sets = [iterate(query, raw=True) for query in queries]
         self._sortable = bool(query.order_by)
         self._seen_keys = set()
         self._next_result = None

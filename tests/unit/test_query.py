@@ -114,9 +114,11 @@ class TestRepeatedStructuredPropertyPredicate:
     @staticmethod
     def test_constructor():
         predicate = query_module.RepeatedStructuredPropertyPredicate(
-            "matilda", ["foo", "bar", "baz"], unittest.mock.Mock(
+            "matilda",
+            ["foo", "bar", "baz"],
+            unittest.mock.Mock(
                 properties={"foo": "a", "bar": "b", "baz": "c"}
-            )
+            ),
         )
         assert predicate.name == "matilda"
         assert predicate.match_keys == ["foo", "bar", "baz"]
@@ -137,10 +139,9 @@ class TestRepeatedStructuredPropertyPredicate:
             "foo", ["bar", "baz"], model._entity_to_protobuf(match_entity)
         )
 
-        entity = SomeKind(foo=[
-            SubKind(bar=2, baz="matic"),
-            SubKind(bar=1, baz="scoggs")
-        ])
+        entity = SomeKind(
+            foo=[SubKind(bar=2, baz="matic"), SubKind(bar=1, baz="scoggs")]
+        )
 
         assert predicate(model._entity_to_protobuf(entity)) is True
 
@@ -159,10 +160,9 @@ class TestRepeatedStructuredPropertyPredicate:
             "foo", ["bar", "baz"], model._entity_to_protobuf(match_entity)
         )
 
-        entity = SomeKind(foo=[
-            SubKind(bar=1, baz="matic"),
-            SubKind(bar=2, baz="scoggs")
-        ])
+        entity = SomeKind(
+            foo=[SubKind(bar=1, baz="matic"), SubKind(bar=2, baz="scoggs")]
+        )
 
         assert predicate(model._entity_to_protobuf(entity)) is False
 

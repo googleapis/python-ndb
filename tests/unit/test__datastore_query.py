@@ -94,7 +94,7 @@ class Test_iterate:
             filters=mock.Mock(
                 _multiquery=False,
                 _post_filters=mock.Mock(return_value=None),
-                spec=("_multiquery", "_post_filters")
+                spec=("_multiquery", "_post_filters"),
             ),
             spec=("filters", "_post_filters"),
         )
@@ -103,12 +103,13 @@ class Test_iterate:
         QueryIterator.assert_called_once_with(query, raw=False)
 
     @staticmethod
-    @mock.patch("google.cloud.ndb._datastore_query._PostFilterQueryIteratorImpl")
+    @mock.patch(
+        "google.cloud.ndb._datastore_query._PostFilterQueryIteratorImpl"
+    )
     def test_iterate_single_with_post_filter(QueryIterator):
         query = mock.Mock(
             filters=mock.Mock(
-                _multiquery=False,
-                spec=("_multiquery", "_post_filters")
+                _multiquery=False, spec=("_multiquery", "_post_filters")
             ),
             spec=("filters", "_post_filters"),
         )
@@ -439,9 +440,7 @@ class Test_PostFilterQueryIteratorImpl:
     def test_constructor():
         foo = model.StringProperty("foo")
         query = query_module.QueryOptions(
-            offset=20,
-            limit=10,
-            filters=foo == "this",
+            offset=20, limit=10, filters=foo == "this"
         )
         predicate = object()
         iterator = _datastore_query._PostFilterQueryIteratorImpl(
@@ -519,7 +518,9 @@ class Test_PostFilterQueryIteratorImpl:
             return results
 
         assert iterate().result() == [
-            MockResult(2), MockResult(4), MockResult(6)
+            MockResult(2),
+            MockResult(4),
+            MockResult(6),
         ]
 
         with pytest.raises(StopIteration):
@@ -619,7 +620,6 @@ class Test_PostFilterQueryIteratorImpl:
         )
         with pytest.raises(exceptions.BadArgumentError):
             iterator.cursor_after()
-
 
 
 class Test_MultiQueryIteratorImpl:

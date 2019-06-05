@@ -112,6 +112,7 @@ class RepeatedStructuredPropertyPredicate:
             repeated structured property. Should contain a value for each key
             in ``match_keys``.
     """
+
     __slots__ = ["name", "match_keys", "match_values"]
 
     def __init__(self, name, match_keys, entity_pb):
@@ -821,6 +822,7 @@ class ConjunctionNode(Node):
             return filters[0]
 
         if post:
+
             def composite_and_predicate(entity_pb):
                 return all((filter(entity_pb) for filter in filters))
 
