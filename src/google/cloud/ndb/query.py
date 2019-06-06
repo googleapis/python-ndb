@@ -1676,7 +1676,7 @@ class Query:
                 values for some of these arguments.
 
         Returns:
-            QueryIterator: An iterator.
+            :class:`QueryIterator`: An iterator.
         """
         return _datastore_query.iterate(_options)
 
@@ -1846,7 +1846,7 @@ class Query:
                 values for some of these arguments.
 
         Returns:
-            Optional[Union[entity.Entity, key.Key]]: A single result, or
+            Optional[Union[google.cloud.datastore.entity.Entity, key.Key]]: A single result, or
                 :data:`None` if there are no results.
         """
         return self.get_async(_options=_options).result()
@@ -1952,7 +1952,7 @@ class Query:
                 values for some of these arguments.
 
         Returns:
-            Optional[Union[entity.Entity, key.Key]]: A single result, or
+            Optional[Union[google.cloud.datastore.entity.Entity, key.Key]]: A single result, or
                 :data:`None` if there are no results.
         """
         return self.count_async(_options=_options).result()
@@ -2025,7 +2025,7 @@ class Query:
         next call using the `start_cursor` argument.  A common idiom is to pass
         the cursor to the client using :meth:`_datastore_query.Cursor.urlsafe`
         and to reconstruct that cursor on a subsequent request using the
-        `urlsafe` argument to :class:`Cursor`.
+        `urlsafe` argument to :class:`_datastore_query.Cursor`.
 
         NOTE:
             This method relies on cursors which are not available for queries
@@ -2062,10 +2062,11 @@ class Query:
                results will be returned.
 
         Returns:
-            Tuple[list, Cursor, bool]: A tuple `(results, cursor, more)` where
-                `results` is a list of query results, `cursor` is a cursor
-                pointing just after the last result returned, and `more`
-                indicates whether there are (likely) more results after that.
+            Tuple[list, _datastore_query.Cursor, bool]: A tuple
+                `(results, cursor, more)` where `results` is a list of query
+                results, `cursor` is a cursor pointing just after the last
+                result returned, and `more` indicates whether there are
+                (likely) more results after that.
         """
         return self.fetch_page_async(None, _options=_options).result()
 
