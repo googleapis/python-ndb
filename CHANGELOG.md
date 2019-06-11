@@ -4,7 +4,7 @@
 
 [1]: https://pypi.org/project/google-cloud-ndb/#history
 
-## 0.1.0
+## 0.0.1dev2
 
 06-11-2019 16:30 PDT
 
@@ -29,3 +29,6 @@
 ### Documentation
 - update sphinx version and eliminate all warnings ([#105](https://github.com/googleapis/python-ndb/pull/105))
 
+## 0.0.1dev1
+
+Initial development release of NDB client library.
