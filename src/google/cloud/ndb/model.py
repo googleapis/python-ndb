@@ -30,6 +30,7 @@
 """
 
 
+import copy
 import datetime
 import functools
 import inspect
@@ -46,7 +47,7 @@ from google.cloud.ndb import _datastore_types
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import _options
-from google.cloud.ndb import _retry
+from google.cloud.ndb import query as query_module
 from google.cloud.ndb import _transaction
 from google.cloud.ndb import tasklets
 
@@ -106,6 +107,7 @@ __all__ = [
 
 
 _MEANING_PREDEFINED_ENTITY_USER = 20
+_MEANING_URI_COMPRESSED = "ZLIB"
 _MAX_STRING_LENGTH = 1500
 Key = key_module.Key
 BlobKey = _datastore_types.BlobKey
@@ -334,17 +336,15 @@ def _entity_from_protobuf(protobuf):
     return _entity_from_ds_entity(ds_entity)
 
 
-def _entity_to_protobuf(entity, set_key=True):
-    """Serialize an entity to a protobuffer.
+def _entity_to_ds_entity(entity, set_key=True):
+    """Convert an NDB entity to Datastore entity.
 
     Args:
-        entity (Model): The entity to be serialized.
+        entity (Model): The entity to be converted.
 
     Returns:
-        google.cloud.datastore_v1.types.Entity: The protocol buffer
-            representation.
+        google.cloud.datastore.entity.Entity: The converted entity.
     """
-    # First, make a datastore entity
     data = {}
     for cls in type(entity).mro():
         for prop in cls.__dict__.values():
@@ -370,7 +370,20 @@ def _entity_to_protobuf(entity, set_key=True):
         ds_entity = entity_module.Entity()
     ds_entity.update(data)
 
-    # Then, use datatore to get the protocol buffer
+    return ds_entity
+
+
+def _entity_to_protobuf(entity, set_key=True):
+    """Serialize an entity to a protocol buffer.
+
+    Args:
+        entity (Model): The entity to be serialized.
+
+    Returns:
+        google.cloud.datastore_v1.types.Entity: The protocol buffer
+            representation.
+    """
+    ds_entity = _entity_to_ds_entity(entity, set_key=set_key)
     return helpers.entity_to_protobuf(ds_entity)
 
 
@@ -3351,10 +3364,245 @@ class TimeProperty(DateTimeProperty):
 
 
 class StructuredProperty(Property):
-    __slots__ = ()
+    """A Property whose value is itself an entity.
 
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError
+    The values of the sub-entity are indexed and can be queried.
+    """
+
+    _model_class = None
+    _kwargs = None
+
+    def __init__(self, model_class, name=None, **kwargs):
+        super(StructuredProperty, self).__init__(name=name, **kwargs)
+        if self._repeated:
+            if model_class._has_repeated:
+                raise TypeError(
+                    "This StructuredProperty cannot use repeated=True "
+                    "because its model class (%s) contains repeated "
+                    "properties (directly or indirectly)."
+                    % model_class.__name__
+                )
+        self._model_class = model_class
+
+    def _get_value(self, entity):
+        """Override _get_value() to *not* raise UnprojectedPropertyError.
+
+        This is necessary because the projection must include both the
+        sub-entity and the property name that is projected (e.g. 'foo.bar'
+        instead of only 'foo'). In that case the original code would fail,
+        because it only looks for the property name ('foo'). Here we check for
+        a value, and only call the original code if the value is None.
+        """
+        value = self._get_user_value(entity)
+        if value is None and entity._projection:
+            # Invoke super _get_value() to raise the proper exception.
+            return super(StructuredProperty, self)._get_value(entity)
+        return value
+
+    def _get_for_dict(self, entity):
+        value = self._get_value(entity)
+        if self._repeated:
+            value = [v._to_dict() for v in value]
+        elif value is not None:
+            value = value._to_dict()
+        return value
+
+    def __getattr__(self, attrname):
+        """Dynamically get a subproperty."""
+        # Optimistically try to use the dict key.
+        prop = self._model_class._properties.get(attrname)
+        if prop is None:
+            raise AttributeError(
+                "Model subclass %s has no attribute %s"
+                % (self._model_class.__name__, attrname)
+            )
+        prop_copy = copy.copy(prop)
+        prop_copy._name = self._name + "." + prop_copy._name
+        # Cache the outcome, so subsequent requests for the same attribute
+        # name will get the copied property directly rather than going
+        # through the above motions all over again.
+        setattr(self, attrname, prop_copy)
+        return prop_copy
+
+    def _comparison(self, op, value):
+        if op != query_module._EQ_OP:
+            raise exceptions.BadFilterError(
+                "StructuredProperty filter can only use =="
+            )
+        if not self._indexed:
+            raise exceptions.BadFilterError(
+                "Cannot query for unindexed StructuredProperty %s" % self._name
+            )
+        # Import late to avoid circular imports.
+        from .query import ConjunctionNode, PostFilterNode
+        from .query import RepeatedStructuredPropertyPredicate
+
+        if value is None:
+            from .query import (
+                FilterNode,
+            )  # Import late to avoid circular imports.
+
+            return FilterNode(self._name, op, value)
+
+        value = self._do_validate(value)
+        filters = []
+        match_keys = []
+        for prop in self._model_class._properties.values():
+            subvalue = prop._get_value(value)
+            if prop._repeated:
+                if subvalue:  # pragma: no branch
+                    raise exceptions.BadFilterError(
+                        "Cannot query for non-empty repeated property %s"
+                        % prop._name
+                    )
+                continue  # pragma: NO COVER
+
+            if subvalue is not None:  # pragma: no branch
+                altprop = getattr(self, prop._code_name)
+                filt = altprop._comparison(op, subvalue)
+                filters.append(filt)
+                match_keys.append(altprop._name)
+
+        if not filters:
+            raise exceptions.BadFilterError(
+                "StructuredProperty filter without any values"
+            )
+
+        if len(filters) == 1:
+            return filters[0]
+
+        if self._repeated:
+            raise NotImplementedError("This depends on code not yet ported.")
+            # pb = value._to_pb(allow_partial=True)
+            # pred = RepeatedStructuredPropertyPredicate(match_keys, pb,
+            #                                          self._name + '.')
+            # filters.append(PostFilterNode(pred))
+
+        return ConjunctionNode(*filters)
+
+    def _IN(self, value):
+        if not isinstance(value, (list, tuple, set, frozenset)):
+            raise exceptions.BadArgumentError(
+                "Expected list, tuple or set, got %r" % (value,)
+            )
+        from .query import DisjunctionNode, FalseNode
+
+        # Expand to a series of == filters.
+        filters = [self._comparison(query_module._EQ_OP, val) for val in value]
+        if not filters:
+            # DisjunctionNode doesn't like an empty list of filters.
+            # Running the query will still fail, but this matches the
+            # behavior of IN for regular properties.
+            return FalseNode()
+        else:
+            return DisjunctionNode(*filters)
+
+    IN = _IN
+
+    def _validate(self, value):
+        if isinstance(value, dict):
+            # A dict is assumed to be the result of a _to_dict() call.
+            return self._model_class(**value)
+        if not isinstance(value, self._model_class):
+            raise exceptions.BadValueError(
+                "Expected %s instance, got %s"
+                % (self._model_class.__name__, value.__class__)
+            )
+
+    def _has_value(self, entity, rest=None):
+        """Check if entity has a value for this property.
+
+        Basically, prop._has_value(self, ent, ['x', 'y']) is similar to
+          (prop._has_value(ent) and prop.x._has_value(ent.x) and
+           prop.x.y._has_value(ent.x.y)), assuming prop.x and prop.x.y exist.
+
+        Args:
+            entity (ndb.Model): An instance of a model.
+            rest (list[str]): optional list of attribute names to check in
+                addition.
+
+        Returns:
+            bool: True if the entity has a value for that property.
+        """
+        ok = super(StructuredProperty, self)._has_value(entity)
+        if ok and rest:
+            value = self._get_value(entity)
+            if self._repeated:
+                if len(value) != 1:
+                    raise RuntimeError(
+                        "Failed to retrieve sub-entity of StructuredProperty"
+                        " %s" % self._name
+                    )
+                subent = value[0]
+            else:
+                subent = value
+
+            if subent is None:
+                return True
+
+            subprop = subent._properties.get(rest[0])
+            if subprop is None:
+                ok = False
+            else:
+                ok = subprop._has_value(subent, rest[1:])
+
+        return ok
+
+    def _check_property(self, rest=None, require_indexed=True):
+        """Override for Property._check_property().
+
+        Raises:
+            InvalidPropertyError if no subproperty is specified or if something
+            is wrong with the subproperty.
+        """
+        if not rest:
+            raise InvalidPropertyError(
+                "Structured property %s requires a subproperty" % self._name
+            )
+        self._model_class._check_properties(
+            [rest], require_indexed=require_indexed
+        )
+
+    def _to_base_type(self, value):
+        """Convert a value to the "base" value type for this property.
+
+        Args:
+            value: The given class value to be converted.
+
+        Returns:
+            bytes
+
+        Raises:
+            TypeError: If ``value`` is not the correct ``Model`` type.
+        """
+        if not isinstance(value, self._model_class):
+            raise TypeError(
+                "Cannot convert to protocol buffer. Expected {} value; "
+                "received {}".format(self._model_class.__name__, value)
+            )
+        return _entity_to_ds_entity(value)
+
+    def _from_base_type(self, value):
+        """Convert a value from the "base" value type for this property.
+        Args:
+            value(~google.cloud.datastore.Entity or bytes): The value to be
+            converted.
+        Returns:
+            The converted value with given class.
+        """
+        if isinstance(value, entity_module.Entity):
+            value = _entity_from_ds_entity(
+                value, model_class=self._model_class
+            )
+        return value
+
+    def _get_value_size(self, entity):
+        values = self._retrieve_value(entity, self._default)
+        if values is None:
+            return 0
+        if not isinstance(values, list):
+            values = [values]
+        return len(values)
 
 
 class LocalStructuredProperty(BlobProperty):
@@ -3366,7 +3614,8 @@ class LocalStructuredProperty(BlobProperty):
     .. automethod:: _from_base_type
     .. automethod:: _validate
     Args:
-        kls (ndb.Model): The class of the property.
+        model_class (type): The class of the property. (Must be subclass of
+            ``ndb.Model``.)
         name (str): The name of the property.
         compressed (bool): Indicates if the value should be compressed (via
             ``zlib``).
@@ -3382,11 +3631,11 @@ class LocalStructuredProperty(BlobProperty):
             to the datastore.
     """
 
-    _kls = None
+    _model_class = None
     _keep_keys = False
     _kwargs = None
 
-    def __init__(self, kls, **kwargs):
+    def __init__(self, model_class, **kwargs):
         indexed = kwargs.pop("indexed", False)
         if indexed:
             raise NotImplementedError(
@@ -3394,7 +3643,7 @@ class LocalStructuredProperty(BlobProperty):
             )
         keep_keys = kwargs.pop("keep_keys", False)
         super(LocalStructuredProperty, self).__init__(**kwargs)
-        self._kls = kls
+        self._model_class = model_class
         self._keep_keys = keep_keys
 
     def _validate(self, value):
@@ -3406,11 +3655,13 @@ class LocalStructuredProperty(BlobProperty):
         """
         if isinstance(value, dict):
             # A dict is assumed to be the result of a _to_dict() call.
-            value = self._kls(**value)
+            value = self._model_class(**value)
 
-        if not isinstance(value, self._kls):
+        if not isinstance(value, self._model_class):
             raise exceptions.BadValueError(
-                "Expected {}, got {!r}".format(self._kls.__name__, value)
+                "Expected {}, got {!r}".format(
+                    self._model_class.__name__, value
+                )
             )
 
     def _to_base_type(self, value):
@@ -3420,12 +3671,12 @@ class LocalStructuredProperty(BlobProperty):
         Returns:
             bytes
         Raises:
-            TypeError: If ``value`` is not a given class.
+            TypeError: If ``value`` is not the correct ``Model`` type.
         """
-        if not isinstance(value, self._kls):
+        if not isinstance(value, self._model_class):
             raise TypeError(
                 "Cannot convert to bytes expected {} value; "
-                "received {}".format(self._kls.__name__, value)
+                "received {}".format(self._model_class.__name__, value)
             )
         pb = _entity_to_protobuf(value, set_key=self._keep_keys)
         return pb.SerializePartialToString()
@@ -3444,21 +3695,140 @@ class LocalStructuredProperty(BlobProperty):
             value = helpers.entity_from_protobuf(pb)
         if not self._keep_keys and value.key:
             value.key = None
-        return _entity_from_ds_entity(value, model_class=self._kls)
+        return _entity_from_ds_entity(value, model_class=self._model_class)
 
 
 class GenericProperty(Property):
-    __slots__ = ()
+    """A Property whose value can be (almost) any basic type.
+    This is mainly used for Expando and for orphans (values present in
+    Cloud Datastore but not represented in the Model subclass) but can
+    also be used explicitly for properties with dynamically-typed
+    values.
 
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError
+    This supports compressed=True, which is only effective for str
+    values (not for unicode), and implies indexed=False.
+    """
+
+    _compressed = False
+    _kwargs = None
+
+    def __init__(self, name=None, compressed=False, **kwargs):
+        if compressed:  # Compressed implies unindexed.
+            kwargs.setdefault("indexed", False)
+        super(GenericProperty, self).__init__(name=name, **kwargs)
+        self._compressed = compressed
+        if compressed and self._indexed:
+            raise NotImplementedError(
+                "GenericProperty %s cannot be compressed and "
+                "indexed at the same time." % self._name
+            )
+
+    def _to_base_type(self, value):
+        if self._compressed and isinstance(value, bytes):
+            return _CompressedValue(zlib.compress(value))
+
+    def _from_base_type(self, value):
+        if isinstance(value, _CompressedValue):
+            return zlib.decompress(value.z_val)
+
+    def _validate(self, value):
+        if self._indexed:
+            if isinstance(value, bytes) and len(value) > _MAX_STRING_LENGTH:
+                raise exceptions.BadValueError(
+                    "Indexed value %s must be at most %d bytes"
+                    % (self._name, _MAX_STRING_LENGTH)
+                )
+
+    def _db_get_value(self, v, unused_p):
+        """Helper for :meth:`_deserialize`.
+
+        Raises:
+            NotImplementedError: Always. This method is deprecated.
+        """
+        raise exceptions.NoLongerImplementedError()
+
+    def _db_set_value(self, v, p, value):
+        """Helper for :meth:`_deserialize`.
+
+        Raises:
+            NotImplementedError: Always. This method is deprecated.
+        """
+        raise exceptions.NoLongerImplementedError()
 
 
 class ComputedProperty(GenericProperty):
-    __slots__ = ()
+    """A Property whose value is determined by a user-supplied function.
+    Computed properties cannot be set directly, but are instead generated by a
+    function when required. They are useful to provide fields in Cloud Datastore
+    that can be used for filtering or sorting without having to manually set the
+    value in code - for example, sorting on the length of a BlobProperty, or
+    using an equality filter to check if another field is not empty.
+    ComputedProperty can be declared as a regular property, passing a function as
+    the first argument, or it can be used as a decorator for the function that
+    does the calculation.
 
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError
+    Example:
+
+    >>> class DatastoreFile(ndb.Model):
+    ...   name = ndb.model.StringProperty()
+    ...   name_lower = ndb.model.ComputedProperty(lambda self: self.name.lower())
+    ...
+    ...   data = ndb.model.BlobProperty()
+    ...
+    ...   @ndb.model.ComputedProperty
+    ...   def size(self):
+    ...     return len(self.data)
+    ...
+    ...   def _compute_hash(self):
+    ...     return hashlib.sha1(self.data).hexdigest()
+    ...   hash = ndb.model.ComputedProperty(_compute_hash, name='sha1')
+    """
+
+    _kwargs = None
+
+    def __init__(
+        self, func, name=None, indexed=None, repeated=None, verbose_name=None
+    ):
+        """Constructor.
+
+        Args:
+
+        func: A function that takes one argument, the model instance, and returns
+            a calculated value.
+        """
+        super(ComputedProperty, self).__init__(
+            name=name,
+            indexed=indexed,
+            repeated=repeated,
+            verbose_name=verbose_name,
+        )
+        self._func = func
+
+    def _set_value(self, entity, value):
+        raise ComputedPropertyError("Cannot assign to a ComputedProperty")
+
+    def _delete_value(self, entity):
+        raise ComputedPropertyError("Cannot delete a ComputedProperty")
+
+    def _get_value(self, entity):
+        # About projections and computed properties: if the computed
+        # property itself is in the projection, don't recompute it; this
+        # prevents raising UnprojectedPropertyError if one of the
+        # dependents is not in the projection.  However, if the computed
+        # property is not in the projection, compute it normally -- its
+        # dependents may all be in the projection, and it may be useful to
+        # access the computed value without having it in the projection.
+        # In this case, if any of the dependents is not in the projection,
+        # accessing it in the computation function will raise
+        # UnprojectedPropertyError which will just bubble up.
+        if entity._projection and self._name in entity._projection:
+            return super(ComputedProperty, self)._get_value(entity)
+        value = self._func(entity)
+        self._store_value(entity, value)
+        return value
+
+    def _prepare_for_put(self, entity):
+        self._get_value(entity)  # For its side effects.
 
 
 class MetaModel(type):
@@ -4006,7 +4376,7 @@ class Model(metaclass=MetaModel):
                 if isinstance(attr, Property):
                     if attr._repeated or (
                         isinstance(attr, StructuredProperty)
-                        and attr._modelclass._has_repeated
+                        and attr._model_class._has_repeated
                     ):
                         cls._has_repeated = True
                     cls._properties[attr._name] = attr
@@ -4031,14 +4401,14 @@ class Model(metaclass=MetaModel):
         return key
 
     @classmethod
-    def _gql(cls, query_string, *args, **kwds):
+    def _gql(cls, query_string, *args, **kwargs):
         """Run a GQL query using this model as the FROM entity.
 
         Args:
             query_string (str): The WHERE part of a GQL query (including the
                 WHERE kwyword).
             args: if present, used to call bind() on the query.
-            kwds: if present, used to call bind() on the query.
+            kwargs: if present, used to call bind() on the query.
 
         Returns:
             :class:query.Query: A query instance.
@@ -4048,7 +4418,7 @@ class Model(metaclass=MetaModel):
 
         return query.gql(
             "SELECT * FROM {} {}".format(
-                cls._class_name(), query_string, *args, *kwds
+                cls._class_name(), query_string, *args, *kwargs
             )
         )
 
@@ -4892,10 +5262,91 @@ class Model(metaclass=MetaModel):
 
 
 class Expando(Model):
-    __slots__ = ()
+    """Model subclass to support dynamic Property names and types.
 
-    def __init__(self, *args, **kwargs):
-        raise NotImplementedError
+    Sometimes the set of properties is not known ahead of time.  In such
+    cases you can use the Expando class.  This is a Model subclass that
+    creates properties on the fly, both upon assignment and when loading
+    an entity from Cloud Datastore.  For example::
+
+        >>> class SuperPerson(Expando):
+                name = StringProperty()
+                superpower = StringProperty()
+
+        >>> razorgirl = SuperPerson(name='Molly Millions',
+                                    superpower='bionic eyes, razorblade hands',
+                                    rasta_name='Steppin\' Razor',
+                                    alt_name='Sally Shears')
+        >>> elastigirl = SuperPerson(name='Helen Parr',
+                                     superpower='stretchable body')
+        >>> elastigirl.max_stretch = 30  # Meters
+
+        >>> print(razorgirl._properties.keys())
+            ['rasta_name', 'name', 'superpower', 'alt_name']
+        >>> print(elastigirl._properties)
+            {'max_stretch': GenericProperty('max_stretch'),
+             'name': StringProperty('name'),
+             'superpower': StringProperty('superpower')}
+
+    Note: You can inspect the properties of an expando instance using the
+    _properties attribute, as shown above. This property exists for plain Model instances
+    too; it is just not as interesting for those.
+    """
+
+    # Set this to False (in an Expando subclass or entity) to make
+    # properties default to unindexed.
+    _default_indexed = True
+
+    # Set this to True to write [] to Cloud Datastore instead of no property
+    _write_empty_list_for_dynamic_properties = None
+
+    def _set_attributes(self, kwds):
+        for name, value in kwds.items():
+            setattr(self, name, value)
+
+    def __getattr__(self, name):
+        prop = self._properties.get(name)
+        if prop is None:
+            return super(Expando, self).__getattribute__(name)
+        return prop._get_value(self)
+
+    def __setattr__(self, name, value):
+        if name.startswith("_") or isinstance(
+            getattr(self.__class__, name, None), (Property, property)
+        ):
+            return super(Expando, self).__setattr__(name, value)
+        if isinstance(value, Model):
+            prop = StructuredProperty(Model, name)
+        elif isinstance(value, dict):
+            prop = StructuredProperty(Expando, name)
+        else:
+            prop = GenericProperty(
+                name,
+                repeated=isinstance(value, (list, tuple)),
+                indexed=self._default_indexed,
+                write_empty_list=self._write_empty_list_for_dynamic_properties,
+            )
+        prop._code_name = name
+        self._properties[name] = prop
+        prop._set_value(self, value)
+
+    def __delattr__(self, name):
+        if name.startswith("_") or isinstance(
+            getattr(self.__class__, name, None), (Property, property)
+        ):
+            return super(Expando, self).__delattr__(name)
+        prop = self._properties.get(name)
+        if not isinstance(prop, Property):
+            raise TypeError(
+                "Model properties must be Property instances; not %r" % prop
+            )
+        prop._delete_value(self)
+        if name in super(Expando, self)._properties:
+            raise RuntimeError(
+                "Property %s still in the list of properties for the "
+                "base class." % name
+            )
+        del self._properties[name]
 
 
 @_options.ReadOptions.options
