@@ -96,18 +96,18 @@ class RepeatedStructuredPropertyPredicate:
     This query should find any squad with a member named "Joe" whose age is 24
     and rank is 5.
 
-    Datastore, on its own, can find all squads a with a team member named Joe,
-    or a team member whose age is 24, or whose rank is 5, but it can't be
-    queried for all 3 in a single subentity. This predicate must be applied
-    client side, therefore, to limit results to entities where the all keys
-    match for a single subentity.
+    Datastore, on its own, can find all squads with a team member named Joe, or
+    a team member whose age is 24, or whose rank is 5, but it can't be queried
+    for all 3 in a single subentity. This predicate must be applied client
+    side, therefore, to limit results to entities where all the keys match for
+    a single subentity.
 
     Arguments:
         name (str): Name of the repeated structured property being queried
             (e.g. "members").
         match_keys (list[str]): Property names to check on the subentities
             being queried (e.g. ["name", "age", "rank"]).
-        entity_pb (entity_pb2.Entity): A partial entity prototocol buffer
+        entity_pb (entity_pb2.Entity): A partial entity protocol buffer
             containing the values that must match in a subentity of the
             repeated structured property. Should contain a value for each key
             in ``match_keys``.
