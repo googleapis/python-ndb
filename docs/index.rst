@@ -41,7 +41,7 @@ recommended way to do this is to create a `service account
 <https://cloud.google.com/docs/authentication/getting-started>`_ that is
 associated with the Google Cloud project that you'll be working on. Detailed
 instructions are on the link above, but basically once you create the account
-you will be able to download a JSON file with your credentials which ypu can
+you will be able to download a JSON file with your credentials which you can
 store locally.
 
 Once you have the credentials, the best way to let your application know about
@@ -65,11 +65,17 @@ you installed ``ndb``::
 If your credentials are OK, you will have an active client. Otherwise, Python
 will raise a `google.auth.exceptions.DefaultCredentialsError` exception.
 
+Next, you'll need to enable Firestore with Datastore API to your project. To do
+that, select "APIs & Services" from the Google Cloud Platform menu, then "Enable
+APIs and Services". From there, look for "Databases" in the Category filter.
+Make sure that both "Cloud Datastore API" and "Google Cloud Firestore API" are
+enabled.
+
 Defining Entities, Keys, and Properties
 =======================================
 
-Now that we have a connection, we can start writing applications. Let's begin
-by introducing some of ``ndb``'s most important concepts.
+Now that we have completed setup, we can start writing applications. Let's
+begin by introducing some of ``ndb``'s most important concepts.
 
 Cloud Datastore stores data objects, called entities. An entity has one or more
 properties, named values of one of several supported data types. For example, a
@@ -125,23 +131,27 @@ initialized, we get the current context using the
 using Python's context manager mechanisms. Now, we can safely create the
 entities, which are in turn stored using the put() method.
 
+.. note::
+    
+    For all the following examples, please assume that the context
+    activation code precedes any ``ndb`` interactions.
+
 In this example, since we didn't specify a parent, both entities are going to
 be part of the *root* entity group. Let's say we want to have separate contact
 groups, like "home" or "work". In this case, we can specify a parent, in the
 form of an ancestor key, using ``ndb``'s `google.cloud.ndb.Key` class::
 
-    with client.context():
-        ancestor_key = ndb.Key("ContactGroup", "work")
-        contact1 = Contact(parent=ancestor_key,
-                           name="John Smith",
-                           phone="555 617 8993",
-                           email="john.smith@gmail.com")
-        contact1.put()
-        contact2 = Contact(parent=ancestor_key,
-                           name="Jane Doe",
-                           phone="555 445 1937",
-                           email="jane.doe@gmail.com")
-        contact2.put()
+    ancestor_key = ndb.Key("ContactGroup", "work")
+    contact1 = Contact(parent=ancestor_key,
+                       name="John Smith",
+                       phone="555 617 8993",
+                       email="john.smith@gmail.com")
+    contact1.put()
+    contact2 = Contact(parent=ancestor_key,
+                       name="Jane Doe",
+                       phone="555 445 1937",
+                       email="jane.doe@gmail.com")
+    contact2.put()
 
 A `key` is composed of a pair of ``(kind, id)`` values. The kind gives the
 id of the entity that this key refers to, and the id is the name that we want
@@ -150,7 +160,8 @@ defined previously in the code for this to work.
 
 This covers the basics for storing content in the Cloud Database. If you go to
 the Administration Console for your project, you should see the entities that
-were just created.
+were just created. Select "Datastore" from the Storage section of the Google
+Cloud Platform menu, then "Entities", to get to the entity search page.
 
 Queries and Indexes
 ===================
@@ -158,9 +169,8 @@ Queries and Indexes
 Now that we have some entities safely stored, let's see how to get them out. An
 application can query to find entities that match some filters::
 
-    with client.context():
-        query = Contact.query()
-        names = [c.name for c in query]
+    query = Contact.query()
+    names = [c.name for c in query]
 
 A typical ``ndb`` query filters entities by kind. In this example, we use a
 shortcut from the Model class that generates a query that returns all Contact
@@ -174,30 +184,69 @@ a result.
 In the previous section, we stored some contacts using an ancestor key. Using
 that key, we can find only entities that "belong to" some ancestor::
 
-    with client.context():
-        ancestor_key = ndb.Key("ContactGroup", "work")
-        query = Contact.query(ancestor=ancestor_key)
-        names = [c.name for c in query]
+    ancestor_key = ndb.Key("ContactGroup", "work")
+    query = Contact.query(ancestor=ancestor_key)
+    names = [c.name for c in query]
 
 While the first query example returns all four stored contacts, this last one
 only returns those stored under the "work" contact group.
+
+There are many useful operations that can be done on a query. For example, to
+get results ordered by name::
+
+    query = Contact.query().order(Contact.name)
+    names = [c.name for c in query]
+
+You can also filter the results::
+
+    query = Contact.query().filter(Contact.name == "John Smith")
+    names = [c.name for c in query]
 
 Every query uses an index, a table that contains the results for the query in
 the desired order. The underlying Datastore automatically maintains simple
 indexes (indexes that use only one property).
 
 You can define complex indexes in a configuration file, `index.yaml
-<https://cloud.google.com/datastore/docs/tools/indexconfig>`_. The
-development web server automatically adds suggestions to this file when it
-encounters queries that do not yet have indexes configured.
+<https://cloud.google.com/datastore/docs/tools/indexconfig>`_. When starting
+out with complex indexes, the easiest way to define them is by attempting a
+complex query from your application or from the command line. When Datastore
+encounters queries that do not yet have indexes configured, it will generate an
+error stating that no matching index was found, and it will include the
+recommended (and correct) index syntax as part of the error message.
 
-You can tune indexes manually by editing the file before uploading the
-application. You can update the indexes separately from uploading the
-application by running gcloud app deploy index.yaml. If your datastore has many
-entities, it takes a long time to create a new index for them; in this case,
-it's wise to update the index definitions before uploading code that uses the
-new index. You can use the Administration Console to find out when the indexes
-have finished building.
+For example, the following Contact query will generate an error, since we are
+using more than one property::
+
+    query = Contact.query().order(Contact.name, Contact.email)
+    names = [c.name for c in query]
+
+This will show an error like the following. Look for the text "recommended
+index is" to find the index properties that you need::
+
+    debug_error_string = "{"created":"@1560413351.069418472",
+    "description":"Error received from peer ipv6:[2607:f8b0:4012
+    :809::200a]:443","file": "src/core/lib/surface/call.cc",
+    "file_line":1046,"grpc_message":"no matching index found.
+    recommended index is:\n- kind: Contact\n  properties:\n  - name:
+    name\n  - name: email\n","grpc_status":9}"
+
+From this error, you would get the following index description::
+
+    - kind: Contact
+      properties:
+        - name: name
+        - name: email
+
+Add your new indexes to a local `index.yaml` file. When you have them all, you
+can add them to your project using the `gcloud` command from the `Google Cloud
+SDK <https://cloud.google.com/sdk/>`_::
+
+    gcloud datastore indexes create path/to/index.yaml
+
+If your datastore has many entities, it takes a long time to create a new index
+for them; in this case, it's wise to update the index definitions before
+uploading code that uses the new index. You can use the "Datastore" control
+panel to find out when the indexes have finished building.
 
 This index mechanism supports a wide range of queries and is suitable for most
 applications. However, it does not support some kinds of queries common in
