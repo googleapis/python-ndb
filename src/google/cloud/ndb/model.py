@@ -42,24 +42,24 @@ definition can be used to declare the model's structure::
 
 We can now create a Person entity and write it to Cloud Datastore::
 
-    p = Person(name='Arthur Dent', age=42)
-    k = p.put()
+    person = Person(name='Arthur Dent', age=42)
+    key = person.put()
 
 The return value from put() is a Key (see the documentation for ndb/key.py),
 which can be used to retrieve the same entity later::
 
-    p2 = k.get()
-    p2 == p  # Returns True
+    person2 = key.get()
+    person2 == person  # Returns True
 
 To update an entity, simply change its attributes and write it back (note that
 this doesn't change the key)::
 
-    p2.name = 'Arthur Philip Dent'
-    p2.put()
+    person2.name = 'Arthur Philip Dent'
+    person2.put()
 
 We can also delete an entity (by using the key)::
 
-    k.delete()
+    key.delete()
 
 The property definitions in the class body tell the system the names and the
 types of the fields to be stored in Cloud Datastore, whether they must be
@@ -68,34 +68,35 @@ indexed, their default value, and more.
 Many different Property types exist.  Most are indexed by default, the
 exceptions are indicated in the list below:
 
-- StringProperty: a short text string, limited to 500 bytes.
-- TextProperty: an unlimited text string; unindexed.
-- BlobProperty: an unlimited byte string; unindexed.
-- IntegerProperty: a 64-bit signed integer.
-- FloatProperty: a double precision floating point number.
-- BooleanProperty: a bool value.
-- DateTimeProperty: a datetime object.  Note: App Engine always uses
-  UTC as the timezone.
-- DateProperty: a date object.
-- TimeProperty: a time object.
-- GeoPtProperty: a geographical location, i.e. (latitude, longitude).
-- KeyProperty: a Cloud Datastore Key value, optionally constrained to referring
+- :class:`StringProperty`: a short text string, limited to at most 1500 bytes (when
+  UTF-8 encoded from :class:`str` to bytes).
+- :class:`TextProperty`: an unlimited text string; unindexed.
+- :class:`BlobProperty`: an unlimited byte string; unindexed.
+- :class:`IntegerProperty`: a 64-bit signed integer.
+- :class:`FloatProperty`: a double precision floating point number.
+- :class:`BooleanProperty`: a bool value.
+- :class:`DateTimeProperty`: a datetime object.  Note: Datastore always uses UTC as the
+  timezone.
+- :class:`DateProperty`: a date object.
+- :class:`TimeProperty`: a time object.
+- :class:`GeoPtProperty`: a geographical location, i.e. (latitude, longitude).
+- :class:`KeyProperty`: a Cloud Datastore Key value, optionally constrained to referring
   to a specific kind.
-- UserProperty: a User object (for backwards compatibility only)
-- StructuredProperty: a field that is itself structured like an entity; see
+- :class:`UserProperty`: a User object (for backwards compatibility only)
+- :class:`StructuredProperty`: a field that is itself structured like an entity; see
   below for more details.
-- LocalStructuredProperty: like StructuredProperty but the on-disk
+- :class:`LocalStructuredProperty`: like StructuredProperty but the on-disk
   representation is an opaque blob; unindexed.
-- ComputedProperty: a property whose value is computed from other properties by
+- :class:`ComputedProperty`: a property whose value is computed from other properties by
   a user-defined function.  The property value is written to Cloud Datastore so
   that it can be used in queries, but the value from Cloud Datastore is not
   used when the entity is read back.
-- GenericProperty: a property whose type is not constrained; mostly used by the
+- :class:`GenericProperty`: a property whose type is not constrained; mostly used by the
   Expando class (see below) but also usable explicitly.
-- JsonProperty: a property whose value is any object that can be serialized
+- :class:`JsonProperty`: a property whose value is any object that can be serialized
   using JSON; the value written to Cloud Datastore is a JSON representation of
   that object.
-- PickleProperty: a property whose value is any object that can be serialized
+- :class:`PickleProperty`: a property whose value is any object that can be serialized
   using Python's pickle protocol; the value written to the Cloud Datastore is
   the pickled representation of that object, using the highest available pickle
   protocol
@@ -119,10 +120,9 @@ accept several optional keyword arguments:
 - validator=<function>: a general-purpose validation function. It will be
   called with two arguments (prop, value) and should either return the
   validated value or raise an exception. It is also allowed for the function
-  to modify the value, but calling it again on the modified value should not
-  modify the value further. (For example: a validator that returns
-  value.strip() or value.lower() is fine, but one that returns value + '$' is
-  not).
+  to modify the value, but the function should be idempotent. For example: a
+  validator that returns value.strip() or value.lower() is fine, but one that
+  returns value + '$' is not).
 - verbose_name=<value>: A human readable name for this property. This human
   readable name can be used for html form labels.
 
@@ -229,24 +229,18 @@ example::
 
 A number of top-level functions also live in this module:
 
-- transaction() runs a function inside a transaction.
-- get_multi() reads multiple entities at once.
-- put_multi() writes multiple entities at once.
-- delete_multi() deletes multiple entities at once.
+- :func:`get_multi` reads multiple entities at once.
+- :func:`put_multi` writes multiple entities at once.
+- :func:`delete_multi` deletes multiple entities at once.
 
 All these have a corresponding ``*_async()`` variant as well. The
 ``*_multi_async()`` functions return a list of Futures.
 
-And finally, these (without async variants):
-
-- in_transaction() tests whether you are currently running in a transaction.
-- @transactional decorates functions that should be run in a transaction.
-
 There are many other interesting features. For example, Model subclasses may
 define pre-call and post-call hooks for most operations (get, put, delete,
 allocate_ids), and Property classes may be subclassed to suit various needs.
-Documentation for writing a Property subclass is in the docs for the Property
-class.
+Documentation for writing a Property subclass is in the docs for the
+:class:`Property` class.
 """
 
 

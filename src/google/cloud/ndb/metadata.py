@@ -12,22 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Models and helper functions for access to app's datastore metadata.
+"""Models and helper functions for access to a project's datastore metadata.
 
-These entities cannot be created by users, but are created as results of
+These entities cannot be created by users, but are created as the results of
 __namespace__, __kind__, __property__ and __entity_group__ metadata queries
 or gets.
 
 A simplified API is also offered:
 
-    ndb.metadata.get_namespaces(): A list of namespace names.
-    ndb.metadata.get_kinds(): A list of kind names.
-    ndb.metadata.get_properties_of_kind(kind): A list of property names for the
-        given kind name.
-    ndb.metadata.get_representations_of_kind(kind): A dict mapping property
-        names to lists of representation ids.
-    ndb.metadata.get_entity_group_version(key): The version of the entity group
-        containing key (HRD only).
+    :func:`get_namespaces`: A list of namespace names.
+
+    :func:`get_kinds`: A list of kind names.
+
+    :func:`get_properties_of_kind`: A list of property names
+    for the given kind name.
+
+    :func:`get_representations_of_kind`: A dict mapping
+    property names to lists of representation ids.
 
     get_kinds(), get_properties_of_kind(), get_representations_of_kind()
     implicitly apply to the current namespace.

@@ -29,7 +29,7 @@ For example::
     def foo():
         a = yield <some Future>
         b = yield <another Future>
-        raise Return(a + b)
+        return a + b
 
     def main():
         f = foo()
