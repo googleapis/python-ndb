@@ -842,12 +842,11 @@ class Key:
 
         @tasklets.tasklet
         def get():
-
-            if use_cache:
+            if _options.use_cache:
                 try:
                     # This result may be None even on a cache hit.
-                    return context_module.get_context().cache.safe_getitem(
-                        self._key)
+                    return context_module.get_context().cache.get_and_validate(
+                        self)
                 except KeyError:
                     pass
 
@@ -857,8 +856,8 @@ class Key:
             else:
                 result = None
 
-            if use_cache:
-                context_module.get_context().cache[self._key] = result
+            if _options.use_cache:
+                context_module.get_context().cache[self] = result
 
             return result
 
@@ -971,8 +970,8 @@ class Key:
         @tasklets.tasklet
         def delete():
             result = yield _datastore_api.delete(self._key, _options)
-            if use_cache:
-                context_module.get_context().cache[self._key] = None
+            if _options.use_cache:
+                context_module.get_context().cache[self] = None
             return result
 
         future = delete()

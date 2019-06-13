@@ -19,6 +19,7 @@ from unittest import mock
 import pytest
 
 from google.api_core import exceptions as core_exceptions
+from google.cloud.ndb import context as context_module
 from google.cloud.ndb import tasklets
 from google.cloud.ndb import _transaction
 
@@ -47,6 +48,18 @@ class Test_transaction:
         with in_context.new(transaction=b"tx123").use():
             with pytest.raises(NotImplementedError):
                 _transaction.transaction(None)
+
+    @staticmethod
+    def test_transaction_inherits_and_merges_cache(in_context):
+        original_cache = in_context.cache
+        in_context.cache['test'] = 'original value'
+        with in_context.new(transaction=b"tx123").use() as new_context:
+            assert new_context.cache is not original_cache
+            assert new_context.cache['test'] == original_cache['test']
+            new_context.cache['test'] = 'new_value'
+            assert new_context.cache['test'] != original_cache['test']
+        assert in_context.cache['test'] == 'new_value'
+
 
     @staticmethod
     @mock.patch("google.cloud.ndb._transaction.transaction_async")

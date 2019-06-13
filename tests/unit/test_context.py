@@ -219,3 +219,33 @@ class TestTransactionOptions:
     def test_constructor():
         with pytest.raises(NotImplementedError):
             context_module.TransactionOptions()
+
+
+class TestCache:
+    @staticmethod
+    def test_get_and_validate_valid():
+        cache = context_module._Cache()
+        test_entity = mock.Mock(_key='test')
+        cache['test'] = test_entity
+        assert cache.get_and_validate('test') is test_entity
+
+    @staticmethod
+    def test_get_and_validate_invalid():
+        cache = context_module._Cache()
+        test_entity = mock.Mock(_key='test')
+        cache['test'] = test_entity
+        test_entity._key = 'changed_key'
+        with pytest.raises(KeyError):
+            cache.get_and_validate('test')
+
+    @staticmethod
+    def test_get_and_validate_none():
+        cache = context_module._Cache()
+        cache['test'] = None
+        assert cache.get_and_validate('test') is None
+
+    @staticmethod
+    def test_get_and_validate_miss():
+        cache = context_module._Cache()
+        with pytest.raises(KeyError):
+            cache.get_and_validate('nonexistent_key')

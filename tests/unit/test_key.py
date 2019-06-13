@@ -535,7 +535,7 @@ class TestKey:
     @pytest.mark.usefixtures("in_context")
     @unittest.mock.patch("google.cloud.ndb.key._datastore_api")
     @unittest.mock.patch("google.cloud.ndb.model._entity_from_protobuf")
-    def test_get(_entity_from_protobuf, _datastore_api):
+    def test_get_with_cache_miss(_entity_from_protobuf, _datastore_api):
         class Simple(model.Model):
             pass
 
@@ -545,10 +545,54 @@ class TestKey:
         _entity_from_protobuf.return_value = "the entity"
 
         key = key_module.Key("Simple", "b", app="c")
-        assert key.get() == "the entity"
+        assert key.get(use_cache=True) == "the entity"
 
         _datastore_api.lookup.assert_called_once_with(
-            key._key, _options.ReadOptions()
+            key._key, _options.ReadOptions(use_cache=True)
+        )
+        _entity_from_protobuf.assert_called_once_with("ds_entity")
+
+    @staticmethod
+    @unittest.mock.patch("google.cloud.ndb.key._datastore_api")
+    @unittest.mock.patch("google.cloud.ndb.model._entity_from_protobuf")
+    def test_get_with_cache_hit(
+        _entity_from_protobuf, _datastore_api, in_context):
+        class Simple(model.Model):
+            pass
+
+        ds_future = tasklets.Future()
+        ds_future.set_result("ds_entity")
+        _datastore_api.lookup.return_value = ds_future
+        _entity_from_protobuf.return_value = "the entity"
+
+        key = key_module.Key("Simple", "b", app="c")
+        mock_cached_entity = unittest.mock.Mock(_key=key)
+        in_context.cache[key] = mock_cached_entity
+        assert key.get(use_cache=True) == mock_cached_entity
+
+        _datastore_api.lookup.assert_not_called()
+        _entity_from_protobuf.assert_not_called()
+
+    @staticmethod
+    @unittest.mock.patch("google.cloud.ndb.key._datastore_api")
+    @unittest.mock.patch("google.cloud.ndb.model._entity_from_protobuf")
+    def test_get_no_cache(
+        _entity_from_protobuf, _datastore_api, in_context):
+        class Simple(model.Model):
+            pass
+
+        ds_future = tasklets.Future()
+        ds_future.set_result("ds_entity")
+        _datastore_api.lookup.return_value = ds_future
+        _entity_from_protobuf.return_value = "the entity"
+
+        key = key_module.Key("Simple", "b", app="c")
+        mock_cached_entity = unittest.mock.Mock(_key=key)
+        in_context.cache[key] = mock_cached_entity
+        assert key.get(use_cache=False) == "the entity"
+
+        _datastore_api.lookup.assert_called_once_with(
+            key._key, _options.ReadOptions(use_cache=False)
         )
         _entity_from_protobuf.assert_called_once_with("ds_entity")
 
@@ -632,6 +676,46 @@ class TestKey:
         assert key.delete() == "result"
         _datastore_api.delete.assert_called_once_with(
             key._key, _options.Options()
+        )
+
+    @staticmethod
+    @unittest.mock.patch("google.cloud.ndb.key._datastore_api")
+    def test_delete_with_cache(_datastore_api, in_context):
+        class Simple(model.Model):
+            pass
+
+        future = tasklets.Future()
+        _datastore_api.delete.return_value = future
+        future.set_result("result")
+
+        key = key_module.Key("Simple", "b", app="c")
+        mock_cached_entity = unittest.mock.Mock(_key=key)
+        in_context.cache[key] = mock_cached_entity
+
+        assert key.delete(use_cache=True) == "result"
+        assert in_context.cache[key] == None
+        _datastore_api.delete.assert_called_once_with(
+            key._key, _options.Options(use_cache=True)
+        )
+
+    @staticmethod
+    @unittest.mock.patch("google.cloud.ndb.key._datastore_api")
+    def test_delete_no_cache(_datastore_api, in_context):
+        class Simple(model.Model):
+            pass
+
+        future = tasklets.Future()
+        _datastore_api.delete.return_value = future
+        future.set_result("result")
+
+        key = key_module.Key("Simple", "b", app="c")
+        mock_cached_entity = unittest.mock.Mock(_key=key)
+        in_context.cache[key] = mock_cached_entity
+
+        assert key.delete(use_cache=False) == "result"
+        assert in_context.cache[key] == mock_cached_entity
+        _datastore_api.delete.assert_called_once_with(
+            key._key, _options.Options(use_cache=False)
         )
 
     @staticmethod

@@ -85,7 +85,7 @@ class _Cache(collections.UserDict):
        returning a result, in order to handle cases where the entity's key was
        modified but the cache's key was not updated."""
 
-    def safe_getitem(self, key):
+    def get_and_validate(self, key):
         """Verify that the entity's key has not changed since it was added
            to the cache. If it has changed, consider this a cache miss.
            See issue 13.  http://goo.gl/jxjOP"""
@@ -135,7 +135,13 @@ class _Context(_ContextTuple):
         if commit_batches is None:
             commit_batches = {}
 
-        if cache is None:
+        # Create a cache and, if an existing cache was passed into this
+        # method, duplicate its entries.
+        if cache:
+            new_cache = _Cache()
+            new_cache.update(cache)
+            cache = new_cache
+        else:
             cache = _Cache()
 
         return super(_Context, cls).__new__(
@@ -172,7 +178,8 @@ class _Context(_ContextTuple):
         try:
             yield self
         finally:
-            _state.context.cache.update(self.cache)
+            if prev_context:
+                prev_context.cache.update(self.cache)
             _state.context = prev_context
 
 
