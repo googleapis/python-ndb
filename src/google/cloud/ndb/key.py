@@ -846,7 +846,8 @@ class Key:
                 try:
                     # This result may be None even on a cache hit.
                     return context_module.get_context().cache.get_and_validate(
-                        self)
+                        self
+                    )
                 except KeyError:
                     pass
 

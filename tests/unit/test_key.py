@@ -556,7 +556,8 @@ class TestKey:
     @unittest.mock.patch("google.cloud.ndb.key._datastore_api")
     @unittest.mock.patch("google.cloud.ndb.model._entity_from_protobuf")
     def test_get_with_cache_hit(
-        _entity_from_protobuf, _datastore_api, in_context):
+        _entity_from_protobuf, _datastore_api, in_context
+    ):
         class Simple(model.Model):
             pass
 
@@ -576,8 +577,7 @@ class TestKey:
     @staticmethod
     @unittest.mock.patch("google.cloud.ndb.key._datastore_api")
     @unittest.mock.patch("google.cloud.ndb.model._entity_from_protobuf")
-    def test_get_no_cache(
-        _entity_from_protobuf, _datastore_api, in_context):
+    def test_get_no_cache(_entity_from_protobuf, _datastore_api, in_context):
         class Simple(model.Model):
             pass
 
@@ -693,7 +693,7 @@ class TestKey:
         in_context.cache[key] = mock_cached_entity
 
         assert key.delete(use_cache=True) == "result"
-        assert in_context.cache[key] == None
+        assert in_context.cache[key] is None
         _datastore_api.delete.assert_called_once_with(
             key._key, _options.Options(use_cache=True)
         )
