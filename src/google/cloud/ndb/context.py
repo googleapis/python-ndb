@@ -81,9 +81,9 @@ def get_context():
 class _Cache(collections.UserDict):
     """An in-memory entity cache.
 
-       This cache verifies the fetched entity has the correct key before
-       returning a result, in order to handle cases where the entity's key was
-       modified but the cache's key was not updated."""
+    This cache verifies the fetched entity has the correct key before
+    returning a result, in order to handle cases where the entity's key was
+    modified but the cache's key was not updated."""
 
     def get_and_validate(self, key):
         """Verify that the entity's key has not changed since it was added
@@ -93,6 +93,7 @@ class _Cache(collections.UserDict):
         if entity is None or entity._key == key:
             return entity
         else:
+            del self.data[key]
             raise KeyError(key)
 
 

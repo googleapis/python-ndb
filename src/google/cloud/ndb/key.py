@@ -844,7 +844,7 @@ class Key:
         def get():
             if _options.use_cache:
                 try:
-                    # This result may be None even on a cache hit.
+                    # This result may be None, if None is cached for this key.
                     return context_module.get_context().cache.get_and_validate(
                         self
                     )
