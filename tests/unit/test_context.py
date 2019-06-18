@@ -70,8 +70,9 @@ class TestContext:
 
     def test_clear_cache(self):
         context = self._make_one()
-        with pytest.raises(NotImplementedError):
-            context.clear_cache()
+        context.cache["testkey"] = "testdata"
+        context.clear_cache()
+        assert not context.cache
 
     def test_flush(self):
         context = self._make_one()
@@ -125,8 +126,7 @@ class TestContext:
 
     def test_in_transaction(self):
         context = self._make_one()
-        with pytest.raises(NotImplementedError):
-            context.in_transaction()
+        assert context.in_transaction() is False
 
     def test_default_cache_policy(self):
         context = self._make_one()
@@ -218,3 +218,33 @@ class TestTransactionOptions:
     def test_constructor():
         with pytest.raises(NotImplementedError):
             context_module.TransactionOptions()
+
+
+class TestCache:
+    @staticmethod
+    def test_get_and_validate_valid():
+        cache = context_module._Cache()
+        test_entity = mock.Mock(_key="test")
+        cache["test"] = test_entity
+        assert cache.get_and_validate("test") is test_entity
+
+    @staticmethod
+    def test_get_and_validate_invalid():
+        cache = context_module._Cache()
+        test_entity = mock.Mock(_key="test")
+        cache["test"] = test_entity
+        test_entity._key = "changed_key"
+        with pytest.raises(KeyError):
+            cache.get_and_validate("test")
+
+    @staticmethod
+    def test_get_and_validate_none():
+        cache = context_module._Cache()
+        cache["test"] = None
+        assert cache.get_and_validate("test") is None
+
+    @staticmethod
+    def test_get_and_validate_miss():
+        cache = context_module._Cache()
+        with pytest.raises(KeyError):
+            cache.get_and_validate("nonexistent_key")

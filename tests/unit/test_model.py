@@ -3594,6 +3594,41 @@ class TestModel:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    def test__put_w_key_no_cache(_datastore_api, in_context):
+        entity = model.Model()
+        _datastore_api.put.return_value = future = tasklets.Future()
+
+        key = key_module.Key("SomeKind", 123)
+        future.set_result(key._key.to_protobuf())
+
+        entity_pb = model._entity_to_protobuf(entity)
+        assert entity._put(use_cache=False) == key
+        assert not in_context.cache
+        _datastore_api.put.assert_called_once_with(
+            entity_pb, _options.Options(use_cache=False)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    def test__put_w_key_with_cache(_datastore_api, in_context):
+        entity = model.Model()
+        _datastore_api.put.return_value = future = tasklets.Future()
+
+        key = key_module.Key("SomeKind", 123)
+        future.set_result(key._key.to_protobuf())
+
+        entity_pb = model._entity_to_protobuf(entity)
+        assert entity._put(use_cache=True) == key
+        assert in_context.cache[key] == entity
+        assert in_context.cache.get_and_validate(key) == entity
+        _datastore_api.put.assert_called_once_with(
+            entity_pb, _options.Options(use_cache=True)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
     def test__put_w_key(_datastore_api):
         entity = model.Model()
         _datastore_api.put.return_value = future = tasklets.Future()
@@ -4454,26 +4489,6 @@ class TestExpando:
         model.Model._properties["baz"] = "baz"
         with pytest.raises(RuntimeError):
             del expansive.baz
-
-
-def test_transactional():
-    with pytest.raises(NotImplementedError):
-        model.transactional()
-
-
-def test_transactional_async():
-    with pytest.raises(NotImplementedError):
-        model.transactional_async()
-
-
-def test_transactional_tasklet():
-    with pytest.raises(NotImplementedError):
-        model.transactional_tasklet()
-
-
-def test_non_transactional():
-    with pytest.raises(NotImplementedError):
-        model.non_transactional()
 
 
 @pytest.mark.usefixtures("in_context")
