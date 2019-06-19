@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>google.cloud.ndb.tasklets &#8212; ndb 0.0.1.dev1 documentation</title>
+    <meta charset="utf-8" />
+    <title>google.cloud.ndb.tasklets &#8212; ndb 0.0.1 documentation</title>
     <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
@@ -50,8 +48,44 @@
 
 <span class="sd">&quot;&quot;&quot;Provides a tasklet decorator and related helpers.</span>
 
-<span class="sd">Tasklets are a way to write concurrently running functions without</span>
-<span class="sd">threads.</span>
+<span class="sd">Tasklets are a way to write concurrently running functions without threads.</span>
+<span class="sd">Tasklets are executed by an event loop and can suspend themselves blocking for</span>
+<span class="sd">I/O or some other operation using a yield statement. The notion of a blocking</span>
+<span class="sd">operation is abstracted into the Future class, but a tasklet may also yield an</span>
+<span class="sd">RPC in order to wait for that RPC to complete.</span>
+
+<span class="sd">The @tasklet decorator wraps generator function so that when it is called, a</span>
+<span class="sd">Future is returned while the generator is executed by the event loop. Within</span>
+<span class="sd">the tasklet, any yield of a Future waits for and returns the Future&#39;s result.</span>
+<span class="sd">For example::</span>
+
+<span class="sd">    @tasklet</span>
+<span class="sd">    def foo():</span>
+<span class="sd">        a = yield &lt;some Future&gt;</span>
+<span class="sd">        b = yield &lt;another Future&gt;</span>
+<span class="sd">        return a + b</span>
+
+<span class="sd">    def main():</span>
+<span class="sd">        f = foo()</span>
+<span class="sd">        x = f.result()</span>
+<span class="sd">        print x</span>
+
+<span class="sd">Note that blocking until the Future&#39;s result is available using result() is</span>
+<span class="sd">somewhat inefficient (though not vastly -- it is not busy-waiting). In most</span>
+<span class="sd">cases such code should be rewritten as a tasklet instead::</span>
+
+<span class="sd">    @tasklet</span>
+<span class="sd">    def main_tasklet():</span>
+<span class="sd">        f = foo()</span>
+<span class="sd">        x = yield f</span>
+<span class="sd">        print x</span>
+
+<span class="sd">Calling a tasklet automatically schedules it with the event loop::</span>
+
+<span class="sd">    def main():</span>
+<span class="sd">        f = main_tasklet()</span>
+<span class="sd">        eventloop.run()  # Run until no tasklets left to do</span>
+<span class="sd">        f.done()  # Returns True</span>
 <span class="sd">&quot;&quot;&quot;</span>
 <span class="kn">import</span> <span class="nn">functools</span>
 <span class="kn">import</span> <span class="nn">types</span>
@@ -538,8 +572,23 @@
     <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
 
 
-<div class="viewcode-block" id="synctasklet"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.synctasklet">[docs]</a><span class="k">def</span> <span class="nf">synctasklet</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<div class="viewcode-block" id="synctasklet"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.synctasklet">[docs]</a><span class="k">def</span> <span class="nf">synctasklet</span><span class="p">(</span><span class="n">wrapped</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A decorator to run a tasklet as a function when called.</span>
+
+<span class="sd">    Use this to wrap a request handler function that will be called by some</span>
+<span class="sd">    web application framework (e.g. a Django view function or a</span>
+<span class="sd">    webapp.RequestHandler.get method).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        wrapped (Callable): The wrapped function.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">taskletfunc</span> <span class="o">=</span> <span class="n">tasklet</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span>
+
+    <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">synctasklet_wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">taskletfunc</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">synctasklet_wrapper</span></div>
 
 
 <div class="viewcode-block" id="toplevel"><a class="viewcode-back" href="../../../../tasklets.html#google.cloud.ndb.tasklets.toplevel">[docs]</a><span class="k">def</span> <span class="nf">toplevel</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
@@ -587,13 +636,11 @@
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -614,7 +661,7 @@
       &copy;2018, Google.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>ndb library for Google Cloud Datastore &#8212; ndb 0.0.1.dev1 documentation</title>
+    <meta charset="utf-8" />
+    <title>ndb library for Google Cloud Datastore &#8212; ndb 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -38,21 +36,215 @@
 <h1><code class="docutils literal notranslate"><span class="pre">ndb</span></code> library for Google Cloud Datastore<a class="headerlink" href="#ndb-library-for-google-cloud-datastore" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
-<span class="target" id="module-google.cloud.ndb"></span><p><code class="docutils literal notranslate"><span class="pre">ndb</span></code> is a library for Google Cloud Datastore.</p>
-<p>It was originally included in the Google App Engine runtime as a “new”
-version of the <code class="docutils literal notranslate"><span class="pre">db</span></code> API (hence <code class="docutils literal notranslate"><span class="pre">ndb</span></code>).</p>
-<dl class="data">
-<dt id="google.cloud.ndb.__version__">
-<code class="descclassname">google.cloud.ndb.</code><code class="descname">__version__</code><em class="property"> = '0.0.1.dev1'</em><a class="headerlink" href="#google.cloud.ndb.__version__" title="Permalink to this definition">¶</a></dt>
-<dd><p>Current <code class="docutils literal notranslate"><span class="pre">ndb</span></code> version.</p>
-</dd></dl>
+<p>This is a Python 3 version of the <cite>ndb</cite> client library for use with
+<a class="reference external" href="https://cloud.google.com/datastore">Google Cloud Datastore</a>.</p>
+<p>The <a class="reference external" href="https://github.com/GoogleCloudPlatform/datastore-ndb-python">original Python 2 version</a> was designed
+specifically for the Google App Engine <cite>python27</cite> runtime.  This version of
+<cite>ndb</cite> is designed for the <a class="reference external" href="https://cloud.google.com/appengine/docs/standard/python3/">Google App Engine Python 3 runtime</a> and will run on
+other Python 3 platforms as well.</p>
+<div class="section" id="installing-ndb">
+<h2>Installing <code class="docutils literal notranslate"><span class="pre">ndb</span></code><a class="headerlink" href="#installing-ndb" title="Permalink to this headline">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">ndb</span></code> can be installed using pip:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>$ pip install google-cloud-ndb
+</pre></div>
+</div>
+<p>Before you can use <code class="docutils literal notranslate"><span class="pre">ndb</span></code>, you need a way to authenticate with Google. The
+recommended way to do this is to create a <a class="reference external" href="https://cloud.google.com/docs/authentication/getting-started">service account</a> that is
+associated with the Google Cloud project that you’ll be working on. Detailed
+instructions are on the link above, but basically once you create the account
+you will be able to download a JSON file with your credentials which you can
+store locally.</p>
+<p>Once you have the credentials, the best way to let your application know about
+them is to set an environment variable with the path to the JSON file. On
+Linux:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">export</span> <span class="n">GOOGLE_APPLICATION_CREDENTIALS</span><span class="o">=</span><span class="s2">&quot;/path/to/credentials.json&quot;</span>
+</pre></div>
+</div>
+<p>From the Windows command prompt:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nb">set</span> <span class="n">GOOGLE_APPLICATION_CREDENTIALS</span><span class="o">=</span><span class="n">C</span><span class="p">:</span>\<span class="n">path</span>\<span class="n">to</span>\<span class="n">credentials</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>To test that your credentials work, try this from the Python environment where
+you installed <code class="docutils literal notranslate"><span class="pre">ndb</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">google.cloud</span> <span class="k">import</span> <span class="n">ndb</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span> <span class="o">=</span> <span class="n">ndb</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span>
+<span class="go">&lt;google.cloud.ndb.client.Client object at 0x7f82593727b8&gt;</span>
+</pre></div>
+</div>
+<p>If your credentials are OK, you will have an active client. Otherwise, Python
+will raise a <cite>google.auth.exceptions.DefaultCredentialsError</cite> exception.</p>
+<p>Next, you’ll need to enable Firestore with Datastore API to your project. To do
+that, select “APIs &amp; Services” from the Google Cloud Platform menu, then “Enable
+APIs and Services”. From there, look for “Databases” in the Category filter.
+Make sure that both “Cloud Datastore API” and “Google Cloud Firestore API” are
+enabled.</p>
+</div>
+<div class="section" id="defining-entities-keys-and-properties">
+<h2>Defining Entities, Keys, and Properties<a class="headerlink" href="#defining-entities-keys-and-properties" title="Permalink to this headline">¶</a></h2>
+<p>Now that we have completed setup, we can start writing applications. Let’s
+begin by introducing some of <code class="docutils literal notranslate"><span class="pre">ndb</span></code>’s most important concepts.</p>
+<p>Cloud Datastore stores data objects, called entities. An entity has one or more
+properties, named values of one of several supported data types. For example, a
+property can be a string, an integer, or a reference to another entity.</p>
+<p>Each entity is identified by a key, an identifier unique within the
+application’s datastore. The key can have a parent, another key. This parent
+can itself have a parent, and so on; at the top of this “chain” of parents is a
+key with no parent, called the root.</p>
+<p>Entities whose keys have the same root form an entity group or group. If
+entities are in different groups, then changes to those entities might
+sometimes seem to occur “out of order”. If the entities are unrelated in your
+application’s semantics, that’s fine. But if some entities’ changes should be
+consistent, your application should make them part of the same group when
+creating them.</p>
+<p>In practice, this would look like the following. Assume we want to keep track
+of personal contacts. Our entities might look like this:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">google.cloud</span> <span class="k">import</span> <span class="n">ndb</span>
 
-<dl class="data">
-<dt id="google.cloud.ndb.__all__">
-<code class="descclassname">google.cloud.ndb.</code><code class="descname">__all__</code><em class="property"> = ['AutoBatcher', 'Client', 'Context', 'ContextOptions', 'EVENTUAL', 'EVENTUAL_CONSISTENCY', 'TransactionOptions', 'Key', 'BlobKey', 'BlobKeyProperty', 'BlobProperty', 'BooleanProperty', 'ComputedProperty', 'ComputedPropertyError', 'DateProperty', 'DateTimeProperty', 'delete_multi', 'delete_multi_async', 'Expando', 'FloatProperty', 'GenericProperty', 'GeoPt', 'GeoPtProperty', 'get_indexes', 'get_indexes_async', 'get_multi', 'get_multi_async', 'in_transaction', 'Index', 'IndexProperty', 'IndexState', 'IntegerProperty', 'InvalidPropertyError', 'BadProjectionError', 'JsonProperty', 'KeyProperty', 'KindError', 'LocalStructuredProperty', 'make_connection', 'MetaModel', 'Model', 'ModelAdapter', 'ModelAttribute', 'ModelKey', 'non_transactional', 'PickleProperty', 'Property', 'put_multi', 'put_multi_async', 'ReadonlyPropertyError', 'Rollback', 'StringProperty', 'StructuredProperty', 'TextProperty', 'TimeProperty', 'transaction', 'transaction_async', 'transactional', 'transactional_async', 'transactional_tasklet', 'UnprojectedPropertyError', 'UserProperty', 'ConjunctionNode', 'AND', 'Cursor', 'DisjunctionNode', 'OR', 'FalseNode', 'FilterNode', 'gql', 'Node', 'Parameter', 'ParameterizedFunction', 'ParameterizedThing', 'ParameterNode', 'PostFilterNode', 'Query', 'QueryIterator', 'QueryOptions', 'RepeatedStructuredPropertyPredicate', 'add_flow_exception', 'Future', 'get_context', 'make_context', 'make_default_context', 'QueueFuture', 'ReducingFuture', 'Return', 'SerialQueueFuture', 'set_context', 'sleep', 'synctasklet', 'tasklet', 'toplevel', 'wait_all', 'wait_any']</em><a class="headerlink" href="#google.cloud.ndb.__all__" title="Permalink to this definition">¶</a></dt>
-<dd><p>All top-level exported names.</p>
-</dd></dl>
-
+<span class="k">class</span> <span class="nc">Contact</span><span class="p">(</span><span class="n">ndb</span><span class="o">.</span><span class="n">Model</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="n">ndb</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">phone</span> <span class="o">=</span> <span class="n">ndb</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+    <span class="n">email</span> <span class="o">=</span> <span class="n">ndb</span><span class="o">.</span><span class="n">StringProperty</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>For now, we’ll keep it simple. For each contact, we’ll have a name, a phone
+number, and an email. This is defined in the above code. Notice that our
+<cite>Contact</cite> class inherits from <cite>google.cloud.ndb.Model</cite>. A model is a class
+that describes a type of entity, including the types and configuration for its
+properties. It’s roughly analogous to a SQL Table. An entity can be created by
+calling the model’s class constructor and then stored by calling the put()
+method.</p>
+<p>Now that we have our model, let’s create a couple of entities:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">client</span> <span class="o">=</span> <span class="n">ndb</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+<span class="k">with</span> <span class="n">client</span><span class="o">.</span><span class="n">context</span><span class="p">():</span>
+    <span class="n">contact1</span> <span class="o">=</span> <span class="n">Contact</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;John Smith&quot;</span><span class="p">,</span>
+                       <span class="n">phone</span><span class="o">=</span><span class="s2">&quot;555 617 8993&quot;</span><span class="p">,</span>
+                       <span class="n">email</span><span class="o">=</span><span class="s2">&quot;john.smith@gmail.com&quot;</span><span class="p">)</span>
+    <span class="n">contact1</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+    <span class="n">contact2</span> <span class="o">=</span> <span class="n">Contact</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Jane Doe&quot;</span><span class="p">,</span>
+                       <span class="n">phone</span><span class="o">=</span><span class="s2">&quot;555 445 1937&quot;</span><span class="p">,</span>
+                       <span class="n">email</span><span class="o">=</span><span class="s2">&quot;jane.doe@gmail.com&quot;</span><span class="p">)</span>
+    <span class="n">contact2</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>An important thing to note here is that to perform any work in the underlying
+Cloud Store, a client context has to be active. After the <code class="docutils literal notranslate"><span class="pre">ndb</span></code> client is
+initialized, we get the current context using the
+<cite>ndb.google.Client.context</cite> method. Then, we “activate” the context by
+using Python’s context manager mechanisms. Now, we can safely create the
+entities, which are in turn stored using the put() method.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For all the following examples, please assume that the context
+activation code precedes any <code class="docutils literal notranslate"><span class="pre">ndb</span></code> interactions.</p>
+</div>
+<p>In this example, since we didn’t specify a parent, both entities are going to
+be part of the <em>root</em> entity group. Let’s say we want to have separate contact
+groups, like “home” or “work”. In this case, we can specify a parent, in the
+form of an ancestor key, using <code class="docutils literal notranslate"><span class="pre">ndb</span></code>’s <cite>google.cloud.ndb.Key</cite> class:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ancestor_key</span> <span class="o">=</span> <span class="n">ndb</span><span class="o">.</span><span class="n">Key</span><span class="p">(</span><span class="s2">&quot;ContactGroup&quot;</span><span class="p">,</span> <span class="s2">&quot;work&quot;</span><span class="p">)</span>
+<span class="n">contact1</span> <span class="o">=</span> <span class="n">Contact</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">ancestor_key</span><span class="p">,</span>
+                   <span class="n">name</span><span class="o">=</span><span class="s2">&quot;John Smith&quot;</span><span class="p">,</span>
+                   <span class="n">phone</span><span class="o">=</span><span class="s2">&quot;555 617 8993&quot;</span><span class="p">,</span>
+                   <span class="n">email</span><span class="o">=</span><span class="s2">&quot;john.smith@gmail.com&quot;</span><span class="p">)</span>
+<span class="n">contact1</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+<span class="n">contact2</span> <span class="o">=</span> <span class="n">Contact</span><span class="p">(</span><span class="n">parent</span><span class="o">=</span><span class="n">ancestor_key</span><span class="p">,</span>
+                   <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Jane Doe&quot;</span><span class="p">,</span>
+                   <span class="n">phone</span><span class="o">=</span><span class="s2">&quot;555 445 1937&quot;</span><span class="p">,</span>
+                   <span class="n">email</span><span class="o">=</span><span class="s2">&quot;jane.doe@gmail.com&quot;</span><span class="p">)</span>
+<span class="n">contact2</span><span class="o">.</span><span class="n">put</span><span class="p">()</span>
+</pre></div>
+</div>
+<p>A <cite>key</cite> is composed of a pair of <code class="docutils literal notranslate"><span class="pre">(kind,</span> <span class="pre">id)</span></code> values. The kind gives the
+id of the entity that this key refers to, and the id is the name that we want
+to associate with this key. Note that it’s not mandatory to have the kind class
+defined previously in the code for this to work.</p>
+<p>This covers the basics for storing content in the Cloud Database. If you go to
+the Administration Console for your project, you should see the entities that
+were just created. Select “Datastore” from the Storage section of the Google
+Cloud Platform menu, then “Entities”, to get to the entity search page.</p>
+</div>
+<div class="section" id="queries-and-indexes">
+<h2>Queries and Indexes<a class="headerlink" href="#queries-and-indexes" title="Permalink to this headline">¶</a></h2>
+<p>Now that we have some entities safely stored, let’s see how to get them out. An
+application can query to find entities that match some filters:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="o">=</span> <span class="n">Contact</span><span class="o">.</span><span class="n">query</span><span class="p">()</span>
+<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">query</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>A typical <code class="docutils literal notranslate"><span class="pre">ndb</span></code> query filters entities by kind. In this example, we use a
+shortcut from the Model class that generates a query that returns all Contact
+entities. A query can also specify filters on entity property values and keys.</p>
+<p>A query can specify sort order. If a given entity has at least one (possibly
+null) value for every property in the filters and sort orders and all the
+filter criteria are met by the property values, then that entity is returned as
+a result.</p>
+<p>In the previous section, we stored some contacts using an ancestor key. Using
+that key, we can find only entities that “belong to” some ancestor:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">ancestor_key</span> <span class="o">=</span> <span class="n">ndb</span><span class="o">.</span><span class="n">Key</span><span class="p">(</span><span class="s2">&quot;ContactGroup&quot;</span><span class="p">,</span> <span class="s2">&quot;work&quot;</span><span class="p">)</span>
+<span class="n">query</span> <span class="o">=</span> <span class="n">Contact</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ancestor</span><span class="o">=</span><span class="n">ancestor_key</span><span class="p">)</span>
+<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">query</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>While the first query example returns all four stored contacts, this last one
+only returns those stored under the “work” contact group.</p>
+<p>There are many useful operations that can be done on a query. For example, to
+get results ordered by name:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="o">=</span> <span class="n">Contact</span><span class="o">.</span><span class="n">query</span><span class="p">()</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">query</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>You can also filter the results:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="o">=</span> <span class="n">Contact</span><span class="o">.</span><span class="n">query</span><span class="p">()</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">name</span> <span class="o">==</span> <span class="s2">&quot;John Smith&quot;</span><span class="p">)</span>
+<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">query</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>Every query uses an index, a table that contains the results for the query in
+the desired order. The underlying Datastore automatically maintains simple
+indexes (indexes that use only one property).</p>
+<p>You can define complex indexes in a configuration file, <a class="reference external" href="https://cloud.google.com/datastore/docs/tools/indexconfig">index.yaml</a>. When starting
+out with complex indexes, the easiest way to define them is by attempting a
+complex query from your application or from the command line. When Datastore
+encounters queries that do not yet have indexes configured, it will generate an
+error stating that no matching index was found, and it will include the
+recommended (and correct) index syntax as part of the error message.</p>
+<p>For example, the following Contact query will generate an error, since we are
+using more than one property:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">query</span> <span class="o">=</span> <span class="n">Contact</span><span class="o">.</span><span class="n">query</span><span class="p">()</span><span class="o">.</span><span class="n">order</span><span class="p">(</span><span class="n">Contact</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">Contact</span><span class="o">.</span><span class="n">email</span><span class="p">)</span>
+<span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">query</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>This will show an error like the following. Look for the text “recommended
+index is” to find the index properties that you need:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">debug_error_string</span> <span class="o">=</span> <span class="s2">&quot;{&quot;</span><span class="n">created</span><span class="s2">&quot;:&quot;</span><span class="nd">@1560413351</span><span class="o">.</span><span class="mi">069418472</span><span class="s2">&quot;,</span>
+<span class="s2">&quot;description&quot;</span><span class="p">:</span><span class="s2">&quot;Error received from peer ipv6:[2607:f8b0:4012</span>
+<span class="p">:</span><span class="mi">809</span><span class="p">::</span><span class="mi">200</span><span class="n">a</span><span class="p">]:</span><span class="mi">443</span><span class="s2">&quot;,&quot;</span><span class="n">file</span><span class="s2">&quot;: &quot;</span><span class="n">src</span><span class="o">/</span><span class="n">core</span><span class="o">/</span><span class="n">lib</span><span class="o">/</span><span class="n">surface</span><span class="o">/</span><span class="n">call</span><span class="o">.</span><span class="n">cc</span><span class="s2">&quot;,</span>
+<span class="s2">&quot;file_line&quot;</span><span class="p">:</span><span class="mi">1046</span><span class="p">,</span><span class="s2">&quot;grpc_message&quot;</span><span class="p">:</span><span class="s2">&quot;no matching index found.</span>
+<span class="n">recommended</span> <span class="n">index</span> <span class="ow">is</span><span class="p">:</span>\<span class="n">n</span><span class="o">-</span> <span class="n">kind</span><span class="p">:</span> <span class="n">Contact</span>\<span class="n">n</span>  <span class="n">properties</span><span class="p">:</span>\<span class="n">n</span>  <span class="o">-</span> <span class="n">name</span><span class="p">:</span>
+<span class="n">name</span>\<span class="n">n</span>  <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">email</span>\<span class="n">n</span><span class="s2">&quot;,&quot;</span><span class="n">grpc_status</span><span class="s2">&quot;:9}&quot;</span>
+</pre></div>
+</div>
+<p>From this error, you would get the following index description:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="o">-</span> <span class="n">kind</span><span class="p">:</span> <span class="n">Contact</span>
+  <span class="n">properties</span><span class="p">:</span>
+    <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">name</span>
+    <span class="o">-</span> <span class="n">name</span><span class="p">:</span> <span class="n">email</span>
+</pre></div>
+</div>
+<p>Add your new indexes to a local <cite>index.yaml</cite> file. When you have them all, you
+can add them to your project using the <cite>gcloud</cite> command from the <a class="reference external" href="https://cloud.google.com/sdk/">Google Cloud
+SDK</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">gcloud</span> <span class="n">datastore</span> <span class="n">indexes</span> <span class="n">create</span> <span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">index</span><span class="o">.</span><span class="n">yaml</span>
+</pre></div>
+</div>
+<p>If your datastore has many entities, it takes a long time to create a new index
+for them; in this case, it’s wise to update the index definitions before
+uploading code that uses the new index. You can use the “Datastore” control
+panel to find out when the indexes have finished building.</p>
+<p>This index mechanism supports a wide range of queries and is suitable for most
+applications. However, it does not support some kinds of queries common in
+other database technologies. In particular, joins aren’t supported.</p>
+</div>
 </div>
 
 
@@ -96,13 +288,11 @@ version of the <code class="docutils literal notranslate"><span class="pre">db</
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -123,7 +313,7 @@ version of the <code class="docutils literal notranslate"><span class="pre">db</
       &copy;2018, Google.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |

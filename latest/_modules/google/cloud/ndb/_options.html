@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>google.cloud.ndb._options &#8212; ndb 0.0.1.dev1 documentation</title>
+    <meta charset="utf-8" />
+    <title>google.cloud.ndb._options &#8212; ndb 0.0.1 documentation</title>
     <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
@@ -51,6 +49,7 @@
 <span class="sd">&quot;&quot;&quot;Support for options.&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
 <span class="kn">import</span> <span class="nn">itertools</span>
 <span class="kn">import</span> <span class="nn">logging</span>
 
@@ -64,8 +63,8 @@
         <span class="c1"># Supported</span>
         <span class="s2">&quot;retries&quot;</span><span class="p">,</span>
         <span class="s2">&quot;timeout&quot;</span><span class="p">,</span>
-        <span class="c1"># Not yet implemented</span>
         <span class="s2">&quot;use_cache&quot;</span><span class="p">,</span>
+        <span class="c1"># Not yet implemented</span>
         <span class="s2">&quot;use_memcache&quot;</span><span class="p">,</span>
         <span class="s2">&quot;use_datastore&quot;</span><span class="p">,</span>
         <span class="s2">&quot;memcache_timeout&quot;</span><span class="p">,</span>
@@ -78,12 +77,54 @@
 
     <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">options</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">wrapped</span><span class="p">):</span>
+        <span class="c1"># If there are any positional arguments, get their names</span>
+        <span class="n">slots</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">slots</span><span class="p">())</span>
+        <span class="n">signature</span> <span class="o">=</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span>
+        <span class="n">positional</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">name</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">parameter</span> <span class="ow">in</span> <span class="n">signature</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">parameter</span><span class="o">.</span><span class="n">kind</span>
+            <span class="ow">in</span> <span class="p">(</span><span class="n">parameter</span><span class="o">.</span><span class="n">POSITIONAL_ONLY</span><span class="p">,</span> <span class="n">parameter</span><span class="o">.</span><span class="n">POSITIONAL_OR_KEYWORD</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="c1"># We need for any non-option arguments to come before any option</span>
+        <span class="c1"># arguments</span>
+        <span class="n">in_options</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">positional</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">slots</span><span class="p">:</span>
+                <span class="n">in_options</span> <span class="o">=</span> <span class="kc">True</span>
+
+            <span class="k">elif</span> <span class="n">in_options</span> <span class="ow">and</span> <span class="n">name</span> <span class="o">!=</span> <span class="s2">&quot;_options&quot;</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">&quot;All positional non-option arguments must precede option &quot;</span>
+                    <span class="s2">&quot;arguments in function signature.&quot;</span>
+                <span class="p">)</span>
+
         <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">wrapped</span><span class="p">)</span>
-        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-            <span class="n">_options</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;_options&quot;</span><span class="p">)</span>
+        <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">pass_args</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">kw_options</span> <span class="o">=</span> <span class="p">{}</span>
+
+            <span class="c1"># Process positional args</span>
+            <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">positional</span><span class="p">,</span> <span class="n">args</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">slots</span><span class="p">:</span>
+                    <span class="n">kw_options</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">pass_args</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+            <span class="c1"># Process keyword args</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">slots</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kw_options</span><span class="p">:</span>
+                    <span class="n">kw_options</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="c1"># If another function that uses options is delegating to this one,</span>
+            <span class="c1"># we&#39;ll already have options.</span>
+            <span class="n">_options</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;_options&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">_options</span><span class="p">:</span>
-                <span class="n">_options</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">wrapped</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="n">_options</span><span class="o">=</span><span class="n">_options</span><span class="p">)</span>
+                <span class="n">_options</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kw_options</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">wrapped</span><span class="p">(</span><span class="o">*</span><span class="n">pass_args</span><span class="p">,</span> <span class="n">_options</span><span class="o">=</span><span class="n">_options</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">wrapper</span>
 
@@ -128,9 +169,6 @@
                     <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="nb">next</span><span class="p">(</span><span class="nb">iter</span><span class="p">(</span><span class="n">kwargs</span><span class="p">))</span>
                 <span class="p">)</span>
             <span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_cache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_memcache</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span>
@@ -239,13 +277,11 @@
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -266,7 +302,7 @@
       &copy;2018, Google.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>google.cloud.ndb.model &#8212; ndb 0.0.1.dev1 documentation</title>
+    <meta charset="utf-8" />
+    <title>google.cloud.ndb.model &#8212; ndb 0.0.1 documentation</title>
     <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
@@ -63,9 +61,224 @@
 <span class="sd">.. testcleanup:: *</span>
 
 <span class="sd">    context.__exit__(None, None, None)</span>
+
+<span class="sd">A model class represents the structure of entities stored in the datastore.</span>
+<span class="sd">Applications define model classes to indicate the structure of their entities,</span>
+<span class="sd">then instantiate those model classes to create entities.</span>
+
+<span class="sd">All model classes must inherit (directly or indirectly) from Model. Through</span>
+<span class="sd">the magic of metaclasses, straightforward assignments in the model class</span>
+<span class="sd">definition can be used to declare the model&#39;s structure::</span>
+
+<span class="sd">    class Person(Model):</span>
+<span class="sd">        name = StringProperty()</span>
+<span class="sd">        age = IntegerProperty()</span>
+
+<span class="sd">We can now create a Person entity and write it to Cloud Datastore::</span>
+
+<span class="sd">    person = Person(name=&#39;Arthur Dent&#39;, age=42)</span>
+<span class="sd">    key = person.put()</span>
+
+<span class="sd">The return value from put() is a Key (see the documentation for ndb/key.py),</span>
+<span class="sd">which can be used to retrieve the same entity later::</span>
+
+<span class="sd">    person2 = key.get()</span>
+<span class="sd">    person2 == person  # Returns True</span>
+
+<span class="sd">To update an entity, simply change its attributes and write it back (note that</span>
+<span class="sd">this doesn&#39;t change the key)::</span>
+
+<span class="sd">    person2.name = &#39;Arthur Philip Dent&#39;</span>
+<span class="sd">    person2.put()</span>
+
+<span class="sd">We can also delete an entity (by using the key)::</span>
+
+<span class="sd">    key.delete()</span>
+
+<span class="sd">The property definitions in the class body tell the system the names and the</span>
+<span class="sd">types of the fields to be stored in Cloud Datastore, whether they must be</span>
+<span class="sd">indexed, their default value, and more.</span>
+
+<span class="sd">Many different Property types exist.  Most are indexed by default, the</span>
+<span class="sd">exceptions are indicated in the list below:</span>
+
+<span class="sd">- :class:`StringProperty`: a short text string, limited to at most 1500 bytes (when</span>
+<span class="sd">  UTF-8 encoded from :class:`str` to bytes).</span>
+<span class="sd">- :class:`TextProperty`: an unlimited text string; unindexed.</span>
+<span class="sd">- :class:`BlobProperty`: an unlimited byte string; unindexed.</span>
+<span class="sd">- :class:`IntegerProperty`: a 64-bit signed integer.</span>
+<span class="sd">- :class:`FloatProperty`: a double precision floating point number.</span>
+<span class="sd">- :class:`BooleanProperty`: a bool value.</span>
+<span class="sd">- :class:`DateTimeProperty`: a datetime object.  Note: Datastore always uses UTC as the</span>
+<span class="sd">  timezone.</span>
+<span class="sd">- :class:`DateProperty`: a date object.</span>
+<span class="sd">- :class:`TimeProperty`: a time object.</span>
+<span class="sd">- :class:`GeoPtProperty`: a geographical location, i.e. (latitude, longitude).</span>
+<span class="sd">- :class:`KeyProperty`: a Cloud Datastore Key value, optionally constrained to referring</span>
+<span class="sd">  to a specific kind.</span>
+<span class="sd">- :class:`UserProperty`: a User object (for backwards compatibility only)</span>
+<span class="sd">- :class:`StructuredProperty`: a field that is itself structured like an entity; see</span>
+<span class="sd">  below for more details.</span>
+<span class="sd">- :class:`LocalStructuredProperty`: like StructuredProperty but the on-disk</span>
+<span class="sd">  representation is an opaque blob; unindexed.</span>
+<span class="sd">- :class:`ComputedProperty`: a property whose value is computed from other properties by</span>
+<span class="sd">  a user-defined function.  The property value is written to Cloud Datastore so</span>
+<span class="sd">  that it can be used in queries, but the value from Cloud Datastore is not</span>
+<span class="sd">  used when the entity is read back.</span>
+<span class="sd">- :class:`GenericProperty`: a property whose type is not constrained; mostly used by the</span>
+<span class="sd">  Expando class (see below) but also usable explicitly.</span>
+<span class="sd">- :class:`JsonProperty`: a property whose value is any object that can be serialized</span>
+<span class="sd">  using JSON; the value written to Cloud Datastore is a JSON representation of</span>
+<span class="sd">  that object.</span>
+<span class="sd">- :class:`PickleProperty`: a property whose value is any object that can be serialized</span>
+<span class="sd">  using Python&#39;s pickle protocol; the value written to the Cloud Datastore is</span>
+<span class="sd">  the pickled representation of that object, using the highest available pickle</span>
+<span class="sd">  protocol</span>
+
+<span class="sd">Most Property classes have similar constructor signatures.  They</span>
+<span class="sd">accept several optional keyword arguments:</span>
+
+<span class="sd">- name=&lt;string&gt;: the name used to store the property value in the datastore.</span>
+<span class="sd">  Unlike the following options, this may also be given as a positional</span>
+<span class="sd">  argument.</span>
+<span class="sd">- indexed=&lt;bool&gt;: indicates whether the property should be indexed (allowing</span>
+<span class="sd">  queries on this property&#39;s value).</span>
+<span class="sd">- repeated=&lt;bool&gt;: indicates that this property can have multiple values in</span>
+<span class="sd">  the same entity.</span>
+<span class="sd">- write_empty_list&lt;bool&gt;: For repeated value properties, controls whether</span>
+<span class="sd">  properties with no elements (the empty list) is written to Datastore. If</span>
+<span class="sd">  true, written, if false, then nothing is written to Datastore.</span>
+<span class="sd">- required=&lt;bool&gt;: indicates that this property must be given a value.</span>
+<span class="sd">- default=&lt;value&gt;: a default value if no explicit value is given.</span>
+<span class="sd">- choices=&lt;list of values&gt;: a list or tuple of allowable values.</span>
+<span class="sd">- validator=&lt;function&gt;: a general-purpose validation function. It will be</span>
+<span class="sd">  called with two arguments (prop, value) and should either return the</span>
+<span class="sd">  validated value or raise an exception. It is also allowed for the function</span>
+<span class="sd">  to modify the value, but the function should be idempotent. For example: a</span>
+<span class="sd">  validator that returns value.strip() or value.lower() is fine, but one that</span>
+<span class="sd">  returns value + &#39;$&#39; is not).</span>
+<span class="sd">- verbose_name=&lt;value&gt;: A human readable name for this property. This human</span>
+<span class="sd">  readable name can be used for html form labels.</span>
+
+<span class="sd">The repeated and required/default options are mutually exclusive: a repeated</span>
+<span class="sd">property cannot be required nor can it specify a default value (the default is</span>
+<span class="sd">always an empty list and an empty list is always an allowed value), but a</span>
+<span class="sd">required property can have a default.</span>
+
+<span class="sd">Some property types have additional arguments.  Some property types do not</span>
+<span class="sd">support all options.</span>
+
+<span class="sd">Repeated properties are always represented as Python lists; if there is only</span>
+<span class="sd">one value, the list has only one element. When a new list is assigned to a</span>
+<span class="sd">repeated property, all elements of the list are validated. Since it is also</span>
+<span class="sd">possible to mutate lists in place, repeated properties are re-validated before</span>
+<span class="sd">they are written to the datastore.</span>
+
+<span class="sd">No validation happens when an entity is read from Cloud Datastore; however</span>
+<span class="sd">property values read that have the wrong type (e.g. a string value for an</span>
+<span class="sd">IntegerProperty) are ignored.</span>
+
+<span class="sd">For non-repeated properties, None is always a possible value, and no validation</span>
+<span class="sd">is called when the value is set to None. However for required properties,</span>
+<span class="sd">writing the entity to Cloud Datastore requires the value to be something other</span>
+<span class="sd">than None (and valid).</span>
+
+<span class="sd">The StructuredProperty is different from most other properties; it lets you</span>
+<span class="sd">define a sub-structure for your entities. The substructure itself is defined</span>
+<span class="sd">using a model class, and the attribute value is an instance of that model</span>
+<span class="sd">class. However, it is not stored in the datastore as a separate entity;</span>
+<span class="sd">instead, its attribute values are included in the parent entity using a naming</span>
+<span class="sd">convention (the name of the structured attribute followed by a dot followed by</span>
+<span class="sd">the name of the subattribute). For example::</span>
+
+<span class="sd">    class Address(Model):</span>
+<span class="sd">      street = StringProperty()</span>
+<span class="sd">      city = StringProperty()</span>
+
+<span class="sd">    class Person(Model):</span>
+<span class="sd">      name = StringProperty()</span>
+<span class="sd">      address = StructuredProperty(Address)</span>
+
+<span class="sd">    p = Person(name=&#39;Harry Potter&#39;,</span>
+<span class="sd">               address=Address(street=&#39;4 Privet Drive&#39;,</span>
+<span class="sd">               city=&#39;Little Whinging&#39;))</span>
+<span class="sd">    k = p.put()</span>
+
+<span class="sd">This would write a single &#39;Person&#39; entity with three attributes (as you could</span>
+<span class="sd">verify using the Datastore Viewer in the Admin Console)::</span>
+
+<span class="sd">    name = &#39;Harry Potter&#39;</span>
+<span class="sd">    address.street = &#39;4 Privet Drive&#39;</span>
+<span class="sd">    address.city = &#39;Little Whinging&#39;</span>
+
+<span class="sd">Structured property types can be nested arbitrarily deep, but in a hierarchy of</span>
+<span class="sd">nested structured property types, only one level can have the repeated flag</span>
+<span class="sd">set. It is fine to have multiple structured properties referencing the same</span>
+<span class="sd">model class.</span>
+
+<span class="sd">It is also fine to use the same model class both as a top-level entity class</span>
+<span class="sd">and as for a structured property; however, queries for the model class will</span>
+<span class="sd">only return the top-level entities.</span>
+
+<span class="sd">The LocalStructuredProperty works similar to StructuredProperty on the Python</span>
+<span class="sd">side. For example::</span>
+
+<span class="sd">    class Address(Model):</span>
+<span class="sd">        street = StringProperty()</span>
+<span class="sd">        city = StringProperty()</span>
+
+<span class="sd">    class Person(Model):</span>
+<span class="sd">        name = StringProperty()</span>
+<span class="sd">        address = LocalStructuredProperty(Address)</span>
+
+<span class="sd">    p = Person(name=&#39;Harry Potter&#39;,</span>
+<span class="sd">               address=Address(street=&#39;4 Privet Drive&#39;,</span>
+<span class="sd">               city=&#39;Little Whinging&#39;))</span>
+<span class="sd">    k = p.put()</span>
+
+<span class="sd">However, the data written to Cloud Datastore is different; it writes a &#39;Person&#39;</span>
+<span class="sd">entity with a &#39;name&#39; attribute as before and a single &#39;address&#39; attribute</span>
+<span class="sd">whose value is a blob which encodes the Address value (using the standard</span>
+<span class="sd">&quot;protocol buffer&quot; encoding).</span>
+
+<span class="sd">The Model class offers basic query support. You can create a Query object by</span>
+<span class="sd">calling the query() class method. Iterating over a Query object returns the</span>
+<span class="sd">entities matching the query one at a time. Query objects are fully described</span>
+<span class="sd">in the documentation for query, but there is one handy shortcut that is only</span>
+<span class="sd">available through Model.query(): positional arguments are interpreted as filter</span>
+<span class="sd">expressions which are combined through an AND operator. For example::</span>
+
+<span class="sd">    Person.query(Person.name == &#39;Harry Potter&#39;, Person.age &gt;= 11)</span>
+
+<span class="sd">is equivalent to::</span>
+
+<span class="sd">    Person.query().filter(Person.name == &#39;Harry Potter&#39;, Person.age &gt;= 11)</span>
+
+<span class="sd">Keyword arguments passed to .query() are passed along to the Query() constructor.</span>
+
+<span class="sd">It is possible to query for field values of structured properties. For</span>
+<span class="sd">example::</span>
+
+<span class="sd">    qry = Person.query(Person.address.city == &#39;London&#39;)</span>
+
+<span class="sd">A number of top-level functions also live in this module:</span>
+
+<span class="sd">- :func:`get_multi` reads multiple entities at once.</span>
+<span class="sd">- :func:`put_multi` writes multiple entities at once.</span>
+<span class="sd">- :func:`delete_multi` deletes multiple entities at once.</span>
+
+<span class="sd">All these have a corresponding ``*_async()`` variant as well. The</span>
+<span class="sd">``*_multi_async()`` functions return a list of Futures.</span>
+
+<span class="sd">There are many other interesting features. For example, Model subclasses may</span>
+<span class="sd">define pre-call and post-call hooks for most operations (get, put, delete,</span>
+<span class="sd">allocate_ids), and Property classes may be subclassed to suit various needs.</span>
+<span class="sd">Documentation for writing a Property subclass is in the docs for the</span>
+<span class="sd">:class:`Property` class.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 
+<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">import</span> <span class="nn">datetime</span>
 <span class="kn">import</span> <span class="nn">functools</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
@@ -75,12 +288,16 @@
 
 <span class="kn">from</span> <span class="nn">google.cloud.datastore</span> <span class="k">import</span> <span class="n">entity</span> <span class="k">as</span> <span class="n">entity_module</span>
 <span class="kn">from</span> <span class="nn">google.cloud.datastore</span> <span class="k">import</span> <span class="n">helpers</span>
+<span class="kn">from</span> <span class="nn">google.cloud.datastore_v1.proto</span> <span class="k">import</span> <span class="n">entity_pb2</span>
 
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">context</span> <span class="k">as</span> <span class="n">context_module</span>
 <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">_datastore_api</span>
 <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">_datastore_types</span>
 <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">exceptions</span>
 <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">key</span> <span class="k">as</span> <span class="n">key_module</span>
 <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">_options</span>
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">query</span> <span class="k">as</span> <span class="n">query_module</span>
+<span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">_transaction</span>
 <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">tasklets</span>
 
 
@@ -127,12 +344,6 @@
     <span class="s2">&quot;MetaModel&quot;</span><span class="p">,</span>
     <span class="s2">&quot;Model&quot;</span><span class="p">,</span>
     <span class="s2">&quot;Expando&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;transaction&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;transaction_async&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;transactional&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;transactional_async&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;transactional_tasklet&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;non_transactional&quot;</span><span class="p">,</span>
     <span class="s2">&quot;get_multi_async&quot;</span><span class="p">,</span>
     <span class="s2">&quot;get_multi&quot;</span><span class="p">,</span>
     <span class="s2">&quot;put_multi_async&quot;</span><span class="p">,</span>
@@ -145,6 +356,7 @@
 
 
 <span class="n">_MEANING_PREDEFINED_ENTITY_USER</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">_MEANING_URI_COMPRESSED</span> <span class="o">=</span> <span class="s2">&quot;ZLIB&quot;</span>
 <span class="n">_MAX_STRING_LENGTH</span> <span class="o">=</span> <span class="mi">1500</span>
 <span class="n">Key</span> <span class="o">=</span> <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span>
 <span class="n">BlobKey</span> <span class="o">=</span> <span class="n">_datastore_types</span><span class="o">.</span><span class="n">BlobKey</span>
@@ -331,20 +543,20 @@
         <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NoLongerImplementedError</span><span class="p">()</span></div>
 
 
-<span class="k">def</span> <span class="nf">_entity_from_protobuf</span><span class="p">(</span><span class="n">protobuf</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Deserialize an entity from a protobuffer.</span>
+<span class="k">def</span> <span class="nf">_entity_from_ds_entity</span><span class="p">(</span><span class="n">ds_entity</span><span class="p">,</span> <span class="n">model_class</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Create an entity from a datastore entity.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        protobuf (google.cloud.datastore_v1.types.Entity): An entity protobuf</span>
-<span class="sd">            to be deserialized.</span>
+<span class="sd">        ds_entity (google.cloud.datastore_v1.types.Entity): An entity to be</span>
+<span class="sd">        deserialized.</span>
 
 <span class="sd">    Returns:</span>
 <span class="sd">        .Model: The deserialized entity.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">ds_entity</span> <span class="o">=</span> <span class="n">helpers</span><span class="o">.</span><span class="n">entity_from_protobuf</span><span class="p">(</span><span class="n">protobuf</span><span class="p">)</span>
-    <span class="n">model_class</span> <span class="o">=</span> <span class="n">Model</span><span class="o">.</span><span class="n">_lookup_model</span><span class="p">(</span><span class="n">ds_entity</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>
+    <span class="n">model_class</span> <span class="o">=</span> <span class="n">model_class</span> <span class="ow">or</span> <span class="n">Model</span><span class="o">.</span><span class="n">_lookup_model</span><span class="p">(</span><span class="n">ds_entity</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>
     <span class="n">entity</span> <span class="o">=</span> <span class="n">model_class</span><span class="p">()</span>
-    <span class="n">entity</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">_from_ds_key</span><span class="p">(</span><span class="n">ds_entity</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">ds_entity</span><span class="o">.</span><span class="n">key</span><span class="p">:</span>
+        <span class="n">entity</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">_from_ds_key</span><span class="p">(</span><span class="n">ds_entity</span><span class="o">.</span><span class="n">key</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">ds_entity</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
         <span class="n">prop</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">prop</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">Property</span><span class="p">)):</span>
@@ -359,17 +571,29 @@
     <span class="k">return</span> <span class="n">entity</span>
 
 
-<span class="k">def</span> <span class="nf">_entity_to_protobuf</span><span class="p">(</span><span class="n">entity</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Serialize an entity to a protobuffer.</span>
+<span class="k">def</span> <span class="nf">_entity_from_protobuf</span><span class="p">(</span><span class="n">protobuf</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Deserialize an entity from a protobuffer.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        entity (Model): The entity to be serialized.</span>
+<span class="sd">        protobuf (google.cloud.datastore_v1.types.Entity): An entity protobuf</span>
+<span class="sd">            to be deserialized.</span>
 
 <span class="sd">    Returns:</span>
-<span class="sd">        google.cloud.datastore_v1.types.Entity: The protocol buffer</span>
-<span class="sd">            representation.</span>
+<span class="sd">        .Model: The deserialized entity.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="c1"># First, make a datastore entity</span>
+    <span class="n">ds_entity</span> <span class="o">=</span> <span class="n">helpers</span><span class="o">.</span><span class="n">entity_from_protobuf</span><span class="p">(</span><span class="n">protobuf</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">_entity_from_ds_entity</span><span class="p">(</span><span class="n">ds_entity</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_entity_to_ds_entity</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">set_key</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Convert an NDB entity to Datastore entity.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        entity (Model): The entity to be converted.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        google.cloud.datastore.entity.Entity: The converted entity.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">data</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="nb">type</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span><span class="o">.</span><span class="n">mro</span><span class="p">():</span>
         <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
@@ -385,13 +609,30 @@
                 <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">data</span><span class="p">[</span><span class="n">prop</span><span class="o">.</span><span class="n">_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
 
-    <span class="n">key</span> <span class="o">=</span> <span class="n">entity</span><span class="o">.</span><span class="n">_key</span>
-    <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">key</span> <span class="o">=</span> <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">_get_kind</span><span class="p">(),</span> <span class="kc">None</span><span class="p">)</span>
-    <span class="n">ds_entity</span> <span class="o">=</span> <span class="n">entity_module</span><span class="o">.</span><span class="n">Entity</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span>
+    <span class="n">ds_entity</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">if</span> <span class="n">set_key</span><span class="p">:</span>
+        <span class="n">key</span> <span class="o">=</span> <span class="n">entity</span><span class="o">.</span><span class="n">_key</span>
+        <span class="k">if</span> <span class="n">key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">key</span> <span class="o">=</span> <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">_get_kind</span><span class="p">(),</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="n">ds_entity</span> <span class="o">=</span> <span class="n">entity_module</span><span class="o">.</span><span class="n">Entity</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">_key</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">ds_entity</span> <span class="o">=</span> <span class="n">entity_module</span><span class="o">.</span><span class="n">Entity</span><span class="p">()</span>
     <span class="n">ds_entity</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
-    <span class="c1"># Then, use datatore to get the protocol buffer</span>
+    <span class="k">return</span> <span class="n">ds_entity</span>
+
+
+<span class="k">def</span> <span class="nf">_entity_to_protobuf</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">set_key</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Serialize an entity to a protocol buffer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        entity (Model): The entity to be serialized.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        google.cloud.datastore_v1.types.Entity: The protocol buffer</span>
+<span class="sd">            representation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ds_entity</span> <span class="o">=</span> <span class="n">_entity_to_ds_entity</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">set_key</span><span class="o">=</span><span class="n">set_key</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">helpers</span><span class="o">.</span><span class="n">entity_to_protobuf</span><span class="p">(</span><span class="n">ds_entity</span><span class="p">)</span>
 
 
@@ -3372,31 +3613,473 @@
 
 
 <div class="viewcode-block" id="StructuredProperty"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.StructuredProperty">[docs]</a><span class="k">class</span> <span class="nc">StructuredProperty</span><span class="p">(</span><span class="n">Property</span><span class="p">):</span>
-    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="sd">&quot;&quot;&quot;A Property whose value is itself an entity.</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<span class="sd">    The values of the sub-entity are indexed and can be queried.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_model_class</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_kwargs</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_class</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">StructuredProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repeated</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">model_class</span><span class="o">.</span><span class="n">_has_repeated</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">&quot;This StructuredProperty cannot use repeated=True &quot;</span>
+                    <span class="s2">&quot;because its model class (</span><span class="si">%s</span><span class="s2">) contains repeated &quot;</span>
+                    <span class="s2">&quot;properties (directly or indirectly).&quot;</span>
+                    <span class="o">%</span> <span class="n">model_class</span><span class="o">.</span><span class="vm">__name__</span>
+                <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span> <span class="o">=</span> <span class="n">model_class</span>
+
+    <span class="k">def</span> <span class="nf">_get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Override _get_value() to *not* raise UnprojectedPropertyError.</span>
+
+<span class="sd">        This is necessary because the projection must include both the</span>
+<span class="sd">        sub-entity and the property name that is projected (e.g. &#39;foo.bar&#39;</span>
+<span class="sd">        instead of only &#39;foo&#39;). In that case the original code would fail,</span>
+<span class="sd">        because it only looks for the property name (&#39;foo&#39;). Here we check for</span>
+<span class="sd">        a value, and only call the original code if the value is None.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_user_value</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">entity</span><span class="o">.</span><span class="n">_projection</span><span class="p">:</span>
+            <span class="c1"># Invoke super _get_value() to raise the proper exception.</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">StructuredProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_get_for_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repeated</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="p">[</span><span class="n">v</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">_to_dict</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+<div class="viewcode-block" id="StructuredProperty.__getattr__"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.StructuredProperty.__getattr__">[docs]</a>    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attrname</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Dynamically get a subproperty.&quot;&quot;&quot;</span>
+        <span class="c1"># Optimistically try to use the dict key.</span>
+        <span class="n">prop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="n">_properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">attrname</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span>
+                <span class="s2">&quot;Model subclass </span><span class="si">%s</span><span class="s2"> has no attribute </span><span class="si">%s</span><span class="s2">&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">attrname</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">prop_copy</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">prop</span><span class="p">)</span>
+        <span class="n">prop_copy</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">prop_copy</span><span class="o">.</span><span class="n">_name</span>
+        <span class="c1"># Cache the outcome, so subsequent requests for the same attribute</span>
+        <span class="c1"># name will get the copied property directly rather than going</span>
+        <span class="c1"># through the above motions all over again.</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attrname</span><span class="p">,</span> <span class="n">prop_copy</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">prop_copy</span></div>
+
+    <span class="k">def</span> <span class="nf">_comparison</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="o">!=</span> <span class="n">query_module</span><span class="o">.</span><span class="n">_EQ_OP</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">BadFilterError</span><span class="p">(</span>
+                <span class="s2">&quot;StructuredProperty filter can only use ==&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_indexed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">BadFilterError</span><span class="p">(</span>
+                <span class="s2">&quot;Cannot query for unindexed StructuredProperty </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+            <span class="p">)</span>
+        <span class="c1"># Import late to avoid circular imports.</span>
+        <span class="kn">from</span> <span class="nn">.query</span> <span class="k">import</span> <span class="n">ConjunctionNode</span><span class="p">,</span> <span class="n">PostFilterNode</span>
+        <span class="kn">from</span> <span class="nn">.query</span> <span class="k">import</span> <span class="n">RepeatedStructuredPropertyPredicate</span>
+
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="kn">from</span> <span class="nn">.query</span> <span class="k">import</span> <span class="p">(</span>
+                <span class="n">FilterNode</span><span class="p">,</span>
+            <span class="p">)</span>  <span class="c1"># Import late to avoid circular imports.</span>
+
+            <span class="k">return</span> <span class="n">FilterNode</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_do_validate</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+        <span class="n">filters</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">match_keys</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="n">_properties</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">subvalue</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">prop</span><span class="o">.</span><span class="n">_repeated</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">subvalue</span><span class="p">:</span>  <span class="c1"># pragma: no branch</span>
+                    <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">BadFilterError</span><span class="p">(</span>
+                        <span class="s2">&quot;Cannot query for non-empty repeated property </span><span class="si">%s</span><span class="s2">&quot;</span>
+                        <span class="o">%</span> <span class="n">prop</span><span class="o">.</span><span class="n">_name</span>
+                    <span class="p">)</span>
+                <span class="k">continue</span>  <span class="c1"># pragma: NO COVER</span>
+
+            <span class="k">if</span> <span class="n">subvalue</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># pragma: no branch</span>
+                <span class="n">altprop</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prop</span><span class="o">.</span><span class="n">_code_name</span><span class="p">)</span>
+                <span class="n">filt</span> <span class="o">=</span> <span class="n">altprop</span><span class="o">.</span><span class="n">_comparison</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">subvalue</span><span class="p">)</span>
+                <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">filt</span><span class="p">)</span>
+                <span class="n">match_keys</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">prop</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">filters</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">BadFilterError</span><span class="p">(</span>
+                <span class="s2">&quot;StructuredProperty filter without any values&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">filters</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">filters</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repeated</span><span class="p">:</span>
+            <span class="n">entity_pb</span> <span class="o">=</span> <span class="n">_entity_to_protobuf</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">predicate</span> <span class="o">=</span> <span class="n">RepeatedStructuredPropertyPredicate</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">match_keys</span><span class="p">,</span> <span class="n">entity_pb</span>
+            <span class="p">)</span>
+            <span class="n">filters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">PostFilterNode</span><span class="p">(</span><span class="n">predicate</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">ConjunctionNode</span><span class="p">(</span><span class="o">*</span><span class="n">filters</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_IN</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">,</span> <span class="nb">set</span><span class="p">,</span> <span class="nb">frozenset</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">BadArgumentError</span><span class="p">(</span>
+                <span class="s2">&quot;Expected list, tuple or set, got </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">value</span><span class="p">,)</span>
+            <span class="p">)</span>
+        <span class="kn">from</span> <span class="nn">.query</span> <span class="k">import</span> <span class="n">DisjunctionNode</span><span class="p">,</span> <span class="n">FalseNode</span>
+
+        <span class="c1"># Expand to a series of == filters.</span>
+        <span class="n">filters</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_comparison</span><span class="p">(</span><span class="n">query_module</span><span class="o">.</span><span class="n">_EQ_OP</span><span class="p">,</span> <span class="n">val</span><span class="p">)</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">value</span><span class="p">]</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">filters</span><span class="p">:</span>
+            <span class="c1"># DisjunctionNode doesn&#39;t like an empty list of filters.</span>
+            <span class="c1"># Running the query will still fail, but this matches the</span>
+            <span class="c1"># behavior of IN for regular properties.</span>
+            <span class="k">return</span> <span class="n">FalseNode</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">DisjunctionNode</span><span class="p">(</span><span class="o">*</span><span class="n">filters</span><span class="p">)</span>
+
+    <span class="n">IN</span> <span class="o">=</span> <span class="n">_IN</span>
+
+    <span class="k">def</span> <span class="nf">_validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="c1"># A dict is assumed to be the result of a _to_dict() call.</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="p">(</span><span class="o">**</span><span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">BadValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Expected </span><span class="si">%s</span><span class="s2"> instance, got </span><span class="si">%s</span><span class="s2">&quot;</span>
+                <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">value</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_has_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">,</span> <span class="n">rest</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Check if entity has a value for this property.</span>
+
+<span class="sd">        Basically, prop._has_value(self, ent, [&#39;x&#39;, &#39;y&#39;]) is similar to</span>
+<span class="sd">          (prop._has_value(ent) and prop.x._has_value(ent.x) and</span>
+<span class="sd">           prop.x.y._has_value(ent.x.y)), assuming prop.x and prop.x.y exist.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            entity (ndb.Model): An instance of a model.</span>
+<span class="sd">            rest (list[str]): optional list of attribute names to check in</span>
+<span class="sd">                addition.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if the entity has a value for that property.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ok</span> <span class="o">=</span> <span class="nb">super</span><span class="p">(</span><span class="n">StructuredProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_has_value</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ok</span> <span class="ow">and</span> <span class="n">rest</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_repeated</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                        <span class="s2">&quot;Failed to retrieve sub-entity of StructuredProperty&quot;</span>
+                        <span class="s2">&quot; </span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+                    <span class="p">)</span>
+                <span class="n">subent</span> <span class="o">=</span> <span class="n">value</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">subent</span> <span class="o">=</span> <span class="n">value</span>
+
+            <span class="k">if</span> <span class="n">subent</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+
+            <span class="n">subprop</span> <span class="o">=</span> <span class="n">subent</span><span class="o">.</span><span class="n">_properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">rest</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">subprop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">ok</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">ok</span> <span class="o">=</span> <span class="n">subprop</span><span class="o">.</span><span class="n">_has_value</span><span class="p">(</span><span class="n">subent</span><span class="p">,</span> <span class="n">rest</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span>
+
+        <span class="k">return</span> <span class="n">ok</span>
+
+    <span class="k">def</span> <span class="nf">_check_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rest</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">require_indexed</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Override for Property._check_property().</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            InvalidPropertyError if no subproperty is specified or if something</span>
+<span class="sd">            is wrong with the subproperty.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">rest</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">InvalidPropertyError</span><span class="p">(</span>
+                <span class="s2">&quot;Structured property </span><span class="si">%s</span><span class="s2"> requires a subproperty&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+            <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="n">_check_properties</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">rest</span><span class="p">],</span> <span class="n">require_indexed</span><span class="o">=</span><span class="n">require_indexed</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_to_base_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a value to the &quot;base&quot; value type for this property.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            value: The given class value to be converted.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bytes</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: If ``value`` is not the correct ``Model`` type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;Cannot convert to protocol buffer. Expected </span><span class="si">{}</span><span class="s2"> value; &quot;</span>
+                <span class="s2">&quot;received </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">_entity_to_ds_entity</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_from_base_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a value from the &quot;base&quot; value type for this property.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            value(~google.cloud.datastore.Entity or bytes): The value to be</span>
+<span class="sd">            converted.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            The converted value with given class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">entity_module</span><span class="o">.</span><span class="n">Entity</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">_entity_from_ds_entity</span><span class="p">(</span>
+                <span class="n">value</span><span class="p">,</span> <span class="n">model_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_get_value_size</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">):</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_retrieve_value</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">values</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mi">0</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">values</span><span class="p">]</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="LocalStructuredProperty"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.LocalStructuredProperty">[docs]</a><span class="k">class</span> <span class="nc">LocalStructuredProperty</span><span class="p">(</span><span class="n">BlobProperty</span><span class="p">):</span>
-    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="sd">&quot;&quot;&quot;A property that contains ndb.Model value.</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<span class="sd">    .. note::</span>
+<span class="sd">        Unlike most property types, a :class:`LocalStructuredProperty`</span>
+<span class="sd">        is **not** indexed.</span>
+<span class="sd">    .. automethod:: _to_base_type</span>
+<span class="sd">    .. automethod:: _from_base_type</span>
+<span class="sd">    .. automethod:: _validate</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        model_class (type): The class of the property. (Must be subclass of</span>
+<span class="sd">            ``ndb.Model``.)</span>
+<span class="sd">        name (str): The name of the property.</span>
+<span class="sd">        compressed (bool): Indicates if the value should be compressed (via</span>
+<span class="sd">            ``zlib``).</span>
+<span class="sd">        repeated (bool): Indicates if this property is repeated, i.e. contains</span>
+<span class="sd">            multiple values.</span>
+<span class="sd">        required (bool): Indicates if this property is required on the given</span>
+<span class="sd">            model type.</span>
+<span class="sd">        default (Any): The default value for this property.</span>
+<span class="sd">        validator (Callable[[~google.cloud.ndb.model.Property, Any], bool]): A</span>
+<span class="sd">            validator to be used to check values.</span>
+<span class="sd">        verbose_name (str): A longer, user-friendly name for this property.</span>
+<span class="sd">        write_empty_list (bool): Indicates if an empty list should be written</span>
+<span class="sd">            to the datastore.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_model_class</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">_keep_keys</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">_kwargs</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_class</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">indexed</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;indexed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">indexed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;Cannot index LocalStructuredProperty </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">keep_keys</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;keep_keys&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">LocalStructuredProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span> <span class="o">=</span> <span class="n">model_class</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_keep_keys</span> <span class="o">=</span> <span class="n">keep_keys</span>
+
+<div class="viewcode-block" id="LocalStructuredProperty._validate"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.LocalStructuredProperty._validate">[docs]</a>    <span class="k">def</span> <span class="nf">_validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Validate a ``value`` before setting it.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            value: The value to check.</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            .BadValueError: If ``value`` is not a given class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="c1"># A dict is assumed to be the result of a _to_dict() call.</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="p">(</span><span class="o">**</span><span class="n">value</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">BadValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Expected </span><span class="si">{}</span><span class="s2">, got </span><span class="si">{!r}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">value</span>
+                <span class="p">)</span>
+            <span class="p">)</span></div>
+
+<div class="viewcode-block" id="LocalStructuredProperty._to_base_type"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.LocalStructuredProperty._to_base_type">[docs]</a>    <span class="k">def</span> <span class="nf">_to_base_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a value to the &quot;base&quot; value type for this property.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            value: The given class value to be converted.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            bytes</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            TypeError: If ``value`` is not the correct ``Model`` type.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;Cannot convert to bytes expected </span><span class="si">{}</span><span class="s2"> value; &quot;</span>
+                <span class="s2">&quot;received </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">pb</span> <span class="o">=</span> <span class="n">_entity_to_protobuf</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">set_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_keep_keys</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">pb</span><span class="o">.</span><span class="n">SerializePartialToString</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="LocalStructuredProperty._from_base_type"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.LocalStructuredProperty._from_base_type">[docs]</a>    <span class="k">def</span> <span class="nf">_from_base_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Convert a value from the &quot;base&quot; value type for this property.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            value(~google.cloud.datastore.Entity or bytes): The value to be</span>
+<span class="sd">            converted.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            The converted value with given class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+            <span class="n">pb</span> <span class="o">=</span> <span class="n">entity_pb2</span><span class="o">.</span><span class="n">Entity</span><span class="p">()</span>
+            <span class="n">pb</span><span class="o">.</span><span class="n">MergeFromString</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">helpers</span><span class="o">.</span><span class="n">entity_from_protobuf</span><span class="p">(</span><span class="n">pb</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keep_keys</span> <span class="ow">and</span> <span class="n">value</span><span class="o">.</span><span class="n">key</span><span class="p">:</span>
+            <span class="n">value</span><span class="o">.</span><span class="n">key</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">_entity_from_ds_entity</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">model_class</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_model_class</span><span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="GenericProperty"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.GenericProperty">[docs]</a><span class="k">class</span> <span class="nc">GenericProperty</span><span class="p">(</span><span class="n">Property</span><span class="p">):</span>
-    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="sd">&quot;&quot;&quot;A Property whose value can be (almost) any basic type.</span>
+<span class="sd">    This is mainly used for Expando and for orphans (values present in</span>
+<span class="sd">    Cloud Datastore but not represented in the Model subclass) but can</span>
+<span class="sd">    also be used explicitly for properties with dynamically-typed</span>
+<span class="sd">    values.</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<span class="sd">    This supports compressed=True, which is only effective for str</span>
+<span class="sd">    values (not for unicode), and implies indexed=False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_compressed</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">_kwargs</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">compressed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">compressed</span><span class="p">:</span>  <span class="c1"># Compressed implies unindexed.</span>
+            <span class="n">kwargs</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">&quot;indexed&quot;</span><span class="p">,</span> <span class="kc">False</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GenericProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_compressed</span> <span class="o">=</span> <span class="n">compressed</span>
+        <span class="k">if</span> <span class="n">compressed</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_indexed</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;GenericProperty </span><span class="si">%s</span><span class="s2"> cannot be compressed and &quot;</span>
+                <span class="s2">&quot;indexed at the same time.&quot;</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_to_base_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compressed</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">_CompressedValue</span><span class="p">(</span><span class="n">zlib</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">value</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_from_base_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">_CompressedValue</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">zlib</span><span class="o">.</span><span class="n">decompress</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">z_val</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_validate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_indexed</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">bytes</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">_MAX_STRING_LENGTH</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">BadValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Indexed value </span><span class="si">%s</span><span class="s2"> must be at most </span><span class="si">%d</span><span class="s2"> bytes&quot;</span>
+                    <span class="o">%</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_name</span><span class="p">,</span> <span class="n">_MAX_STRING_LENGTH</span><span class="p">)</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_db_get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">unused_p</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper for :meth:`_deserialize`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: Always. This method is deprecated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NoLongerImplementedError</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_db_set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">p</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Helper for :meth:`_deserialize`.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            NotImplementedError: Always. This method is deprecated.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NoLongerImplementedError</span><span class="p">()</span></div>
 
 
 <div class="viewcode-block" id="ComputedProperty"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.ComputedProperty">[docs]</a><span class="k">class</span> <span class="nc">ComputedProperty</span><span class="p">(</span><span class="n">GenericProperty</span><span class="p">):</span>
-    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="sd">&quot;&quot;&quot;A Property whose value is determined by a user-supplied function.</span>
+<span class="sd">    Computed properties cannot be set directly, but are instead generated by a</span>
+<span class="sd">    function when required. They are useful to provide fields in Cloud Datastore</span>
+<span class="sd">    that can be used for filtering or sorting without having to manually set the</span>
+<span class="sd">    value in code - for example, sorting on the length of a BlobProperty, or</span>
+<span class="sd">    using an equality filter to check if another field is not empty.</span>
+<span class="sd">    ComputedProperty can be declared as a regular property, passing a function as</span>
+<span class="sd">    the first argument, or it can be used as a decorator for the function that</span>
+<span class="sd">    does the calculation.</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<span class="sd">    Example:</span>
+
+<span class="sd">    &gt;&gt;&gt; class DatastoreFile(ndb.Model):</span>
+<span class="sd">    ...   name = ndb.model.StringProperty()</span>
+<span class="sd">    ...   name_lower = ndb.model.ComputedProperty(lambda self: self.name.lower())</span>
+<span class="sd">    ...</span>
+<span class="sd">    ...   data = ndb.model.BlobProperty()</span>
+<span class="sd">    ...</span>
+<span class="sd">    ...   @ndb.model.ComputedProperty</span>
+<span class="sd">    ...   def size(self):</span>
+<span class="sd">    ...     return len(self.data)</span>
+<span class="sd">    ...</span>
+<span class="sd">    ...   def _compute_hash(self):</span>
+<span class="sd">    ...     return hashlib.sha1(self.data).hexdigest()</span>
+<span class="sd">    ...   hash = ndb.model.ComputedProperty(_compute_hash, name=&#39;sha1&#39;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_kwargs</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">indexed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">repeated</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose_name</span><span class="o">=</span><span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Constructor.</span>
+
+<span class="sd">        Args:</span>
+
+<span class="sd">        func: A function that takes one argument, the model instance, and returns</span>
+<span class="sd">            a calculated value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">ComputedProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">indexed</span><span class="o">=</span><span class="n">indexed</span><span class="p">,</span>
+            <span class="n">repeated</span><span class="o">=</span><span class="n">repeated</span><span class="p">,</span>
+            <span class="n">verbose_name</span><span class="o">=</span><span class="n">verbose_name</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_func</span> <span class="o">=</span> <span class="n">func</span>
+
+    <span class="k">def</span> <span class="nf">_set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ComputedPropertyError</span><span class="p">(</span><span class="s2">&quot;Cannot assign to a ComputedProperty&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_delete_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">ComputedPropertyError</span><span class="p">(</span><span class="s2">&quot;Cannot delete a ComputedProperty&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">):</span>
+        <span class="c1"># About projections and computed properties: if the computed</span>
+        <span class="c1"># property itself is in the projection, don&#39;t recompute it; this</span>
+        <span class="c1"># prevents raising UnprojectedPropertyError if one of the</span>
+        <span class="c1"># dependents is not in the projection.  However, if the computed</span>
+        <span class="c1"># property is not in the projection, compute it normally -- its</span>
+        <span class="c1"># dependents may all be in the projection, and it may be useful to</span>
+        <span class="c1"># access the computed value without having it in the projection.</span>
+        <span class="c1"># In this case, if any of the dependents is not in the projection,</span>
+        <span class="c1"># accessing it in the computation function will raise</span>
+        <span class="c1"># UnprojectedPropertyError which will just bubble up.</span>
+        <span class="k">if</span> <span class="n">entity</span><span class="o">.</span><span class="n">_projection</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="ow">in</span> <span class="n">entity</span><span class="o">.</span><span class="n">_projection</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ComputedProperty</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_func</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_store_value</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">value</span>
+
+    <span class="k">def</span> <span class="nf">_prepare_for_put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>  <span class="c1"># For its side effects.</span></div>
 
 
 <div class="viewcode-block" id="MetaModel"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.MetaModel">[docs]</a><span class="k">class</span> <span class="nc">MetaModel</span><span class="p">(</span><span class="nb">type</span><span class="p">):</span>
@@ -3944,7 +4627,7 @@
                 <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">Property</span><span class="p">):</span>
                     <span class="k">if</span> <span class="n">attr</span><span class="o">.</span><span class="n">_repeated</span> <span class="ow">or</span> <span class="p">(</span>
                         <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">StructuredProperty</span><span class="p">)</span>
-                        <span class="ow">and</span> <span class="n">attr</span><span class="o">.</span><span class="n">_modelclass</span><span class="o">.</span><span class="n">_has_repeated</span>
+                        <span class="ow">and</span> <span class="n">attr</span><span class="o">.</span><span class="n">_model_class</span><span class="o">.</span><span class="n">_has_repeated</span>
                     <span class="p">):</span>
                         <span class="bp">cls</span><span class="o">.</span><span class="n">_has_repeated</span> <span class="o">=</span> <span class="kc">True</span>
                     <span class="bp">cls</span><span class="o">.</span><span class="n">_properties</span><span class="p">[</span><span class="n">attr</span><span class="o">.</span><span class="n">_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">attr</span>
@@ -3969,14 +4652,14 @@
         <span class="k">return</span> <span class="n">key</span>
 
     <span class="nd">@classmethod</span>
-    <span class="k">def</span> <span class="nf">_gql</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">query_string</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_gql</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">query_string</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Run a GQL query using this model as the FROM entity.</span>
 
 <span class="sd">        Args:</span>
 <span class="sd">            query_string (str): The WHERE part of a GQL query (including the</span>
 <span class="sd">                WHERE kwyword).</span>
 <span class="sd">            args: if present, used to call bind() on the query.</span>
-<span class="sd">            kwds: if present, used to call bind() on the query.</span>
+<span class="sd">            kwargs: if present, used to call bind() on the query.</span>
 
 <span class="sd">        Returns:</span>
 <span class="sd">            :class:query.Query: A query instance.</span>
@@ -3986,7 +4669,7 @@
 
         <span class="k">return</span> <span class="n">query</span><span class="o">.</span><span class="n">gql</span><span class="p">(</span>
             <span class="s2">&quot;SELECT * FROM </span><span class="si">{}</span><span class="s2"> </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="bp">cls</span><span class="o">.</span><span class="n">_class_name</span><span class="p">(),</span> <span class="n">query_string</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">*</span><span class="n">kwds</span>
+                <span class="bp">cls</span><span class="o">.</span><span class="n">_class_name</span><span class="p">(),</span> <span class="n">query_string</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">*</span><span class="n">kwargs</span>
             <span class="p">)</span>
         <span class="p">)</span>
 
@@ -3995,6 +4678,7 @@
     <span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
     <span class="k">def</span> <span class="nf">_put</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
         <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -4012,6 +4696,10 @@
 <span class="sd">        attribute is set to the new, complete key.</span>
 
 <span class="sd">        Args:</span>
+<span class="sd">            retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">                of transient server errors. Operation will potentially be tried</span>
+<span class="sd">                up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">                once, with no retries.</span>
 <span class="sd">            timeout (float): Override the gRPC timeout, in seconds.</span>
 <span class="sd">            deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
 <span class="sd">            force_writes (bool): Specifies whether a write request should</span>
@@ -4038,10 +4726,10 @@
 
     <span class="n">put</span> <span class="o">=</span> <span class="n">_put</span>
 
-    <span class="nd">@tasklets</span><span class="o">.</span><span class="n">tasklet</span>
     <span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
     <span class="k">def</span> <span class="nf">_put_async</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
         <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -4059,6 +4747,10 @@
 <span class="sd">        attribute is set to the new, complete key.</span>
 
 <span class="sd">        Args:</span>
+<span class="sd">            retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">                of transient server errors. Operation will potentially be tried</span>
+<span class="sd">                up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">                once, with no retries.</span>
 <span class="sd">            timeout (float): Override the gRPC timeout, in seconds.</span>
 <span class="sd">            deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
 <span class="sd">            force_writes (bool): Specifies whether a write request should</span>
@@ -4082,12 +4774,25 @@
 <span class="sd">            tasklets.Future: The eventual result will be the key for the</span>
 <span class="sd">                entity. This is always a complete key.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">entity_pb</span> <span class="o">=</span> <span class="n">_entity_to_protobuf</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
-        <span class="n">key_pb</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">_datastore_api</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">entity_pb</span><span class="p">,</span> <span class="n">_options</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">key_pb</span><span class="p">:</span>
-            <span class="n">ds_key</span> <span class="o">=</span> <span class="n">helpers</span><span class="o">.</span><span class="n">key_from_protobuf</span><span class="p">(</span><span class="n">key_pb</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">_from_ds_key</span><span class="p">(</span><span class="n">ds_key</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pre_put_hook</span><span class="p">()</span>
+
+        <span class="nd">@tasklets</span><span class="o">.</span><span class="n">tasklet</span>
+        <span class="k">def</span> <span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="n">entity_pb</span> <span class="o">=</span> <span class="n">_entity_to_protobuf</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">key_pb</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">_datastore_api</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">entity_pb</span><span class="p">,</span> <span class="n">_options</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">key_pb</span><span class="p">:</span>
+                <span class="n">ds_key</span> <span class="o">=</span> <span class="n">helpers</span><span class="o">.</span><span class="n">key_from_protobuf</span><span class="p">(</span><span class="n">key_pb</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">_from_ds_key</span><span class="p">(</span><span class="n">ds_key</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">_options</span><span class="o">.</span><span class="n">use_cache</span><span class="p">:</span>
+                    <span class="n">context_module</span><span class="o">.</span><span class="n">get_context</span><span class="p">()</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span>
+
+        <span class="n">future</span> <span class="o">=</span> <span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="n">future</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_post_put_hook</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">future</span>
 
     <span class="n">put_async</span> <span class="o">=</span> <span class="n">_put_async</span>
 
@@ -4166,43 +4871,744 @@
         <span class="n">query</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="o">*</span><span class="n">filters</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">query</span>
 
-    <span class="n">query</span> <span class="o">=</span> <span class="n">_query</span></div>
+    <span class="n">query</span> <span class="o">=</span> <span class="n">_query</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
+    <span class="k">def</span> <span class="nf">_allocate_ids</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="nb">max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">force_writes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_memcache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_datastore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">memcache_timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_memcache_items</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Allocates a range of key IDs for this model class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            size (int): Number of IDs to allocate. Must be specified.</span>
+<span class="sd">            max (int): Maximum ID to allocated. This feature is no longer</span>
+<span class="sd">                supported. You must always specify ``size``.</span>
+<span class="sd">            parent (key.Key): Parent key for which the IDs will be allocated.</span>
+<span class="sd">            retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">                of transient server errors. Operation will potentially be tried</span>
+<span class="sd">                up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">                once, with no retries.</span>
+<span class="sd">            timeout (float): Override the gRPC timeout, in seconds.</span>
+<span class="sd">            deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
+<span class="sd">            force_writes (bool): Specifies whether a write request should</span>
+<span class="sd">                succeed even if the app is read-only. (This only applies to</span>
+<span class="sd">                user controlled read-only periods.)</span>
+<span class="sd">            use_cache (bool): Specifies whether to store entities in in-process</span>
+<span class="sd">                cache; overrides in-process cache policy for this operation.</span>
+<span class="sd">            use_memcache (bool): Specifies whether to store entities in</span>
+<span class="sd">                memcache; overrides memcache policy for this operation.</span>
+<span class="sd">            use_datastore (bool): Specifies whether to store entities in</span>
+<span class="sd">                Datastore; overrides Datastore policy for this operation.</span>
+<span class="sd">            memcache_timeout (int): Maximum lifetime for entities in memcache;</span>
+<span class="sd">                overrides memcache timeout policy for this operation.</span>
+<span class="sd">            max_memcache_items (int): Maximum batch size for the auto-batching</span>
+<span class="sd">                feature of the Context memcache methods. For example, with the</span>
+<span class="sd">                default size of max_memcache_items (100), up to 100 memcache</span>
+<span class="sd">                set operations will be combined into a single set_multi</span>
+<span class="sd">                operation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tuple(key.Key): Keys for the newly allocated IDs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">future</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_allocate_ids_async</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">_options</span><span class="o">=</span><span class="n">_options</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">future</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+
+    <span class="n">allocate_ids</span> <span class="o">=</span> <span class="n">_allocate_ids</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
+    <span class="k">def</span> <span class="nf">_allocate_ids_async</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">size</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="nb">max</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">force_writes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_memcache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_datastore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">memcache_timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_memcache_items</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Allocates a range of key IDs for this model class.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            size (int): Number of IDs to allocate. Must be specified.</span>
+<span class="sd">            max (int): Maximum ID to allocated. This feature is no longer</span>
+<span class="sd">                supported. You must always specify ``size``.</span>
+<span class="sd">            parent (key.Key): Parent key for which the IDs will be allocated.</span>
+<span class="sd">            retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">                of transient server errors. Operation will potentially be tried</span>
+<span class="sd">                up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">                once, with no retries.</span>
+<span class="sd">            timeout (float): Override the gRPC timeout, in seconds.</span>
+<span class="sd">            deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
+<span class="sd">            force_writes (bool): Specifies whether a write request should</span>
+<span class="sd">                succeed even if the app is read-only. (This only applies to</span>
+<span class="sd">                user controlled read-only periods.)</span>
+<span class="sd">            use_cache (bool): Specifies whether to store entities in in-process</span>
+<span class="sd">                cache; overrides in-process cache policy for this operation.</span>
+<span class="sd">            use_memcache (bool): Specifies whether to store entities in</span>
+<span class="sd">                memcache; overrides memcache policy for this operation.</span>
+<span class="sd">            use_datastore (bool): Specifies whether to store entities in</span>
+<span class="sd">                Datastore; overrides Datastore policy for this operation.</span>
+<span class="sd">            memcache_timeout (int): Maximum lifetime for entities in memcache;</span>
+<span class="sd">                overrides memcache timeout policy for this operation.</span>
+<span class="sd">            max_memcache_items (int): Maximum batch size for the auto-batching</span>
+<span class="sd">                feature of the Context memcache methods. For example, with the</span>
+<span class="sd">                default size of max_memcache_items (100), up to 100 memcache</span>
+<span class="sd">                set operations will be combined into a single set_multi</span>
+<span class="sd">                operation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tasklets.Future: Eventural result is ``tuple(key.Key)``: Keys for</span>
+<span class="sd">                the newly allocated IDs.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">max</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+                <span class="s2">&quot;The &#39;max&#39; argument to &#39;allocate_ids&#39; is no longer supported. &quot;</span>
+                <span class="s2">&quot;There is no support for it in the Google Datastore backend &quot;</span>
+                <span class="s2">&quot;service.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Must pass non-zero &#39;size&#39; to &#39;allocate_ids&#39;&quot;</span><span class="p">)</span>
+
+        <span class="nd">@tasklets</span><span class="o">.</span><span class="n">tasklet</span>
+        <span class="k">def</span> <span class="nf">allocate_ids</span><span class="p">():</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_pre_allocate_ids_hook</span><span class="p">(</span><span class="n">size</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+            <span class="n">kind</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_kind</span><span class="p">()</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="p">(</span><span class="n">kind</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">)</span><span class="o">.</span><span class="n">_key</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">size</span><span class="p">)</span>
+            <span class="p">]</span>
+            <span class="n">key_pbs</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">_datastore_api</span><span class="o">.</span><span class="n">allocate</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">_options</span><span class="p">)</span>
+            <span class="n">keys</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+                <span class="p">(</span>
+                    <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="o">.</span><span class="n">_from_ds_key</span><span class="p">(</span>
+                        <span class="n">helpers</span><span class="o">.</span><span class="n">key_from_protobuf</span><span class="p">(</span><span class="n">key_pb</span><span class="p">)</span>
+                    <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">key_pb</span> <span class="ow">in</span> <span class="n">key_pbs</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">keys</span>
+
+        <span class="n">future</span> <span class="o">=</span> <span class="n">allocate_ids</span><span class="p">()</span>
+        <span class="n">future</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span>
+            <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_post_allocate_ids_hook</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">parent</span><span class="p">)</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">future</span>
+
+    <span class="n">allocate_ids_async</span> <span class="o">=</span> <span class="n">_allocate_ids_async</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@_options</span><span class="o">.</span><span class="n">ReadOptions</span><span class="o">.</span><span class="n">options</span>
+    <span class="k">def</span> <span class="nf">_get_by_id</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="nb">id</span><span class="p">,</span>
+        <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">namespace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">project</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">read_consistency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">read_policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">transaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">force_writes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_memcache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_datastore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">memcache_timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_memcache_items</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get an instance of Model class by ID.</span>
+
+<span class="sd">        This really just a shorthand for ``Key(cls, id, ....).get()``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            id (Union[int, str]): ID of the entity to load.</span>
+<span class="sd">            parent (Optional[key.Key]): Key for the parent of the entity to</span>
+<span class="sd">                load.</span>
+<span class="sd">            namespace (Optional[str]): Namespace for the entity to load. If not</span>
+<span class="sd">                passed, uses the client&#39;s value.</span>
+<span class="sd">            project (Optional[str]): Project id for the entity to load. If not</span>
+<span class="sd">                passed, uses the client&#39;s value.</span>
+<span class="sd">            app (str): DEPRECATED: Synonym for `project`.</span>
+<span class="sd">            read_consistency: Set this to ``ndb.EVENTUAL`` if, instead of</span>
+<span class="sd">                waiting for the Datastore to finish applying changes to all</span>
+<span class="sd">                returned results, you wish to get possibly-not-current results</span>
+<span class="sd">                faster. You can&#39;t do this if using a transaction.</span>
+<span class="sd">            read_policy: DEPRECATED: Synonym for ``read_consistency``.</span>
+<span class="sd">            transaction (bytes): Any results returned will be consistent with</span>
+<span class="sd">                the Datastore state represented by this transaction id.</span>
+<span class="sd">                Defaults to the currently running transaction. Cannot be used</span>
+<span class="sd">                with ``read_consistency=ndb.EVENTUAL``.</span>
+<span class="sd">            retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">                of transient server errors. Operation will potentially be tried</span>
+<span class="sd">                up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">                once, with no retries.</span>
+<span class="sd">            timeout (float): Override the gRPC timeout, in seconds.</span>
+<span class="sd">            deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
+<span class="sd">            force_writes (bool): Specifies whether a write request should</span>
+<span class="sd">                succeed even if the app is read-only. (This only applies to</span>
+<span class="sd">                user controlled read-only periods.)</span>
+<span class="sd">            use_cache (bool): Specifies whether to store entities in in-process</span>
+<span class="sd">                cache; overrides in-process cache policy for this operation.</span>
+<span class="sd">            use_memcache (bool): Specifies whether to store entities in</span>
+<span class="sd">                memcache; overrides memcache policy for this operation.</span>
+<span class="sd">            use_datastore (bool): Specifies whether to store entities in</span>
+<span class="sd">                Datastore; overrides Datastore policy for this operation.</span>
+<span class="sd">            memcache_timeout (int): Maximum lifetime for entities in memcache;</span>
+<span class="sd">                overrides memcache timeout policy for this operation.</span>
+<span class="sd">            max_memcache_items (int): Maximum batch size for the auto-batching</span>
+<span class="sd">                feature of the Context memcache methods. For example, with the</span>
+<span class="sd">                default size of max_memcache_items (100), up to 100 memcache</span>
+<span class="sd">                set operations will be combined into a single set_multi</span>
+<span class="sd">                operation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Optional[Model]: The retrieved entity, if one is found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_by_id_async</span><span class="p">(</span>
+            <span class="nb">id</span><span class="p">,</span>
+            <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span>
+            <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">,</span>
+            <span class="n">project</span><span class="o">=</span><span class="n">project</span><span class="p">,</span>
+            <span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">,</span>
+            <span class="n">_options</span><span class="o">=</span><span class="n">_options</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+
+    <span class="n">get_by_id</span> <span class="o">=</span> <span class="n">_get_by_id</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@_options</span><span class="o">.</span><span class="n">ReadOptions</span><span class="o">.</span><span class="n">options</span>
+    <span class="k">def</span> <span class="nf">_get_by_id_async</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="nb">id</span><span class="p">,</span>
+        <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">namespace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">project</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">read_consistency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">read_policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">transaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">force_writes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_memcache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_datastore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">memcache_timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_memcache_items</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Get an instance of Model class by ID.</span>
+
+<span class="sd">        This is the asynchronous version of :meth:`get_by_id`.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            id (Union[int, str]): ID of the entity to load.</span>
+<span class="sd">            parent (Optional[key.Key]): Key for the parent of the entity to</span>
+<span class="sd">                load.</span>
+<span class="sd">            namespace (Optional[str]): Namespace for the entity to load. If not</span>
+<span class="sd">                passed, uses the client&#39;s value.</span>
+<span class="sd">            project (Optional[str]): Project id for the entity to load. If not</span>
+<span class="sd">                passed, uses the client&#39;s value.</span>
+<span class="sd">            app (str): DEPRECATED: Synonym for `project`.</span>
+<span class="sd">            read_consistency: Set this to ``ndb.EVENTUAL`` if, instead of</span>
+<span class="sd">                waiting for the Datastore to finish applying changes to all</span>
+<span class="sd">                returned results, you wish to get possibly-not-current results</span>
+<span class="sd">                faster. You can&#39;t do this if using a transaction.</span>
+<span class="sd">            read_policy: DEPRECATED: Synonym for ``read_consistency``.</span>
+<span class="sd">            transaction (bytes): Any results returned will be consistent with</span>
+<span class="sd">                the Datastore state represented by this transaction id.</span>
+<span class="sd">                Defaults to the currently running transaction. Cannot be used</span>
+<span class="sd">                with ``read_consistency=ndb.EVENTUAL``.</span>
+<span class="sd">            retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">                of transient server errors. Operation will potentially be tried</span>
+<span class="sd">                up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">                once, with no retries.</span>
+<span class="sd">            timeout (float): Override the gRPC timeout, in seconds.</span>
+<span class="sd">            deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
+<span class="sd">            force_writes (bool): Specifies whether a write request should</span>
+<span class="sd">                succeed even if the app is read-only. (This only applies to</span>
+<span class="sd">                user controlled read-only periods.)</span>
+<span class="sd">            use_cache (bool): Specifies whether to store entities in in-process</span>
+<span class="sd">                cache; overrides in-process cache policy for this operation.</span>
+<span class="sd">            use_memcache (bool): Specifies whether to store entities in</span>
+<span class="sd">                memcache; overrides memcache policy for this operation.</span>
+<span class="sd">            use_datastore (bool): Specifies whether to store entities in</span>
+<span class="sd">                Datastore; overrides Datastore policy for this operation.</span>
+<span class="sd">            memcache_timeout (int): Maximum lifetime for entities in memcache;</span>
+<span class="sd">                overrides memcache timeout policy for this operation.</span>
+<span class="sd">            max_memcache_items (int): Maximum batch size for the auto-batching</span>
+<span class="sd">                feature of the Context memcache methods. For example, with the</span>
+<span class="sd">                default size of max_memcache_items (100), up to 100 memcache</span>
+<span class="sd">                set operations will be combined into a single set_multi</span>
+<span class="sd">                operation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tasklets.Future: Optional[Model]: The retrieved entity, if one is</span>
+<span class="sd">                found.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">app</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">project</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Can&#39;t pass &#39;app&#39; and &#39;project&#39; arguments together.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="n">project</span> <span class="o">=</span> <span class="n">app</span>
+
+        <span class="c1"># Key class is weird about keyword args. If you want it to use defaults</span>
+        <span class="c1"># you have to not pass them at all.</span>
+        <span class="n">key_args</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">project</span><span class="p">:</span>
+            <span class="n">key_args</span><span class="p">[</span><span class="s2">&quot;app&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">project</span>
+
+        <span class="k">if</span> <span class="n">namespace</span><span class="p">:</span>
+            <span class="n">key_args</span><span class="p">[</span><span class="s2">&quot;namespace&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">namespace</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_kind</span><span class="p">(),</span> <span class="nb">id</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> <span class="o">**</span><span class="n">key_args</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">key</span><span class="o">.</span><span class="n">get_async</span><span class="p">(</span><span class="n">_options</span><span class="o">=</span><span class="n">_options</span><span class="p">)</span>
+
+    <span class="n">get_by_id_async</span> <span class="o">=</span> <span class="n">_get_by_id_async</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@_options</span><span class="o">.</span><span class="n">ReadOptions</span><span class="o">.</span><span class="n">options</span>
+    <span class="k">def</span> <span class="nf">_get_or_insert</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">namespace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">project</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">read_consistency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">read_policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">transaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">force_writes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_memcache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_datastore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">memcache_timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_memcache_items</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kw_model_args</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Transactionally retrieves an existing entity or creates a new one.</span>
+
+<span class="sd">        Will attempt to look up an entity with the given ``name`` and</span>
+<span class="sd">        ``parent``. If none is found a new entity will be created using the</span>
+<span class="sd">        given ``name`` and ``parent``, and passing any ``kw_model_args`` to the</span>
+<span class="sd">        constructor the ``Model`` class.</span>
+
+<span class="sd">        If not already in a transaction, a new transaction will be created and</span>
+<span class="sd">        this operation will be run in that transaction.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): Name of the entity to load or create.</span>
+<span class="sd">            parent (Optional[key.Key]): Key for the parent of the entity to</span>
+<span class="sd">                load.</span>
+<span class="sd">            namespace (Optional[str]): Namespace for the entity to load. If not</span>
+<span class="sd">                passed, uses the client&#39;s value.</span>
+<span class="sd">            project (Optional[str]): Project id for the entity to load. If not</span>
+<span class="sd">                passed, uses the client&#39;s value.</span>
+<span class="sd">            app (str): DEPRECATED: Synonym for `project`.</span>
+<span class="sd">            **kw_model_args: Keyword arguments to pass to the constructor of</span>
+<span class="sd">                the model class if an instance for the specified key name does</span>
+<span class="sd">                not already exist. If an instance with the supplied ``name``</span>
+<span class="sd">                and ``parent`` already exists, these arguments will be</span>
+<span class="sd">                discarded.</span>
+<span class="sd">            read_consistency: Set this to ``ndb.EVENTUAL`` if, instead of</span>
+<span class="sd">                waiting for the Datastore to finish applying changes to all</span>
+<span class="sd">                returned results, you wish to get possibly-not-current results</span>
+<span class="sd">                faster. You can&#39;t do this if using a transaction.</span>
+<span class="sd">            read_policy: DEPRECATED: Synonym for ``read_consistency``.</span>
+<span class="sd">            transaction (bytes): Any results returned will be consistent with</span>
+<span class="sd">                the Datastore state represented by this transaction id.</span>
+<span class="sd">                Defaults to the currently running transaction. Cannot be used</span>
+<span class="sd">                with ``read_consistency=ndb.EVENTUAL``.</span>
+<span class="sd">            retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">                of transient server errors. Operation will potentially be tried</span>
+<span class="sd">                up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">                once, with no retries.</span>
+<span class="sd">            timeout (float): Override the gRPC timeout, in seconds.</span>
+<span class="sd">            deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
+<span class="sd">            force_writes (bool): Specifies whether a write request should</span>
+<span class="sd">                succeed even if the app is read-only. (This only applies to</span>
+<span class="sd">                user controlled read-only periods.)</span>
+<span class="sd">            use_cache (bool): Specifies whether to store entities in in-process</span>
+<span class="sd">                cache; overrides in-process cache policy for this operation.</span>
+<span class="sd">            use_memcache (bool): Specifies whether to store entities in</span>
+<span class="sd">                memcache; overrides memcache policy for this operation.</span>
+<span class="sd">            use_datastore (bool): Specifies whether to store entities in</span>
+<span class="sd">                Datastore; overrides Datastore policy for this operation.</span>
+<span class="sd">            memcache_timeout (int): Maximum lifetime for entities in memcache;</span>
+<span class="sd">                overrides memcache timeout policy for this operation.</span>
+<span class="sd">            max_memcache_items (int): Maximum batch size for the auto-batching</span>
+<span class="sd">                feature of the Context memcache methods. For example, with the</span>
+<span class="sd">                default size of max_memcache_items (100), up to 100 memcache</span>
+<span class="sd">                set operations will be combined into a single set_multi</span>
+<span class="sd">                operation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Model: The entity that was either just retrieved or created.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_get_or_insert_async</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">,</span>
+            <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span>
+            <span class="n">namespace</span><span class="o">=</span><span class="n">namespace</span><span class="p">,</span>
+            <span class="n">project</span><span class="o">=</span><span class="n">project</span><span class="p">,</span>
+            <span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">,</span>
+            <span class="n">_options</span><span class="o">=</span><span class="n">_options</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kw_model_args</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">result</span><span class="p">()</span>
+
+    <span class="n">get_or_insert</span> <span class="o">=</span> <span class="n">_get_or_insert</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@_options</span><span class="o">.</span><span class="n">ReadOptions</span><span class="o">.</span><span class="n">options</span>
+    <span class="k">def</span> <span class="nf">_get_or_insert_async</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">parent</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">namespace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">project</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">read_consistency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">read_policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">transaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">force_writes</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_cache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_memcache</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_datastore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">memcache_timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_memcache_items</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">_options</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kw_model_args</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Transactionally retrieves an existing entity or creates a new one.</span>
+
+<span class="sd">        This is the asynchronous version of :meth:``_get_or_insert``.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): Name of the entity to load or create.</span>
+<span class="sd">            parent (Optional[key.Key]): Key for the parent of the entity to</span>
+<span class="sd">                load.</span>
+<span class="sd">            namespace (Optional[str]): Namespace for the entity to load. If not</span>
+<span class="sd">                passed, uses the client&#39;s value.</span>
+<span class="sd">            project (Optional[str]): Project id for the entity to load. If not</span>
+<span class="sd">                passed, uses the client&#39;s value.</span>
+<span class="sd">            app (str): DEPRECATED: Synonym for `project`.</span>
+<span class="sd">            **kw_model_args: Keyword arguments to pass to the constructor of</span>
+<span class="sd">                the model class if an instance for the specified key name does</span>
+<span class="sd">                not already exist. If an instance with the supplied ``name``</span>
+<span class="sd">                and ``parent`` already exists, these arguments will be</span>
+<span class="sd">                discarded.</span>
+<span class="sd">            read_consistency: Set this to ``ndb.EVENTUAL`` if, instead of</span>
+<span class="sd">                waiting for the Datastore to finish applying changes to all</span>
+<span class="sd">                returned results, you wish to get possibly-not-current results</span>
+<span class="sd">                faster. You can&#39;t do this if using a transaction.</span>
+<span class="sd">            read_policy: DEPRECATED: Synonym for ``read_consistency``.</span>
+<span class="sd">            transaction (bytes): Any results returned will be consistent with</span>
+<span class="sd">                the Datastore state represented by this transaction id.</span>
+<span class="sd">                Defaults to the currently running transaction. Cannot be used</span>
+<span class="sd">                with ``read_consistency=ndb.EVENTUAL``.</span>
+<span class="sd">            retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">                of transient server errors. Operation will potentially be tried</span>
+<span class="sd">                up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">                once, with no retries.</span>
+<span class="sd">            timeout (float): Override the gRPC timeout, in seconds.</span>
+<span class="sd">            deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
+<span class="sd">            force_writes (bool): Specifies whether a write request should</span>
+<span class="sd">                succeed even if the app is read-only. (This only applies to</span>
+<span class="sd">                user controlled read-only periods.)</span>
+<span class="sd">            use_cache (bool): Specifies whether to store entities in in-process</span>
+<span class="sd">                cache; overrides in-process cache policy for this operation.</span>
+<span class="sd">            use_memcache (bool): Specifies whether to store entities in</span>
+<span class="sd">                memcache; overrides memcache policy for this operation.</span>
+<span class="sd">            use_datastore (bool): Specifies whether to store entities in</span>
+<span class="sd">                Datastore; overrides Datastore policy for this operation.</span>
+<span class="sd">            memcache_timeout (int): Maximum lifetime for entities in memcache;</span>
+<span class="sd">                overrides memcache timeout policy for this operation.</span>
+<span class="sd">            max_memcache_items (int): Maximum batch size for the auto-batching</span>
+<span class="sd">                feature of the Context memcache methods. For example, with the</span>
+<span class="sd">                default size of max_memcache_items (100), up to 100 memcache</span>
+<span class="sd">                set operations will be combined into a single set_multi</span>
+<span class="sd">                operation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            tasklets.Future: Model: The entity that was either just retrieved</span>
+<span class="sd">                or created.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;&#39;name&#39; must be a string; received </span><span class="si">{!r}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;&#39;name&#39; must not be an empty string.&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">app</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">project</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="s2">&quot;Can&#39;t pass &#39;app&#39; and &#39;project&#39; arguments together.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="n">project</span> <span class="o">=</span> <span class="n">app</span>
+
+        <span class="c1"># Key class is weird about keyword args. If you want it to use defaults</span>
+        <span class="c1"># you have to not pass them at all.</span>
+        <span class="n">key_args</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="k">if</span> <span class="n">project</span><span class="p">:</span>
+            <span class="n">key_args</span><span class="p">[</span><span class="s2">&quot;app&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">project</span>
+
+        <span class="k">if</span> <span class="n">namespace</span><span class="p">:</span>
+            <span class="n">key_args</span><span class="p">[</span><span class="s2">&quot;namespace&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">namespace</span>
+
+        <span class="n">key</span> <span class="o">=</span> <span class="n">key_module</span><span class="o">.</span><span class="n">Key</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_get_kind</span><span class="p">(),</span> <span class="n">name</span><span class="p">,</span> <span class="n">parent</span><span class="o">=</span><span class="n">parent</span><span class="p">,</span> <span class="o">**</span><span class="n">key_args</span><span class="p">)</span>
+
+        <span class="nd">@tasklets</span><span class="o">.</span><span class="n">tasklet</span>
+        <span class="k">def</span> <span class="nf">get_or_insert</span><span class="p">():</span>
+            <span class="nd">@tasklets</span><span class="o">.</span><span class="n">tasklet</span>
+            <span class="k">def</span> <span class="nf">insert</span><span class="p">():</span>
+                <span class="n">entity</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="o">**</span><span class="n">kw_model_args</span><span class="p">)</span>
+                <span class="n">entity</span><span class="o">.</span><span class="n">_key</span> <span class="o">=</span> <span class="n">key</span>
+                <span class="k">yield</span> <span class="n">entity</span><span class="o">.</span><span class="n">put_async</span><span class="p">(</span><span class="n">_options</span><span class="o">=</span><span class="n">_options</span><span class="p">)</span>
+
+                <span class="k">return</span> <span class="n">entity</span>
+
+            <span class="c1"># We don&#39;t need to start a transaction just to check if the entity</span>
+            <span class="c1"># exists already</span>
+            <span class="n">entity</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">key</span><span class="o">.</span><span class="n">get_async</span><span class="p">(</span><span class="n">_options</span><span class="o">=</span><span class="n">_options</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">entity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">entity</span>
+
+            <span class="k">if</span> <span class="n">_transaction</span><span class="o">.</span><span class="n">in_transaction</span><span class="p">():</span>
+                <span class="n">entity</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">insert</span><span class="p">()</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">entity</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">_transaction</span><span class="o">.</span><span class="n">transaction_async</span><span class="p">(</span><span class="n">insert</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">entity</span>
+
+        <span class="k">return</span> <span class="n">get_or_insert</span><span class="p">()</span>
+
+    <span class="n">get_or_insert_async</span> <span class="o">=</span> <span class="n">_get_or_insert_async</span>
+
+    <span class="k">def</span> <span class="nf">_populate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Populate an instance from keyword arguments.</span>
+
+<span class="sd">        Each keyword argument will be used to set a corresponding property.</span>
+<span class="sd">        Each keyword must refer to a valid property name. This is similar to</span>
+<span class="sd">        passing keyword arguments to the ``Model`` constructor, except that no</span>
+<span class="sd">        provision for key, id, or parent are made.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            **kwargs: Keyword arguments corresponding to poperties of this</span>
+<span class="sd">                model class.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_set_attributes</span><span class="p">(</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="n">populate</span> <span class="o">=</span> <span class="n">_populate</span>
+
+    <span class="k">def</span> <span class="nf">_has_complete_key</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return whether this entity has a complete key.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: :data:``True`` if and only if entity has a key and that key</span>
+<span class="sd">                has a name or an id.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="o">.</span><span class="n">id</span><span class="p">()</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+
+    <span class="n">has_complete_key</span> <span class="o">=</span> <span class="n">_has_complete_key</span>
+
+    <span class="k">def</span> <span class="nf">_to_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">include</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">exclude</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a ``dict`` containing the entity&#39;s property values.</span>
+
+<span class="sd">        Arguments:</span>
+<span class="sd">            include (Optional[Union[list, tuple, set]]): Set of property names</span>
+<span class="sd">                to include. Default is to include all names.</span>
+<span class="sd">            exclude (Optional[Union[list, tuple, set]]): Set of property names</span>
+<span class="sd">                to exclude. Default is to not exclude any names.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">prop</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_properties</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">_code_name</span>
+            <span class="k">if</span> <span class="n">include</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">include</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">exclude</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">exclude</span><span class="p">:</span>
+                <span class="k">continue</span>
+
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">values</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span><span class="o">.</span><span class="n">_get_for_dict</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+            <span class="k">except</span> <span class="n">UnprojectedPropertyError</span><span class="p">:</span>
+                <span class="c1"># Ignore unprojected property errors, rather than failing</span>
+                <span class="k">pass</span>
+
+        <span class="k">return</span> <span class="n">values</span>
+
+    <span class="n">to_dict</span> <span class="o">=</span> <span class="n">_to_dict</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_pre_allocate_ids_hook</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">parent</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_post_allocate_ids_hook</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="nb">max</span><span class="p">,</span> <span class="n">parent</span><span class="p">,</span> <span class="n">future</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_pre_delete_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_post_delete_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">future</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_pre_get_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_post_get_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">future</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_pre_put_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_post_put_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">future</span><span class="p">):</span>
+        <span class="k">pass</span></div>
 
 
 <div class="viewcode-block" id="Expando"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.Expando">[docs]</a><span class="k">class</span> <span class="nc">Expando</span><span class="p">(</span><span class="n">Model</span><span class="p">):</span>
-    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">()</span>
+    <span class="sd">&quot;&quot;&quot;Model subclass to support dynamic Property names and types.</span>
 
-    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<span class="sd">    Sometimes the set of properties is not known ahead of time.  In such</span>
+<span class="sd">    cases you can use the Expando class.  This is a Model subclass that</span>
+<span class="sd">    creates properties on the fly, both upon assignment and when loading</span>
+<span class="sd">    an entity from Cloud Datastore.  For example::</span>
 
+<span class="sd">        &gt;&gt;&gt; class SuperPerson(Expando):</span>
+<span class="sd">                name = StringProperty()</span>
+<span class="sd">                superpower = StringProperty()</span>
 
-<div class="viewcode-block" id="transaction"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.transaction">[docs]</a><span class="k">def</span> <span class="nf">transaction</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<span class="sd">        &gt;&gt;&gt; razorgirl = SuperPerson(name=&#39;Molly Millions&#39;,</span>
+<span class="sd">                                    superpower=&#39;bionic eyes, razorblade hands&#39;,</span>
+<span class="sd">                                    rasta_name=&#39;Steppin\&#39; Razor&#39;,</span>
+<span class="sd">                                    alt_name=&#39;Sally Shears&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; elastigirl = SuperPerson(name=&#39;Helen Parr&#39;,</span>
+<span class="sd">                                     superpower=&#39;stretchable body&#39;)</span>
+<span class="sd">        &gt;&gt;&gt; elastigirl.max_stretch = 30  # Meters</span>
 
+<span class="sd">        &gt;&gt;&gt; print(razorgirl._properties.keys())</span>
+<span class="sd">            [&#39;rasta_name&#39;, &#39;name&#39;, &#39;superpower&#39;, &#39;alt_name&#39;]</span>
+<span class="sd">        &gt;&gt;&gt; print(elastigirl._properties)</span>
+<span class="sd">            {&#39;max_stretch&#39;: GenericProperty(&#39;max_stretch&#39;),</span>
+<span class="sd">             &#39;name&#39;: StringProperty(&#39;name&#39;),</span>
+<span class="sd">             &#39;superpower&#39;: StringProperty(&#39;superpower&#39;)}</span>
 
-<div class="viewcode-block" id="transaction_async"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.transaction_async">[docs]</a><span class="k">def</span> <span class="nf">transaction_async</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+<span class="sd">    Note: You can inspect the properties of an expando instance using the</span>
+<span class="sd">    _properties attribute, as shown above. This property exists for plain Model instances</span>
+<span class="sd">    too; it is just not as interesting for those.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
+    <span class="c1"># Set this to False (in an Expando subclass or entity) to make</span>
+    <span class="c1"># properties default to unindexed.</span>
+    <span class="n">_default_indexed</span> <span class="o">=</span> <span class="kc">True</span>
 
-<div class="viewcode-block" id="transactional"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.transactional">[docs]</a><span class="k">def</span> <span class="nf">transactional</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    <span class="c1"># Set this to True to write [] to Cloud Datastore instead of no property</span>
+    <span class="n">_write_empty_list_for_dynamic_properties</span> <span class="o">=</span> <span class="kc">None</span>
 
+    <span class="k">def</span> <span class="nf">_set_attributes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kwds</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwds</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
-<div class="viewcode-block" id="transactional_async"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.transactional_async">[docs]</a><span class="k">def</span> <span class="nf">transactional_async</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    <span class="k">def</span> <span class="nf">__getattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="n">prop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">prop</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Expando</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">prop</span><span class="o">.</span><span class="n">_get_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
 
+    <span class="k">def</span> <span class="nf">__setattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="n">Property</span><span class="p">,</span> <span class="nb">property</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Expando</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">Model</span><span class="p">):</span>
+            <span class="n">prop</span> <span class="o">=</span> <span class="n">StructuredProperty</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="nb">dict</span><span class="p">):</span>
+            <span class="n">prop</span> <span class="o">=</span> <span class="n">StructuredProperty</span><span class="p">(</span><span class="n">Expando</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">prop</span> <span class="o">=</span> <span class="n">GenericProperty</span><span class="p">(</span>
+                <span class="n">name</span><span class="p">,</span>
+                <span class="n">repeated</span><span class="o">=</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)),</span>
+                <span class="n">indexed</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_default_indexed</span><span class="p">,</span>
+                <span class="n">write_empty_list</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_write_empty_list_for_dynamic_properties</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="n">prop</span><span class="o">.</span><span class="n">_code_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_properties</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">prop</span>
+        <span class="n">prop</span><span class="o">.</span><span class="n">_set_value</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
 
-<div class="viewcode-block" id="transactional_tasklet"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.transactional_tasklet">[docs]</a><span class="k">def</span> <span class="nf">transactional_tasklet</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
-
-
-<div class="viewcode-block" id="non_transactional"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.non_transactional">[docs]</a><span class="k">def</span> <span class="nf">non_transactional</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-    <span class="k">raise</span> <span class="ne">NotImplementedError</span></div>
+    <span class="k">def</span> <span class="nf">__delattr__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="p">(</span><span class="n">Property</span><span class="p">,</span> <span class="nb">property</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">Expando</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__delattr__</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="n">prop</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_properties</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prop</span><span class="p">,</span> <span class="n">Property</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;Model properties must be Property instances; not </span><span class="si">%r</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">prop</span>
+            <span class="p">)</span>
+        <span class="n">prop</span><span class="o">.</span><span class="n">_delete_value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">super</span><span class="p">(</span><span class="n">Expando</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_properties</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span>
+                <span class="s2">&quot;Property </span><span class="si">%s</span><span class="s2"> still in the list of properties for the &quot;</span>
+                <span class="s2">&quot;base class.&quot;</span> <span class="o">%</span> <span class="n">name</span>
+            <span class="p">)</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_properties</span><span class="p">[</span><span class="n">name</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="get_multi_async"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.get_multi_async">[docs]</a><span class="nd">@_options</span><span class="o">.</span><span class="n">ReadOptions</span><span class="o">.</span><span class="n">options</span>
 <span class="k">def</span> <span class="nf">get_multi_async</span><span class="p">(</span>
     <span class="n">keys</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">read_consistency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">read_policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">transaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -4263,6 +5669,7 @@
 <div class="viewcode-block" id="get_multi"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.get_multi">[docs]</a><span class="nd">@_options</span><span class="o">.</span><span class="n">ReadOptions</span><span class="o">.</span><span class="n">options</span>
 <span class="k">def</span> <span class="nf">get_multi</span><span class="p">(</span>
     <span class="n">keys</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">read_consistency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">read_policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">transaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -4325,6 +5732,7 @@
 <div class="viewcode-block" id="put_multi_async"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.put_multi_async">[docs]</a><span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
 <span class="k">def</span> <span class="nf">put_multi_async</span><span class="p">(</span>
     <span class="n">entities</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -4339,6 +5747,10 @@
     <span class="sd">&quot;&quot;&quot;Stores a sequence of Model instances.</span>
 
 <span class="sd">    Args:</span>
+<span class="sd">        retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">            of transient server errors. Operation will potentially be tried</span>
+<span class="sd">            up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">            once, with no retries.</span>
 <span class="sd">        entities (List[:class:`~google.cloud.ndb.model.Model`]): A sequence</span>
 <span class="sd">            of models to store.</span>
 <span class="sd">        timeout (float): Override the gRPC timeout, in seconds.</span>
@@ -4369,6 +5781,7 @@
 <div class="viewcode-block" id="put_multi"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.put_multi">[docs]</a><span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
 <span class="k">def</span> <span class="nf">put_multi</span><span class="p">(</span>
     <span class="n">entities</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -4385,6 +5798,10 @@
 <span class="sd">    Args:</span>
 <span class="sd">        entities (List[:class:`~google.cloud.ndb.model.Model`]): A sequence</span>
 <span class="sd">            of models to store.</span>
+<span class="sd">        retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">            of transient server errors. Operation will potentially be tried</span>
+<span class="sd">            up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">            once, with no retries.</span>
 <span class="sd">        timeout (float): Override the gRPC timeout, in seconds.</span>
 <span class="sd">        deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
 <span class="sd">        force_writes (bool): Specifies whether a write request should</span>
@@ -4414,6 +5831,7 @@
 <div class="viewcode-block" id="delete_multi_async"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.delete_multi_async">[docs]</a><span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
 <span class="k">def</span> <span class="nf">delete_multi_async</span><span class="p">(</span>
     <span class="n">keys</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -4428,6 +5846,10 @@
     <span class="sd">&quot;&quot;&quot;Deletes a sequence of keys.</span>
 
 <span class="sd">    Args:</span>
+<span class="sd">        retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">            of transient server errors. Operation will potentially be tried</span>
+<span class="sd">            up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">            once, with no retries.</span>
 <span class="sd">        keys (Sequence[:class:`~google.cloud.ndb.key.Key`]): A sequence of</span>
 <span class="sd">            keys.</span>
 <span class="sd">        timeout (float): Override the gRPC timeout, in seconds.</span>
@@ -4458,6 +5880,7 @@
 <div class="viewcode-block" id="delete_multi"><a class="viewcode-back" href="../../../../model.html#google.cloud.ndb.blobstore.delete_multi">[docs]</a><span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
 <span class="k">def</span> <span class="nf">delete_multi</span><span class="p">(</span>
     <span class="n">keys</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
     <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -4474,6 +5897,10 @@
 <span class="sd">    Args:</span>
 <span class="sd">        keys (Sequence[:class:`~google.cloud.ndb.key.Key`]): A sequence of</span>
 <span class="sd">            keys.</span>
+<span class="sd">        retries (int): Number of times to retry this operation in the case</span>
+<span class="sd">            of transient server errors. Operation will potentially be tried</span>
+<span class="sd">            up to ``retries`` + 1 times. Set to ``0`` to try operation only</span>
+<span class="sd">            once, with no retries.</span>
 <span class="sd">        timeout (float): Override the gRPC timeout, in seconds.</span>
 <span class="sd">        deadline (float): DEPRECATED: Synonym for ``timeout``.</span>
 <span class="sd">        force_writes (bool): Specifies whether a write request should</span>
@@ -4554,13 +5981,11 @@
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -4581,7 +6006,7 @@
       &copy;2018, Google.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>google.cloud.ndb.metadata &#8212; ndb 0.0.1.dev1 documentation</title>
+    <meta charset="utf-8" />
+    <title>google.cloud.ndb.metadata &#8212; ndb 0.0.1 documentation</title>
     <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
@@ -48,7 +46,31 @@
 <span class="c1"># See the License for the specific language governing permissions and</span>
 <span class="c1"># limitations under the License.</span>
 
-<span class="sd">&quot;&quot;&quot;Access datastore metadata.&quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot;Models and helper functions for access to a project&#39;s datastore metadata.</span>
+
+<span class="sd">These entities cannot be created by users, but are created as the results of</span>
+<span class="sd">__namespace__, __kind__, __property__ and __entity_group__ metadata queries</span>
+<span class="sd">or gets.</span>
+
+<span class="sd">A simplified API is also offered:</span>
+
+<span class="sd">    :func:`get_namespaces`: A list of namespace names.</span>
+
+<span class="sd">    :func:`get_kinds`: A list of kind names.</span>
+
+<span class="sd">    :func:`get_properties_of_kind`: A list of property names</span>
+<span class="sd">    for the given kind name.</span>
+
+<span class="sd">    :func:`get_representations_of_kind`: A dict mapping</span>
+<span class="sd">    property names to lists of representation ids.</span>
+
+<span class="sd">    get_kinds(), get_properties_of_kind(), get_representations_of_kind()</span>
+<span class="sd">    implicitly apply to the current namespace.</span>
+
+<span class="sd">    get_namespaces(), get_kinds(), get_properties_of_kind(),</span>
+<span class="sd">    get_representations_of_kind() have optional start and end arguments to</span>
+<span class="sd">    limit the query to a range of names, such that start &lt;= name &lt; end.</span>
+<span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">exceptions</span>
 <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">model</span>
@@ -273,8 +295,8 @@
     <span class="sd">&quot;&quot;&quot;Return the version of the entity group containing key.</span>
 
 <span class="sd">    Raises:</span>
-<span class="sd">        google.cloud.ndb.excpetions.NoLongerImplementedError. Always. This</span>
-<span class="sd">            method is not supported anymore.</span>
+<span class="sd">        :class:google.cloud.ndb.exceptions.NoLongerImplementedError. Always.</span>
+<span class="sd">            This method is not supported anymore.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NoLongerImplementedError</span><span class="p">()</span></div>
 
@@ -306,9 +328,11 @@
 
 <div class="viewcode-block" id="get_namespaces"><a class="viewcode-back" href="../../../../metadata.html#google.cloud.ndb.metadata.get_namespaces">[docs]</a><span class="k">def</span> <span class="nf">get_namespaces</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Return all namespaces in the specified range.</span>
+
 <span class="sd">    Args:</span>
 <span class="sd">        start (str): only return namespaces &gt;= start if start is not None.</span>
 <span class="sd">        end (str): only return namespaces &lt; end if end is not None.</span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        List[str]: Namespace names between the (optional) start and end values.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -336,6 +360,7 @@
 <span class="sd">        kind (str): name of kind whose properties you want.</span>
 <span class="sd">        start (str): only return properties &gt;= start if start is not None.</span>
 <span class="sd">        end (str): only return properties &lt; end if end is not None.</span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        List[str]: Property names of kind between the (optional) start and end</span>
 <span class="sd">            values.</span>
@@ -370,6 +395,7 @@
 <span class="sd">        kind: name of kind whose properties you want.</span>
 <span class="sd">        start: only return properties &gt;= start if start is not None.</span>
 <span class="sd">        end: only return properties &lt; end if end is not None.</span>
+
 <span class="sd">    Returns:</span>
 <span class="sd">        dict: map of property names to their list of representations.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
@@ -441,13 +467,11 @@
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -468,7 +492,7 @@
       &copy;2018, Google.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

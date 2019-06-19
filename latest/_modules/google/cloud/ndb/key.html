@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>google.cloud.ndb.key &#8212; ndb 0.0.1.dev1 documentation</title>
+    <meta charset="utf-8" />
+    <title>google.cloud.ndb.key &#8212; ndb 0.0.1 documentation</title>
     <link rel="stylesheet" href="../../../../_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
@@ -122,6 +120,7 @@
 
 
 <span class="kn">import</span> <span class="nn">base64</span>
+<span class="kn">import</span> <span class="nn">functools</span>
 
 <span class="kn">from</span> <span class="nn">google.cloud.datastore</span> <span class="k">import</span> <span class="n">_app_engine_key_pb2</span>
 <span class="kn">from</span> <span class="nn">google.cloud.datastore</span> <span class="k">import</span> <span class="n">key</span> <span class="k">as</span> <span class="n">_key_module</span>
@@ -751,6 +750,7 @@
 <div class="viewcode-block" id="Key.get"><a class="viewcode-back" href="../../../../key.html#google.cloud.ndb.key.Key.get">[docs]</a>    <span class="nd">@_options</span><span class="o">.</span><span class="n">ReadOptions</span><span class="o">.</span><span class="n">options</span>
     <span class="k">def</span> <span class="nf">get</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
         <span class="n">read_consistency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">read_policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">transaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -808,10 +808,10 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_async</span><span class="p">(</span><span class="n">_options</span><span class="o">=</span><span class="n">_options</span><span class="p">)</span><span class="o">.</span><span class="n">result</span><span class="p">()</span></div>
 
-<div class="viewcode-block" id="Key.get_async"><a class="viewcode-back" href="../../../../key.html#google.cloud.ndb.key.Key.get_async">[docs]</a>    <span class="nd">@tasklets</span><span class="o">.</span><span class="n">tasklet</span>
-    <span class="nd">@_options</span><span class="o">.</span><span class="n">ReadOptions</span><span class="o">.</span><span class="n">options</span>
+<div class="viewcode-block" id="Key.get_async"><a class="viewcode-back" href="../../../../key.html#google.cloud.ndb.key.Key.get_async">[docs]</a>    <span class="nd">@_options</span><span class="o">.</span><span class="n">ReadOptions</span><span class="o">.</span><span class="n">options</span>
     <span class="k">def</span> <span class="nf">get_async</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
         <span class="n">read_consistency</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">read_policy</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">transaction</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -869,13 +869,44 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">model</span>  <span class="c1"># avoid circular import</span>
 
-        <span class="n">entity_pb</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">_datastore_api</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="n">_options</span><span class="p">)</span>
-        <span class="k">if</span> <span class="n">entity_pb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_datastore_api</span><span class="o">.</span><span class="n">_NOT_FOUND</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">model</span><span class="o">.</span><span class="n">_entity_from_protobuf</span><span class="p">(</span><span class="n">entity_pb</span><span class="p">)</span></div>
+        <span class="bp">cls</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Model</span><span class="o">.</span><span class="n">_kind_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">())</span>
+
+        <span class="k">if</span> <span class="bp">cls</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_pre_get_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="nd">@tasklets</span><span class="o">.</span><span class="n">tasklet</span>
+        <span class="k">def</span> <span class="nf">get</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">_options</span><span class="o">.</span><span class="n">use_cache</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="c1"># This result may be None, if None is cached for this key.</span>
+                    <span class="k">return</span> <span class="n">context_module</span><span class="o">.</span><span class="n">get_context</span><span class="p">()</span><span class="o">.</span><span class="n">cache</span><span class="o">.</span><span class="n">get_and_validate</span><span class="p">(</span>
+                        <span class="bp">self</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">KeyError</span><span class="p">:</span>
+                    <span class="k">pass</span>
+
+            <span class="n">entity_pb</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">_datastore_api</span><span class="o">.</span><span class="n">lookup</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="n">_options</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">entity_pb</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">_datastore_api</span><span class="o">.</span><span class="n">_NOT_FOUND</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_entity_from_protobuf</span><span class="p">(</span><span class="n">entity_pb</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="k">if</span> <span class="n">_options</span><span class="o">.</span><span class="n">use_cache</span><span class="p">:</span>
+                <span class="n">context_module</span><span class="o">.</span><span class="n">get_context</span><span class="p">()</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="n">future</span> <span class="o">=</span> <span class="n">get</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="p">:</span>
+            <span class="n">future</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span>
+                <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_post_get_hook</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">future</span></div>
 
 <div class="viewcode-block" id="Key.delete"><a class="viewcode-back" href="../../../../key.html#google.cloud.ndb.key.Key.delete">[docs]</a>    <span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
     <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
         <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -927,6 +958,7 @@
 <div class="viewcode-block" id="Key.delete_async"><a class="viewcode-back" href="../../../../key.html#google.cloud.ndb.key.Key.delete_async">[docs]</a>    <span class="nd">@_options</span><span class="o">.</span><span class="n">Options</span><span class="o">.</span><span class="n">options</span>
     <span class="k">def</span> <span class="nf">delete_async</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
         <span class="n">retries</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">timeout</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
         <span class="n">deadline</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
@@ -964,7 +996,27 @@
 <span class="sd">                set operations will be combined into a single set_multi</span>
 <span class="sd">                operation.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">_datastore_api</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="n">_options</span><span class="p">)</span></div>
+        <span class="kn">from</span> <span class="nn">google.cloud.ndb</span> <span class="k">import</span> <span class="n">model</span>  <span class="c1"># avoid circular import</span>
+
+        <span class="bp">cls</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">Model</span><span class="o">.</span><span class="n">_kind_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kind</span><span class="p">())</span>
+        <span class="k">if</span> <span class="bp">cls</span><span class="p">:</span>
+            <span class="bp">cls</span><span class="o">.</span><span class="n">_pre_delete_hook</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+        <span class="nd">@tasklets</span><span class="o">.</span><span class="n">tasklet</span>
+        <span class="k">def</span> <span class="nf">delete</span><span class="p">():</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="k">yield</span> <span class="n">_datastore_api</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_key</span><span class="p">,</span> <span class="n">_options</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">_options</span><span class="o">.</span><span class="n">use_cache</span><span class="p">:</span>
+                <span class="n">context_module</span><span class="o">.</span><span class="n">get_context</span><span class="p">()</span><span class="o">.</span><span class="n">cache</span><span class="p">[</span><span class="bp">self</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">return</span> <span class="n">result</span>
+
+        <span class="n">future</span> <span class="o">=</span> <span class="n">delete</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="bp">cls</span><span class="p">:</span>
+            <span class="n">future</span><span class="o">.</span><span class="n">add_done_callback</span><span class="p">(</span>
+                <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">_post_delete_hook</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">future</span></div>
 
 <div class="viewcode-block" id="Key.from_old_key"><a class="viewcode-back" href="../../../../key.html#google.cloud.ndb.key.Key.from_old_key">[docs]</a>    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">from_old_key</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">old_key</span><span class="p">):</span>
@@ -1190,7 +1242,7 @@
     <span class="n">urlsafe</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">app</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
     <span class="n">namespace</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-    <span class="o">**</span><span class="n">kwargs</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;Construct a key from a Reference.</span>
 
@@ -1494,13 +1546,11 @@
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="../../../../search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -1521,7 +1571,7 @@
       &copy;2018, Google.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
     </div>

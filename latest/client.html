@@ -1,12 +1,10 @@
 
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<!DOCTYPE html>
 
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Client &#8212; ndb 0.0.1.dev1 documentation</title>
+    <meta charset="utf-8" />
+    <title>Client &#8212; ndb 0.0.1 documentation</title>
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -40,36 +38,32 @@
 <p>A client for NDB which manages credentials, project, namespace.</p>
 <dl class="class">
 <dt id="google.cloud.ndb.client.Client">
-<em class="property">class </em><code class="descclassname">google.cloud.ndb.client.</code><code class="descname">Client</code><span class="sig-paren">(</span><em>project=None</em>, <em>namespace=None</em>, <em>credentials=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/client.html#Client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.client.Client" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="sig-prename descclassname">google.cloud.ndb.client.</code><code class="sig-name descname">Client</code><span class="sig-paren">(</span><em class="sig-param">project=None</em>, <em class="sig-param">namespace=None</em>, <em class="sig-param">credentials=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/client.html#Client"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.client.Client" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference external" href="https://googleapis.github.io/google-cloud-python/latest/core/client.html#google.cloud.client.ClientWithProject" title="(in google-cloud)"><code class="xref py py-class docutils literal notranslate"><span class="pre">google.cloud.client.ClientWithProject</span></code></a></p>
 <p>An NDB client.</p>
 <p>The NDB client must be created in order to use NDB, and any use of NDB must
 be within the context of a call to <a class="reference internal" href="#google.cloud.ndb.client.Client.context" title="google.cloud.ndb.client.Client.context"><code class="xref py py-meth docutils literal notranslate"><span class="pre">context()</span></code></a>.</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
-<li><strong>project</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The project to pass to proxied API methods. If
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>project</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – The project to pass to proxied API methods. If
 not passed, falls back to the default inferred from the
-environment.</li>
-<li><strong>namespace</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – Namespace to pass to proxied API methods.</li>
-<li><strong>credentials</strong> (Optional[<a class="reference external" href="https://google-auth.readthedocs.io/en/latest/reference/google.auth.credentials.html#google.auth.credentials.Credentials" title="(in google-auth v1.6.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Credentials</span></code></a>]) – The OAuth2 Credentials to use for this client. If not passed, falls
-back to the default inferred from the environment.</li>
+environment.</p></li>
+<li><p><strong>namespace</strong> (<em>Optional</em><em>[</em><a class="reference external" href="https://docs.python.org/3/library/stdtypes.html#str" title="(in Python v3.7)"><em>str</em></a><em>]</em>) – Namespace to pass to proxied API methods.</p></li>
+<li><p><strong>credentials</strong> (Optional[<a class="reference external" href="https://google-auth.readthedocs.io/en/latest/reference/google.auth.credentials.html#google.auth.credentials.Credentials" title="(in google-auth v1.6.2)"><code class="xref py py-class docutils literal notranslate"><span class="pre">Credentials</span></code></a>]) – The OAuth2 Credentials to use for this client. If not passed, falls
+back to the default inferred from the environment.</p></li>
 </ul>
-</td>
-</tr>
-</tbody>
-</table>
+</dd>
+</dl>
 <dl class="attribute">
 <dt id="google.cloud.ndb.client.Client.SCOPE">
-<code class="descname">SCOPE</code><em class="property"> = ('https://www.googleapis.com/auth/datastore',)</em><a class="headerlink" href="#google.cloud.ndb.client.Client.SCOPE" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">SCOPE</code><em class="property"> = ('https://www.googleapis.com/auth/datastore',)</em><a class="headerlink" href="#google.cloud.ndb.client.Client.SCOPE" title="Permalink to this definition">¶</a></dt>
 <dd><p>The scopes required for authenticating as a Cloud Datastore consumer.</p>
 </dd></dl>
 
 <dl class="method">
 <dt id="google.cloud.ndb.client.Client.context">
-<code class="descname">context</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/client.html#Client.context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.client.Client.context" title="Permalink to this definition">¶</a></dt>
+<code class="sig-name descname">context</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/google/cloud/ndb/client.html#Client.context"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#google.cloud.ndb.client.Client.context" title="Permalink to this definition">¶</a></dt>
 <dd><p>Establish a context for a set of NDB calls.</p>
 <p>This method provides a context manager which establishes the runtime
 state for using NDB.</p>
@@ -140,13 +134,11 @@ layer.</p>
 </ul>
 </div>
 <div id="searchbox" style="display: none" role="search">
-  <h3>Quick search</h3>
+  <h3 id="searchlabel">Quick search</h3>
     <div class="searchformwrapper">
     <form class="search" action="search.html" method="get">
-      <input type="text" name="q" />
+      <input type="text" name="q" aria-labelledby="searchlabel" />
       <input type="submit" value="Go" />
-      <input type="hidden" name="check_keywords" value="yes" />
-      <input type="hidden" name="area" value="default" />
     </form>
     </div>
 </div>
@@ -167,7 +159,7 @@ layer.</p>
       &copy;2018, Google.
       
       |
-      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.8.5</a>
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 2.1.1</a>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
       
       |
