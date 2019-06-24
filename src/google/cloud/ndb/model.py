@@ -571,7 +571,7 @@ def _entity_to_ds_entity(entity, set_key=True):
         if not hasattr(cls, '_properties'):
             continue
 
-        for _, prop in cls._properties.items():
+        for prop in cls._properties.values():
             if (
                 not isinstance(prop, Property)
                 or isinstance(prop, ModelKey)
