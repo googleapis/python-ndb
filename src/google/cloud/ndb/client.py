@@ -92,7 +92,7 @@ class Client(google_client.ClientWithProject):
         self.secure = not emulator
 
         if emulator:
-            # When using the emulator, in theory, the client should need to
+            # When using the emulator, in theory, the client shouldn't need to
             # call home to authenticate, as you don't need to authenticate to
             # use the local emulator. Unfortunately, the client calls home to
             # authenticate anyway, unless you pass ``requests.Session`` to
