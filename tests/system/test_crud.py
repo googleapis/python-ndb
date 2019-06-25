@@ -22,7 +22,6 @@ import pytest
 
 import test_utils.system
 
-from google.cloud import datastore
 from google.cloud import ndb
 
 from tests.system import KIND, eventually
@@ -132,7 +131,7 @@ def test_retrieve_two_entities_in_parallel(ds_entity):
 
 
 @pytest.mark.usefixtures("client_context")
-def test_insert_entity(dispose_of):
+def test_insert_entity(dispose_of, ds_client):
     class SomeKind(ndb.Model):
         foo = ndb.IntegerProperty()
         bar = ndb.StringProperty()
@@ -145,7 +144,6 @@ def test_insert_entity(dispose_of):
     assert retrieved.bar == "none"
 
     # Make sure strings are stored as strings in datastore
-    ds_client = datastore.Client()
     ds_entity = ds_client.get(key._key)
     assert ds_entity["bar"] == "none"
 
@@ -415,5 +413,21 @@ def test_insert_entity_with_structured_property(dispose_of):
     assert retrieved.bar.two == "mom"
 
     assert isinstance(retrieved.bar, OtherKind)
+
+    dispose_of(key._key)
+
+
+@pytest.mark.usefixtures("client_context")
+def test_insert_expando(dispose_of):
+    class SomeKind(ndb.Expando):
+        foo = ndb.IntegerProperty()
+
+    entity = SomeKind(foo=42)
+    entity.expando_prop = "exp-value"
+    key = entity.put()
+
+    retrieved = key.get()
+    assert retrieved.foo == 42
+    assert retrieved.expando_prop == "exp-value"
 
     dispose_of(key._key)
