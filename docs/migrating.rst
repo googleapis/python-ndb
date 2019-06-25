@@ -61,6 +61,16 @@ this version of `ndb`:
     - Key.from_old_key.
     - Key.to_old_key.
 
+Models
+======
+
+There are some methods from the ``model`` module that are not implemented in
+this version of `ndb`. This is because getting the indexes relied on GAE
+context functionality:
+
+    - get_indexes.
+    - get_indexes_async.
+
 Properties
 ==========
 
