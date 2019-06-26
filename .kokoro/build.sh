@@ -57,4 +57,4 @@ python3.6 -m nox
 
 # Need enchant for spell check
 sudo apt-get update
-sudo apt-get -y install enchant
+sudo apt-get -y install libenchant1c2a
