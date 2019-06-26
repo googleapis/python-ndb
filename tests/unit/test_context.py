@@ -20,6 +20,7 @@ from google.cloud.ndb import _eventloop
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import model
+from google.cloud.ndb import remote_cache
 import tests.unit.utils
 
 
@@ -76,6 +77,46 @@ class TestContext:
         context.clear_cache()
         assert not context.cache
 
+    @staticmethod
+    def get_mock_remote_cache():
+        class RemoteCacheAdapterMock(remote_cache.RemoteCacheAdapter):
+            def __init__(self):
+                super(RemoteCacheAdapterMock, self).__init__()
+                self._cache = {}
+
+            def cache_get_multi(self, keys):
+                results = [self._cache.get(x, None) for x in keys]
+                return results
+
+            def cache_set_multi(self, values, expire=None):
+                self._cache.update(values)
+                results = {x: True for x in values.keys()}
+                return results
+
+            def cache_delete_multi(self, keys):
+                """Direct pass-through to memcache client."""
+                return [self._cache.pop(x, None) is not None for x in keys]
+
+        return RemoteCacheAdapterMock()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_clear_memcache(in_context):
+        class Simple(model.Model):
+            pass
+
+        cache = TestContext.get_mock_remote_cache()
+        new_context = in_context.new(remote_cache=cache)
+        with new_context.use():
+            key = key_module.Key("Simple", "b", app="c")
+            entity = Simple(key=key)
+            new_context.cache[key] = entity
+            remote_cache.cache_set(key, entity).wait()
+            assert remote_cache.cache_get(key).result() == entity
+            for fut in new_context.clear_memcache():
+                fut.wait()
+            assert remote_cache.cache_get(key).result() is None
+
     def test_flush(self):
         context = self._make_one()
         with pytest.raises(NotImplementedError):
@@ -94,8 +135,10 @@ class TestContext:
 
     def test_get_memcache_policy(self):
         context = self._make_one()
-        with pytest.raises(NotImplementedError):
-            context.get_memcache_policy()
+        policy = context.get_memcache_policy()
+        assert (
+            policy is context_module._default_memcache_policy
+        )
 
     def test_get_memcache_timeout_policy(self):
         context = self._make_one()
@@ -126,9 +169,17 @@ class TestContext:
             context.set_datastore_policy(None)
 
     def test_set_memcache_policy(self):
+        policy = object()
         context = self._make_one()
-        with pytest.raises(NotImplementedError):
-            context.set_memcache_policy(None)
+        context.set_memcache_policy(policy)
+        assert context.get_memcache_policy() is policy
+
+    def test_set_memcache_policy_bool(self):
+        policy = False
+        context = self._make_one()
+        context.set_memcache_policy(policy)
+        p = context.get_memcache_policy()
+        assert p("") == policy
 
     def test_set_memcache_timeout_policy(self):
         context = self._make_one()
@@ -148,11 +199,6 @@ class TestContext:
         context = self._make_one()
         with pytest.raises(NotImplementedError):
             context.default_datastore_policy(None)
-
-    def test_default_memcache_policy(self):
-        context = self._make_one()
-        with pytest.raises(NotImplementedError):
-            context.default_memcache_policy(None)
 
     def test_default_memcache_timeout_policy(self):
         context = self._make_one()
@@ -271,6 +317,48 @@ class Test_default_cache_policy:
 
         key = key_module.Key("ThisKind", 0)
         assert context_module._default_cache_policy(key) is False
+
+
+class Test_default_memcache_policy:
+    @staticmethod
+    def test_key_is_None():
+        assert context_module._default_memcache_policy(None) is None
+
+    @staticmethod
+    def test_no_model_class():
+        key = mock.Mock(kind=mock.Mock(return_value="nokind"), spec=("kind",))
+        assert context_module._default_memcache_policy(key) is None
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_standard_model():
+        class ThisKind(model.Model):
+            pass
+
+        key = key_module.Key("ThisKind", 0)
+        assert context_module._default_memcache_policy(key) is None
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_standard_model_defines_policy():
+        flag = object()
+
+        class ThisKind(model.Model):
+            @classmethod
+            def _use_memcache(cls, key):
+                return flag
+
+        key = key_module.Key("ThisKind", 0)
+        assert context_module._default_memcache_policy(key) is flag
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_standard_model_defines_policy_as_bool():
+        class ThisKind(model.Model):
+            _use_memcache = False
+
+        key = key_module.Key("ThisKind", 0)
+        assert context_module._default_memcache_policy(key) is False
 
 
 class TestCache:

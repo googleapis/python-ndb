@@ -30,8 +30,8 @@ class Options:
         "retries",
         "timeout",
         "use_cache",
-        # Not yet implemented
         "use_memcache",
+        # Not yet implemented
         "use_datastore",
         "memcache_timeout",
         "max_memcache_items",
@@ -135,9 +135,6 @@ class Options:
                     type(self).__name__, next(iter(kwargs))
                 )
             )
-
-        if self.use_memcache is not None:
-            raise NotImplementedError
 
         if self.use_datastore is not None:
             raise NotImplementedError

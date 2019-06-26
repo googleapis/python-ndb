@@ -265,6 +265,7 @@ from google.cloud.ndb import _options
 from google.cloud.ndb import query as query_module
 from google.cloud.ndb import _transaction
 from google.cloud.ndb import tasklets
+from google.cloud.ndb import remote_cache
 
 
 __all__ = [
@@ -4812,13 +4813,20 @@ class Model(metaclass=MetaModel):
 
         @tasklets.tasklet
         def put(self):
+            context = context_module.get_context()
+            use_memcache = context._use_memcache(self.key, _options)
+            if use_memcache and self._has_complete_key():
+                yield remote_cache.cache_set_locked(self.key)
+
             entity_pb = _entity_to_protobuf(self)
             key_pb = yield _datastore_api.put(entity_pb, _options)
             if key_pb:
                 ds_key = helpers.key_from_protobuf(key_pb)
                 self._key = key_module.Key._from_ds_key(ds_key)
 
-                context = context_module.get_context()
+                if use_memcache and not context.in_transaction():
+                    yield remote_cache.cache_delete(self.key)
+
                 if context._use_cache(self._key, _options):
                     context.cache[self._key] = self
 

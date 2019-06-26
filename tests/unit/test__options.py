@@ -40,8 +40,8 @@ class TestOptions:
 
     @staticmethod
     def test_constructor_w_use_memcache():
-        with pytest.raises(NotImplementedError):
-            MyOptions(use_memcache=20)
+        options = MyOptions(use_memcache=20)
+        assert options.use_memcache == 20
 
     @staticmethod
     def test_constructor_w_use_datastore():

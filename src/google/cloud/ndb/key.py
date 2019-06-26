@@ -98,6 +98,7 @@ from google.cloud.ndb import exceptions
 from google.cloud.ndb import _options
 from google.cloud.ndb import tasklets
 from google.cloud.ndb import _transaction
+from google.cloud.ndb import remote_cache
 
 
 __all__ = ["Key"]
@@ -844,6 +845,9 @@ class Key:
         def get():
             context = context_module.get_context()
             use_cache = context._use_cache(self, _options)
+            use_memcache = context._use_memcache(self, _options)
+            if context.in_transaction():
+                use_memcache = False
 
             if use_cache:
                 try:
@@ -851,6 +855,16 @@ class Key:
                     return context.cache.get_and_validate(self)
                 except KeyError:
                     pass
+
+            remote_cache_locked = False
+            if use_memcache:
+                result = yield remote_cache.cache_get(self)
+                remote_cache_locked = remote_cache.is_locked_value(result)
+                if result is not None and not remote_cache_locked:
+                    return result
+                if result is None:
+                    yield remote_cache.cache_set_locked(self)
+                    yield remote_cache.cache_start_cas(self)
 
             entity_pb = yield _datastore_api.lookup(self._key, _options)
             if entity_pb is not _datastore_api._NOT_FOUND:
@@ -860,6 +874,9 @@ class Key:
 
             if use_cache:
                 context.cache[self] = result
+
+            if use_memcache and not remote_cache_locked:
+                yield remote_cache.cache_cas(self, result)
 
             return result
 
@@ -971,9 +988,17 @@ class Key:
 
         @tasklets.tasklet
         def delete():
+            context = context_module.get_context()
+            use_memcache = context._use_memcache(self, _options)
+
+            if use_memcache:
+                yield remote_cache.cache_set_locked(self)
+
             result = yield _datastore_api.delete(self._key, _options)
 
-            context = context_module.get_context()
+            if use_memcache and not context.in_transaction():
+                yield remote_cache.cache_delete(self)
+
             if context._use_cache(self, _options):
                 context.cache[self] = None
 

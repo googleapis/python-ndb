@@ -99,7 +99,8 @@ def _transaction_async(context, callback, read_only=False):
         read_only, retries=0
     )
 
-    with context.new(transaction=transaction_id).use():
+    tx_context = context.new(transaction=transaction_id)
+    with tx_context.use():
         try:
             # Run the callback
             result = callback()
@@ -113,6 +114,8 @@ def _transaction_async(context, callback, read_only=False):
         except:
             yield _datastore_api.rollback(transaction_id)
             raise
+
+        yield tx_context.clear_memcache()
 
         return result
 

@@ -32,6 +32,7 @@ from google.cloud.ndb import model
 from google.cloud.ndb import _options
 from google.cloud.ndb import query as query_module
 from google.cloud.ndb import tasklets
+from google.cloud.ndb import remote_cache
 
 from tests.unit import utils
 
@@ -3625,6 +3626,74 @@ class TestModel:
         _datastore_api.put.assert_called_once_with(
             entity_pb, _options.Options(use_cache=True)
         )
+
+    @staticmethod
+    def get_mock_remote_cache():
+        class RemoteCacheAdapterMock(remote_cache.RemoteCacheAdapter):
+            def __init__(self):
+                super(RemoteCacheAdapterMock, self).__init__()
+                self._cache = {}
+
+            def cache_get(self, key):
+                return self._cache.get(key, None)
+
+            def cache_set(self, key, value):
+                self._cache[key] = value
+                return True
+
+            def cache_get_multi(self, keys):
+                print(self._cache)
+                results = [self._cache.get(x, None) for x in keys]
+                return results
+
+            def cache_set_multi(self, values, expire=None):
+                self._cache.update(values)
+                results = {x: True for x in values.keys()}
+                return results
+
+            def cache_delete_multi(self, keys):
+                """Direct pass-through to memcache client."""
+                return [self._cache.pop(x, None) is not None for x in keys]
+
+        return RemoteCacheAdapterMock()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    def test__put_w_key_no_remote_cache(_datastore_api, in_context):
+        cache = TestModel.get_mock_remote_cache()
+        with in_context.new(remote_cache=cache).use():
+            entity = model.Model()
+            _datastore_api.put.return_value = future = tasklets.Future()
+
+            key = key_module.Key("SomeKind", 123)
+            future.set_result(key._key.to_protobuf())
+
+            entity_pb = model._entity_to_protobuf(entity)
+            assert entity._put(use_memcache=False) == key
+            assert cache.cache_get(key.urlsafe()) is None
+            _datastore_api.put.assert_called_once_with(
+                entity_pb, _options.Options(use_memcache=False)
+            )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    def test__put_w_key_with_remotecache(_datastore_api, in_context):
+        cache = TestModel.get_mock_remote_cache()
+        with in_context.new(remote_cache=cache).use():
+            key = key_module.Key("SomeKind", 123)
+            entity = model.Model(key=key)
+            _datastore_api.put.return_value = future = tasklets.Future()
+            future.set_result(key._key.to_protobuf())
+
+            cache.cache_set(key.urlsafe(), "cache")
+            entity_pb = model._entity_to_protobuf(entity)
+            assert entity._put(use_memcache=True) == key
+            assert remote_cache.cache_get(key).result() is None
+            _datastore_api.put.assert_called_once_with(
+                entity_pb, _options.Options(use_memcache=True)
+            )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")

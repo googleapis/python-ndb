@@ -22,6 +22,8 @@ from google.cloud.ndb import _datastore_api
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import model
+from google.cloud.ndb import remote_cache
+from google.cloud.ndb import tasklets
 
 
 __all__ = [
@@ -105,6 +107,27 @@ def _default_cache_policy(key):
     return flag
 
 
+def _default_memcache_policy(key):
+    """The default memcache policy.
+
+    Defers to ``_use_memcache`` on the Model class for the key's kind.
+
+    See: :meth:`~google.cloud.ndb.context.Context.set_memcache_policy`
+    """
+    flag = None
+    if key is not None:
+        modelclass = model.Model._kind_map.get(key.kind())
+        if modelclass is not None:
+            policy = getattr(modelclass, "_use_memcache", None)
+            if policy is not None:
+                if isinstance(policy, bool):
+                    flag = policy
+                else:
+                    flag = policy(key)
+
+    return flag
+
+
 _ContextTuple = collections.namedtuple(
     "_ContextTuple",
     [
@@ -115,6 +138,7 @@ _ContextTuple = collections.namedtuple(
         "commit_batches",
         "transaction",
         "cache",
+        "remote_cache",
     ],
 )
 
@@ -146,6 +170,7 @@ class _Context(_ContextTuple):
         transaction=None,
         cache=None,
         cache_policy=None,
+        remote_cache=None,
     ):
         if eventloop is None:
             eventloop = _eventloop.EventLoop()
@@ -177,9 +202,11 @@ class _Context(_ContextTuple):
             commit_batches=commit_batches,
             transaction=transaction,
             cache=cache,
+            remote_cache=remote_cache,
         )
 
         context.set_cache_policy(cache_policy)
+        context.set_memcache_policy(None)
 
         return context
 
@@ -221,6 +248,23 @@ class Context(_Context):
         """
         self.cache.clear()
 
+    def clear_memcache(self):
+        """Clears the in-memory cache.
+
+        This does not affect memcache.
+        """
+
+        keys = set(key for key in self.cache if self._use_memcache(key, None))
+        if not keys:
+            future = tasklets.Future(info="clear_memcache")
+            future.set_result(True)
+            return future
+        futures = []
+        for key in keys:
+            fut = remote_cache.cache_delete(key)
+            futures.append(fut)
+        return futures
+
     def flush(self):
         """Force any pending batch operations to go ahead and run."""
         raise NotImplementedError
@@ -256,7 +300,7 @@ class Context(_Context):
                 positional argument and returns a ``bool`` indicating if it
                 should be cached. May be :data:`None`.
         """
-        raise NotImplementedError
+        return self.memcache_policy
 
     def get_memcache_timeout_policy(self):
         """Return the current policy function memcache timeout (expiration).
@@ -310,7 +354,16 @@ class Context(_Context):
                 positional argument and returns a ``bool`` indicating if it
                 should be cached.  May be :data:`None`.
         """
-        raise NotImplementedError
+        if policy is None:
+            policy = _default_memcache_policy
+
+        elif isinstance(policy, bool):
+            flag = policy
+
+            def policy(key):
+                return flag
+
+        self.memcache_policy = policy
 
     def set_memcache_timeout_policy(self, policy):
         """Set the policy function for memcache timeout (expiration).
@@ -366,20 +419,6 @@ class Context(_Context):
 
         Returns:
             Union[bool, None]: Whether to use datastore.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def default_memcache_policy(key):
-        """Default memcache policy.
-
-        This defers to ``Model._use_memcache``.
-
-        Args:
-            key (google.cloud.ndb.key.Key): The key.
-
-        Returns:
-            Union[bool, None]: Whether to cache the key.
         """
         raise NotImplementedError
 
@@ -443,6 +482,17 @@ class Context(_Context):
         flag = options.use_cache
         if flag is None:
             flag = self.cache_policy(key)
+        if flag is None:
+            flag = True
+        return flag
+
+    def _use_memcache(self, key, options):
+        """Return whether to use the context cache for this key."""
+        flag = None
+        if options:
+            flag = options.use_memcache
+        if flag is None:
+            flag = self.memcache_policy(key)
         if flag is None:
             flag = True
         return flag
