@@ -18,6 +18,7 @@ import collections
 import contextlib
 import threading
 
+from google.cloud.ndb import _cache
 from google.cloud.ndb import _datastore_api
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import exceptions
@@ -61,25 +62,6 @@ def get_context():
         return context
 
     raise exceptions.ContextError()
-
-
-class _Cache(collections.UserDict):
-    """An in-memory entity cache.
-
-    This cache verifies the fetched entity has the correct key before
-    returning a result, in order to handle cases where the entity's key was
-    modified but the cache's key was not updated."""
-
-    def get_and_validate(self, key):
-        """Verify that the entity's key has not changed since it was added
-           to the cache. If it has changed, consider this a cache miss.
-           See issue 13.  http://goo.gl/jxjOP"""
-        entity = self.data[key]  # May be None, meaning "doesn't exist".
-        if entity is None or entity._key == key:
-            return entity
-        else:
-            del self.data[key]
-            raise KeyError(key)
 
 
 def _default_cache_policy(key):
@@ -159,12 +141,9 @@ class _Context(_ContextTuple):
 
         # Create a cache and, if an existing cache was passed into this
         # method, duplicate its entries.
+        new_cache = _cache.ContextCache()
         if cache:
-            new_cache = _Cache()
             new_cache.update(cache)
-            cache = new_cache
-        else:
-            cache = _Cache()
 
         context = super(_Context, cls).__new__(
             cls,
@@ -174,7 +153,7 @@ class _Context(_ContextTuple):
             batches=batches,
             commit_batches=commit_batches,
             transaction=transaction,
-            cache=cache,
+            cache=new_cache,
         )
 
         context.set_cache_policy(cache_policy)
