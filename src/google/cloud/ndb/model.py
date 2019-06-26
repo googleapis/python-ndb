@@ -2888,7 +2888,7 @@ class UserProperty(Property):
     .. warning::
 
         This exists for backwards compatibility with existing Cloud Datastore
-        schemata only; storing :class:`.User` objects directly in Cloud
+        schemas only; storing :class:`.User` objects directly in Cloud
         Datastore is not recommended.
 
     .. warning::

@@ -272,7 +272,7 @@ class Parameter(ParameterizedThing):
     """Represents a bound variable in a GQL query.
 
     ``Parameter(1)`` corresponds to a slot labeled ``:1`` in a GQL query.
-    ``Parameter('xyz')`` corresponds to a slot labeled ``:xyz``.
+    ``Parameter('something')`` corresponds to a slot labeled ``:something``.
 
     The value must be set (bound) separately.
 
@@ -1543,7 +1543,7 @@ class Query:
         When a query is created using gql, any bound parameters
         are created as ParameterNode instances. This method
         receives values for both positional (:1, :2, etc.) or
-        keyword (:xyz, :abc, etc.) bound parameters, then sets the
+        keyword (:something, :other, etc.) bound parameters, then sets the
         values accordingly. This mechanism allows easy reuse of a
         parameterized query, by passing the values to bind here.
 
