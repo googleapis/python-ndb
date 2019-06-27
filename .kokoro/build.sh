@@ -56,6 +56,8 @@ python3.6 -m nox --version
 python3.6 -m nox
 
 # Need enchant for spell check
+sudo apt-get update
+sudo apt-get -y install software-properties-common
 sudo add-apt-repository universe
 sudo apt-get update
-sudo apt-get -y install enchant libenchant1c2a
+sudo apt-get -y install libglibc2.0-0 enchant
