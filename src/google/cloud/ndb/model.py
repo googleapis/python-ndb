@@ -536,6 +536,11 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
                     ]
                 else:
                     value = _BaseValue(value)
+
+                if "." in name:
+                    _load_structured_property(name, value, entity)
+                    continue
+
                 setattr(entity, name, value)
             continue
         if value is not None:
@@ -549,6 +554,92 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
         prop._store_value(entity, value)
 
     return entity
+
+
+def _create_structured_property_model(prop, repeated_count=0):
+    struct_prop_model = prop._model_class()
+    for property in struct_prop_model._properties.values():
+        if not isinstance(property, StructuredProperty):
+            continue
+
+        if not property._repeated:
+            property._set_value(struct_prop_model, property._model_class())
+        elif repeated_count > 0:
+            property._set_value(struct_prop_model, [property._model_class() for i in range(repeated_count)])
+
+        _create_structured_property_model(property, repeated_count)
+
+    return struct_prop_model
+
+
+def _load_structured_property(name, value, entity):
+    if not name:
+        return
+
+    name_parts = name.split(".")
+    name_parts_len = len(name_parts)
+    if name_parts_len < 2:
+        return
+
+    value_name_part = name_parts[name_parts_len - 1]
+
+    struct_prop_index = 0
+    struct_prop_model = None
+    for i in range(name_parts_len):
+        name_part = name_parts[i]
+
+        if i == 0:
+            prop = entity._properties.get(name_part)
+            if prop is None:
+                raise InvalidPropertyError("Unknown property {}".format(name_part))
+
+            if not isinstance(prop, StructuredProperty):
+                return
+
+            if not prop._has_value(entity):
+                struct_prop_model = _create_structured_property_model(prop)
+                prop._set_value(entity, struct_prop_model)
+            else:
+                struct_prop_model = prop._get_value(entity)
+
+            struct_prop_index = i
+
+        elif i == struct_prop_index + 1 and i + 1 == name_parts_len:
+            setattr(struct_prop_model, name_part, value)
+            return
+
+        else:
+            parent_name_part = name_parts[i - 1]
+            prop = struct_prop_model._properties.get(parent_name_part)
+            if prop is None:
+                continue
+
+            if not isinstance(prop, StructuredProperty):
+                return
+
+            has_value = prop._has_value(struct_prop_model)
+            if not has_value:
+                prop_val = _create_structured_property_model(prop) if not prop._repeated else \
+                    [_create_structured_property_model(prop, len(value)) for _ in value]
+            else:
+                prop_val = prop._get_value(struct_prop_model)
+
+            if name_part != value_name_part:
+                prop._set_value(struct_prop_model, prop_val)
+
+                if not prop._repeated:
+                    struct_prop_model = prop_val
+                    struct_prop_index = i - 1
+                continue
+
+            if not prop._repeated:
+                setattr(prop_val, name_part, value)
+            else:
+                for i in range(len(prop_val)):
+                    sub_prop_val = prop_val[i]
+                    setattr(sub_prop_val, name_part, value[i])
+
+            prop._set_value(struct_prop_model, prop_val)
 
 
 def _entity_from_protobuf(protobuf):
