@@ -2,10 +2,10 @@
 Migrating from Python 2 version of NDB
 ######################################
 
-While every attempt has been made to keep compatibilty with the previous
+While every attempt has been made to keep compatibility with the previous
 version of `ndb`, there are fundamental differences at the platform level,
 which have made necessary in some cases to depart from the original
-implementation, and sometimes even to remove exisitng functionality
+implementation, and sometimes even to remove existing functionality
 altogether.
 
 Because one of the main objectives of this rewrite was to be able to use `ndb`
@@ -17,7 +17,7 @@ resources directly have been dropped.
 
 Aside from this, there are many differences between the Datastore APIs
 provided by GAE and those provided by the newer Google Cloud Platform. These
-diffeences have required some code and API changes as well.
+differences have required some code and API changes as well.
 
 Finally, in many cases, new features of Python 3 have eliminated the need for
 some code, particularly from the old `utils` module.
@@ -49,7 +49,7 @@ be within the context obtained from this call::
     with context as client.context():
         do_something_with_ndb()
 
-Note that the example above is assumming the google credentials are set in
+Note that the example above is assuming the google credentials are set in
 the environment.
 
 Keys
@@ -97,7 +97,7 @@ since ``google.appengine.datastore.datastore_rpc.Configuration`` is no longer
 available. It still uses the same signature, but does not support original
 Configuration methods.
 
-Similarly,b ecause ``google.appengine.datastore.datastore_query.Order`` is no
+Similarly, because ``google.appengine.datastore.datastore_query.Order`` is no
 longer available, the ``ndb.query.PropertyOrder`` class has been created to
 replace it.
 
@@ -134,8 +134,8 @@ created and used in this version:
     - set_context.
     - toplevel.
 
-Utils
-=====
+ndb.utils
+=========
 
 The previous version of `ndb` included an ``ndb.utils`` module, which defined
 a number of methods that were mostly used internally. Some of those have been
@@ -168,7 +168,7 @@ package, like this::
 Datastore API
 =============
 
-There are many differences bewteen the current Datastore API and the legacy App
+There are many differences between the current Datastore API and the legacy App
 Engine Datastore. In most cases, where the public API was generally used, this
 should not be a problem. However, if you relied in your code on the private
 Datastore API, the code that does this will probably need to be rewritten.
@@ -186,7 +186,7 @@ In the previous version, ``google.appengine.api.namespacemanager`` was used
 to determine the default namespace when not passed in to constructors which
 require it, like ``Key``. In this version, the client class can be instantiated
 with a namespace, which will be used as the default whenever it's not included
-in the constuctor or method arguments that expect a namespace::
+in the constructor or method arguments that expect a namespace::
 
     from google.cloud import ndb
 
