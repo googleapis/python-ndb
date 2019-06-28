@@ -121,6 +121,7 @@ __all__ = [
     "toplevel",
     "wait_all",
     "wait_any",
+    "RemoteCacheAdapter",
 ]
 """All top-level exported names."""
 
@@ -224,3 +225,4 @@ from google.cloud.ndb._transaction import transactional
 from google.cloud.ndb._transaction import transactional_async
 from google.cloud.ndb._transaction import transactional_tasklet
 from google.cloud.ndb._transaction import non_transactional
+from google.cloud.ndb.remote_cache import RemoteCacheAdapter
