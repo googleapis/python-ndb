@@ -633,7 +633,7 @@ class TestKey:
             key = key_module.Key("Simple", "b", app="c")
             remote_cache.cache_set(key, remote_cache._LOCKED)
             assert key.get(use_memcache=True) == entity
-            assert remote_cache.cache_get(key).result() == remote_cache._LOCKED
+            assert remote_cache.is_locked_value(remote_cache.cache_get(key).result())
 
         _datastore_api.lookup.assert_called_once_with(
             key._key, _options.ReadOptions(use_memcache=True)

@@ -20,6 +20,8 @@ __all__ = [
 ]
 
 _LOCKED = 0
+_LOCKED_STR = '0'
+_LOCKED_BYTES = b'0'
 _LOCK_TIME = 32
 _PREFIX = "NDB9"
 
@@ -92,7 +94,7 @@ def cache_delete(key, **options):
 
 
 def is_locked_value(value):
-    return value == _LOCKED
+    return value in (_LOCKED, _LOCKED_STR, _LOCKED_BYTES)
 
 
 def _get_batch(batch_cls, options):
