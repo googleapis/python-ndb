@@ -528,10 +528,10 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
         prop = getattr(model_class, name, None)
 
         # Backwards compatibility shim. NDB previously stored structured
-        # properties as sets of dotted name proprties. Datastore now has native
-        # support for embedded entities and NDB now uses that, by default. This
-        # handles the case of reading structured properties from older
-        # NDB datastore instances.
+        # properties as sets of dotted name properties. Datastore now has
+        # native support for embedded entities and NDB now uses that, by
+        # default. This handles the case of reading structured properties from
+        # older NDB datastore instances.
         if prop is None and "." in name:
             supername, subname = name.split(".", 1)
             structprop = getattr(model_class, supername, None)
@@ -553,7 +553,11 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
                     structprop._store_value(entity, value)
 
                 if structprop._repeated:
-                    for subentity, subsubvalue in zip(value, subvalue):
+                    # Branch coverage bug,
+                    # See: https://github.com/nedbat/coveragepy/issues/817
+                    for subentity, subsubvalue in zip(  # pragma no branch
+                        value, subvalue
+                    ):
                         subentity.b_val.update({subname: subsubvalue})
                 else:
                     value.b_val.update({subname: subvalue})
