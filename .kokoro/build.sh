@@ -60,4 +60,4 @@ sudo apt-get update
 sudo apt-get -y install software-properties-common
 sudo add-apt-repository universe
 sudo apt-get update
-sudo apt-get -y install libglibc2.0-0 enchant libenchant1c2a
+sudo apt-get -y install libenchant1c2a
