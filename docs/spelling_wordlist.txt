@@ -1,4 +1,7 @@
+Admin
 api
+App
+app
 Appengine
 appengine
 Args
@@ -9,17 +12,23 @@ Blobstore
 blobstore
 bool
 boolean
+builtin
 composable
 Datastore
 datastore
 deserialized
+Dict
+Django
 Expando
 expando
+fallback
 Firestore
 func
+google
 gRPC
 gql
 gVisor
+indices
 instantiation
 iter
 iterable
@@ -30,6 +39,9 @@ Metaclass
 metaclass
 Metaclasses
 metaclasses
+Metadata
+metadata
+meth
 middleware
 MultiFuture
 multitenancy
@@ -41,6 +53,7 @@ NDB
 ndb
 NoLongerImplementedError
 OAuth
+offline
 param
 polymorphism
 Pre
@@ -66,6 +79,7 @@ Tasklet
 tasklet
 Tasklets
 tasklets
+timestamp
 Transactionally
 unary
 unicode
@@ -73,6 +87,7 @@ unindexed
 unpickled
 unpickling
 urlsafe
+username
 UTF
 webapp
 websafe
