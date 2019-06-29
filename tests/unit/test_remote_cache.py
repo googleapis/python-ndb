@@ -35,14 +35,16 @@ class TestAdapter:
     def test_cache_key():
         adapter = remote_cache.RemoteCacheAdapter()
         key = key_module.Key("SomeKind", 123)
-        assert adapter.cache_key(key) == "NDB9:agd0ZXN0aW5ncg4LEghTb21lS2luZBh7DA"
+        key_str = "NDB9:agd0ZXN0aW5ncg4LEghTb21lS2luZBh7DA"
+        assert adapter.cache_key(key) == key_str
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_cache_key_with_ns():
         adapter = remote_cache.RemoteCacheAdapter()
         key = key_module.Key("SomeKind", 123, namespace="ns")
-        assert adapter.cache_key(key) == "ns:NDB9:agd0ZXN0aW5ncg4LEghTb21lS2luZBh7DKIBAm5z"
+        key_str = "ns:NDB9:agd0ZXN0aW5ncg4LEghTb21lS2luZBh7DKIBAm5z"
+        assert adapter.cache_key(key) == key_str
 
     @staticmethod
     def test_cache_get_multi():
@@ -92,3 +94,29 @@ class Test__get_batch:
         in_context.batches[kls] = {(("a", "b"), ): batch}
 
         assert remote_cache._get_batch(kls, options) == batch
+
+
+class Test_remote_cache_available:
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_remote_cache_unavailable(in_context):
+        assert not remote_cache.remote_cache_available()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_remote_cache_available(in_context):
+        with in_context.new(remote_cache="remote_cache").use():
+            assert remote_cache.remote_cache_available()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_cache_action_done_with_remote_cache_unavailable(in_context):
+        key = "key"
+        value = "value"
+        assert remote_cache.cache_get(key).done()
+        assert remote_cache.cache_set(key, value).done()
+        assert remote_cache.cache_set_locked(key).done()
+        assert remote_cache.cache_start_cas(key).done()
+        assert remote_cache.cache_cas(key, value).done()
+        assert remote_cache.cache_delete(key).done()
+

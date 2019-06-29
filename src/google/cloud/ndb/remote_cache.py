@@ -17,6 +17,7 @@ __all__ = [
     "cache_cas",
     "cache_delete",
     "is_locked_value",
+    "remote_cache_available",
 ]
 
 _LOCKED = 0
@@ -57,18 +58,24 @@ class RemoteCacheAdapter:
 
 def cache_get(key, **options):
     """Direct pass-through to memcache client."""
+    if not remote_cache_available():
+        return _do_nothing_future()
     batch = _get_batch(_RemoteCacheGetBatch, options)
     return batch.add(key, **options)
 
 
 def cache_set(key, value, **options):
     """Direct pass-through to memcache client."""
+    if not remote_cache_available():
+        return _do_nothing_future()
     batch = _get_batch(_RemoteCacheSetBatch, options)
     return batch.add(key, value, **options)
 
 
 def cache_set_locked(key, **options):
     """Direct pass-through to memcache client."""
+    if not remote_cache_available():
+        return _do_nothing_future()
     value = _LOCKED
     options = options or {}
     options['expire'] = _LOCK_TIME
@@ -77,20 +84,36 @@ def cache_set_locked(key, **options):
 
 def cache_start_cas(key, **options):
     """Direct pass-through to memcache client."""
+    if not remote_cache_available():
+        return _do_nothing_future()
     batch = _get_batch(_RemoteCacheStartCasBatch, options)
     return batch.add(key, **options)
 
 
 def cache_cas(key, value, **options):
     """Direct pass-through to memcache client."""
+    if not remote_cache_available():
+        return _do_nothing_future()
     batch = _get_batch(_RemoteCacheCasBatch, options)
     return batch.add(key, value, **options)
 
 
 def cache_delete(key, **options):
     """Direct pass-through to memcache client."""
+    if not remote_cache_available():
+        return _do_nothing_future()
     batch = _get_batch(_RemoteCacheDeleteBatch, options)
     return batch.add(key, **options)
+
+
+def _do_nothing_future():
+    future = tasklets.Future()
+    future.set_result(None)
+    return future
+
+
+def remote_cache_available():
+    return context_module.get_context().remote_cache is not None
 
 
 def is_locked_value(value):
@@ -176,9 +199,6 @@ class _RemoteCacheGetBatch:
 
         future = tasklets.Future(info=self.future_info(key))
         adapter = context_module.get_context().remote_cache
-        if not adapter:
-            future.set_result(None)
-            return future
         todo_key = adapter.cache_key(key)
         self.todo.setdefault(todo_key, []).append(future)
         return future
@@ -241,9 +261,6 @@ class _RemoteCacheSetBatch:
 
         future = tasklets.Future(info=self.future_info(value))
         adapter = context_module.get_context().remote_cache
-        if not adapter:
-            future.set_result(False)
-            return future
         todo_key = adapter.cache_key(key)
         todo_value = value
         if not is_locked_value(value):
