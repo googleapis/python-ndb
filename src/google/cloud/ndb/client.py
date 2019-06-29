@@ -108,7 +108,7 @@ class Client(google_client.ClientWithProject):
             )
 
     @contextlib.contextmanager
-    def context(self, cache_policy=None):
+    def context(self, cache_policy=None, remote_cache=None):
         """Establish a context for a set of NDB calls.
 
         This method provides a context manager which establishes the runtime
@@ -143,7 +143,11 @@ class Client(google_client.ClientWithProject):
                 cache policy to use in this context. See:
                 :meth:`~google.cloud.ndb.context.Context.set_cache_policy`.
         """
-        context = context_module.Context(self, cache_policy=cache_policy)
+        context = context_module.Context(
+            self,
+            cache_policy=cache_policy,
+            remote_cache=remote_cache,
+        )
         with context.use():
             yield context
 
