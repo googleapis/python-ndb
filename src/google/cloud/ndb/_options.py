@@ -30,8 +30,8 @@ class Options:
         "retries",
         "timeout",
         "use_cache",
-        "use_memcache",
-        "memcache_timeout",
+        "use_remote_cache",
+        "remote_cache_timeout",
         # Not yet implemented
         "use_datastore",
         "max_memcache_items",

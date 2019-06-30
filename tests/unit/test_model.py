@@ -3652,7 +3652,6 @@ class TestModel:
                 return results
 
             def cache_delete_multi(self, keys):
-                """Direct pass-through to memcache client."""
                 return [self._cache.pop(x, None) is not None for x in keys]
 
         return RemoteCacheAdapterMock()
@@ -3670,10 +3669,10 @@ class TestModel:
             future.set_result(key._key.to_protobuf())
 
             entity_pb = model._entity_to_protobuf(entity)
-            assert entity._put(use_memcache=False) == key
+            assert entity._put(use_remote_cache=False) == key
             assert cache.cache_get(key.urlsafe()) is None
             _datastore_api.put.assert_called_once_with(
-                entity_pb, _options.Options(use_memcache=False)
+                entity_pb, _options.Options(use_remote_cache=False)
             )
 
     @staticmethod
@@ -3689,10 +3688,10 @@ class TestModel:
 
             cache.cache_set(key.urlsafe(), "cache")
             entity_pb = model._entity_to_protobuf(entity)
-            assert entity._put(use_memcache=True) == key
+            assert entity._put(use_remote_cache=True) == key
             assert remote_cache.cache_get(key).result() is None
             _datastore_api.put.assert_called_once_with(
-                entity_pb, _options.Options(use_memcache=True)
+                entity_pb, _options.Options(use_remote_cache=True)
             )
 
     @staticmethod

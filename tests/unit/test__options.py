@@ -39,9 +39,9 @@ class TestOptions:
             MyOptions(timeout=20, deadline=10)
 
     @staticmethod
-    def test_constructor_w_use_memcache():
-        options = MyOptions(use_memcache=20)
-        assert options.use_memcache == 20
+    def test_constructor_w_use_remote_cache():
+        options = MyOptions(use_remote_cache=20)
+        assert options.use_remote_cache == 20
 
     @staticmethod
     def test_constructor_w_use_datastore():
@@ -54,9 +54,9 @@ class TestOptions:
         assert options.use_cache == 20
 
     @staticmethod
-    def test_constructor_w_memcache_timeout():
-        options = MyOptions(memcache_timeout=20)
-        assert options.memcache_timeout == 20
+    def test_constructor_w_remote_cache_timeout():
+        options = MyOptions(remote_cache_timeout=20)
+        assert options.remote_cache_timeout == 20
 
     @staticmethod
     def test_constructor_w_max_memcache_items():

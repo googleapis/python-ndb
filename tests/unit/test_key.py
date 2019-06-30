@@ -549,15 +549,12 @@ class TestKey:
                 return results
 
             def cache_start_cas_multi(self, keys):
-                """Direct pass-through to memcache client."""
                 return [remote_cache._LOCKED for x in keys]
 
             def cache_cas_multi(self, values, expire=None):
-                """Direct pass-through to memcache client."""
                 return self.cache_set_multi(values, expire=expire)
 
             def cache_delete_multi(self, keys):
-                """Direct pass-through to memcache client."""
                 return [self._cache.pop(x, None) is not None for x in keys]
 
         return RemoteCacheAdapterMock()
@@ -579,10 +576,10 @@ class TestKey:
         _entity_from_protobuf.return_value = entity
 
         key = key_module.Key("Simple", "b", app="c")
-        assert key.get(use_memcache=True) == entity
+        assert key.get(use_remote_cache=True) == entity
 
         _datastore_api.lookup.assert_called_once_with(
-            key._key, _options.ReadOptions(use_memcache=True)
+            key._key, _options.ReadOptions(use_remote_cache=True)
         )
         _entity_from_protobuf.assert_called_once_with("ds_entity")
 
@@ -605,10 +602,10 @@ class TestKey:
             _entity_from_protobuf.return_value = entity
 
             key = key_module.Key("Simple", "b", app="c")
-            assert key.get(use_memcache=True) == entity
+            assert key.get(use_remote_cache=True) == entity
 
         _datastore_api.lookup.assert_called_once_with(
-            key._key, _options.ReadOptions(use_memcache=True)
+            key._key, _options.ReadOptions(use_remote_cache=True)
         )
         _entity_from_protobuf.assert_called_once_with("ds_entity")
 
@@ -632,12 +629,12 @@ class TestKey:
 
             key = key_module.Key("Simple", "b", app="c")
             remote_cache.cache_set(key, remote_cache._LOCKED)
-            assert key.get(use_memcache=True) == entity
+            assert key.get(use_remote_cache=True) == entity
             value = remote_cache.cache_get(key).result()
             assert remote_cache.is_locked_value(value)
 
         _datastore_api.lookup.assert_called_once_with(
-            key._key, _options.ReadOptions(use_memcache=True)
+            key._key, _options.ReadOptions(use_remote_cache=True)
         )
         _entity_from_protobuf.assert_called_once_with("ds_entity")
 
@@ -657,7 +654,7 @@ class TestKey:
             key = key_module.Key("Simple", "b", app="c")
             cached_entity = Simple(key=key)
             remote_cache.cache_set(key, cached_entity)
-            ent = key.get(use_memcache=True)
+            ent = key.get(use_remote_cache=True)
             assert ent == cached_entity
 
         _datastore_api.lookup.assert_not_called()
@@ -683,10 +680,10 @@ class TestKey:
             key = key_module.Key("Simple", "b", app="c")
             cached_entity = Simple(key=key)
             remote_cache.cache_set(key, cached_entity)
-            assert key.get(use_memcache=True) == entity
+            assert key.get(use_remote_cache=True) == entity
 
         _datastore_api.lookup.assert_called_once_with(
-            key._key, _options.ReadOptions(use_memcache=True)
+            key._key, _options.ReadOptions(use_remote_cache=True)
         )
         _entity_from_protobuf.assert_called_once_with("ds_entity")
 
@@ -709,7 +706,7 @@ class TestKey:
             ds_future.set_result("ds_entity")
             _datastore_api.lookup.return_value = ds_future
             _entity_from_protobuf.return_value = entity
-            key.get(use_memcache=True)
+            key.get(use_remote_cache=True)
             assert remote_cache.cache_get(key).result() is not None
 
     @staticmethod
@@ -875,9 +872,9 @@ class TestKey:
             key = key_module.Key("Simple", "b", app="c")
             entity = Simple(key=key)
             remote_cache.cache_set(key, entity).wait()
-            assert key.delete(use_memcache=False) == "result"
+            assert key.delete(use_remote_cache=False) == "result"
             assert remote_cache.cache_get(key).result() == entity
-            key.delete(use_memcache=True)
+            key.delete(use_remote_cache=True)
             assert remote_cache.cache_get(key).result() is None
 
     @staticmethod

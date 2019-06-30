@@ -115,7 +115,7 @@ def _transaction_async(context, callback, read_only=False):
             yield _datastore_api.rollback(transaction_id)
             raise
 
-        yield tx_context.clear_memcache()
+        yield tx_context.clear_remote_cache()
 
         return result
 

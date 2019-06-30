@@ -95,14 +95,13 @@ class TestContext:
                 return results
 
             def cache_delete_multi(self, keys):
-                """Direct pass-through to memcache client."""
                 return [self._cache.pop(x, None) is not None for x in keys]
 
         return RemoteCacheAdapterMock()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_clear_memcache(in_context):
+    def test_clear_remote_cache(in_context):
         class Simple(model.Model):
             pass
 
@@ -114,7 +113,7 @@ class TestContext:
             new_context.cache[key] = entity
             remote_cache.cache_set(key, entity).wait()
             assert remote_cache.cache_get(key).result() == entity
-            for fut in new_context.clear_memcache():
+            for fut in new_context.clear_remote_cache():
                 fut.wait()
             assert remote_cache.cache_get(key).result() is None
 
@@ -134,32 +133,32 @@ class TestContext:
         with pytest.raises(NotImplementedError):
             context.get_datastore_policy()
 
-    def test_get_memcache_policy(self):
+    def test_get_remote_cache_policy(self):
         context = self._make_one()
-        policy = context.get_memcache_policy()
+        policy = context.get_remote_cache_policy()
         assert (
-            policy is context_module._default_memcache_policy
+            policy is context_module._default_remote_cache_policy
         )
 
-    def test_get_memcache_timeout_policy(self):
+    def test_get_remote_cache_timeout_policy(self):
         context = self._make_one()
-        policy = context.get_memcache_timeout_policy()
+        policy = context.get_remote_cache_timeout_policy()
         assert (
-            policy is context_module._default_memcache_timeout_policy
+            policy is context_module._default_remote_cache_timeout_policy
         )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test__memcache_timeout_with_options(context):
-        options = _options.ReadOptions(memcache_timeout=10)
+    def test__remote_cache_timeout_with_options(context):
+        options = _options.ReadOptions(remote_cache_timeout=10)
         key = key_module.Key("Simple", "b", app="c")
-        assert context._memcache_timeout(key, options) == 10
+        assert context._remote_cache_timeout(key, options) == 10
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test__memcache_timeout_without_options(context):
+    def test__remote_cache_timeout_without_options(context):
         key = key_module.Key("Simple", "b", app="c")
-        assert context._memcache_timeout(key, None) is None
+        assert context._remote_cache_timeout(key, None) is None
 
     def test_set_cache_policy(self):
         policy = object()
@@ -184,30 +183,30 @@ class TestContext:
         with pytest.raises(NotImplementedError):
             context.set_datastore_policy(None)
 
-    def test_set_memcache_policy(self):
+    def test_set_remote_cache_policy(self):
         policy = object()
         context = self._make_one()
-        context.set_memcache_policy(policy)
-        assert context.get_memcache_policy() is policy
+        context.set_remote_cache_policy(policy)
+        assert context.get_remote_cache_policy() is policy
 
-    def test_set_memcache_policy_bool(self):
+    def test_set_remote_cache_policy_bool(self):
         policy = False
         context = self._make_one()
-        context.set_memcache_policy(policy)
-        p = context.get_memcache_policy()
+        context.set_remote_cache_policy(policy)
+        p = context.get_remote_cache_policy()
         assert p("") == policy
 
-    def test_set_memcache_timeout_policy(self):
+    def test_set_remote_cache_timeout_policy(self):
         policy = object()
         context = self._make_one()
-        context.set_memcache_timeout_policy(policy)
-        assert context.get_memcache_timeout_policy() is policy
+        context.set_remote_cache_timeout_policy(policy)
+        assert context.get_remote_cache_timeout_policy() is policy
 
-    def test_set_memcache_timeout_policy_with_int(self):
+    def test_set_remote_cache_timeout_policy_with_int(self):
         policy = 10
         context = self._make_one()
-        context.set_memcache_timeout_policy(policy)
-        p = context.get_memcache_timeout_policy()
+        context.set_remote_cache_timeout_policy(policy)
+        p = context.get_remote_cache_timeout_policy()
         assert p("") == policy
 
     def test_call_on_commit(self):
@@ -338,15 +337,15 @@ class Test_default_cache_policy:
         assert context_module._default_cache_policy(key) is False
 
 
-class Test_default_memcache_policy:
+class Test_default_remote_cache_policy:
     @staticmethod
     def test_key_is_None():
-        assert context_module._default_memcache_policy(None) is None
+        assert context_module._default_remote_cache_policy(None) is None
 
     @staticmethod
     def test_no_model_class():
         key = mock.Mock(kind=mock.Mock(return_value="nokind"), spec=("kind",))
-        assert context_module._default_memcache_policy(key) is None
+        assert context_module._default_remote_cache_policy(key) is None
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -355,7 +354,7 @@ class Test_default_memcache_policy:
             pass
 
         key = key_module.Key("ThisKind", 0)
-        assert context_module._default_memcache_policy(key) is None
+        assert context_module._default_remote_cache_policy(key) is None
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -364,31 +363,32 @@ class Test_default_memcache_policy:
 
         class ThisKind(model.Model):
             @classmethod
-            def _use_memcache(cls, key):
+            def _use_remote_cache(cls, key):
                 return flag
 
         key = key_module.Key("ThisKind", 0)
-        assert context_module._default_memcache_policy(key) is flag
+        assert context_module._default_remote_cache_policy(key) is flag
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_standard_model_defines_policy_as_bool():
         class ThisKind(model.Model):
-            _use_memcache = False
+            _use_remote_cache = False
 
         key = key_module.Key("ThisKind", 0)
-        assert context_module._default_memcache_policy(key) is False
+        assert context_module._default_remote_cache_policy(key) is False
 
 
-class Test_default_memcache_timeout_policy:
+class Test_default_remote_cache_timeout_policy:
     @staticmethod
     def test_key_is_None():
-        assert context_module._default_memcache_timeout_policy(None) is None
+        policy = context_module._default_remote_cache_timeout_policy(None)
+        assert policy is None
 
     @staticmethod
     def test_no_model_class():
         key = mock.Mock(kind=mock.Mock(return_value="nokind"), spec=("kind",))
-        assert context_module._default_memcache_timeout_policy(key) is None
+        assert context_module._default_remote_cache_timeout_policy(key) is None
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -397,7 +397,7 @@ class Test_default_memcache_timeout_policy:
             pass
 
         key = key_module.Key("ThisKind", 0)
-        assert context_module._default_memcache_timeout_policy(key) is None
+        assert context_module._default_remote_cache_timeout_policy(key) is None
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -406,20 +406,20 @@ class Test_default_memcache_timeout_policy:
 
         class ThisKind(model.Model):
             @classmethod
-            def _memcache_timeout(cls, key):
+            def _remote_cache_timeout(cls, key):
                 return flag
 
         key = key_module.Key("ThisKind", 0)
-        assert context_module._default_memcache_timeout_policy(key) is flag
+        assert context_module._default_remote_cache_timeout_policy(key) is flag
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_standard_model_defines_policy_as_bool():
         class ThisKind(model.Model):
-            _memcache_timeout = 10
+            _remote_cache_timeout = 10
 
         key = key_module.Key("ThisKind", 0)
-        assert context_module._default_memcache_timeout_policy(key) == 10
+        assert context_module._default_remote_cache_timeout_policy(key) == 10
 
 
 class TestCache:

@@ -112,8 +112,8 @@ class Client(google_client.ClientWithProject):
         self,
         cache_policy=None,
         remote_cache=None,
-        memcache_policy=None,
-        memcache_timeout_policy=None,
+        remote_cache_policy=None,
+        remote_cache_timeout_policy=None,
     ):
         """Establish a context for a set of NDB calls.
 
@@ -153,8 +153,8 @@ class Client(google_client.ClientWithProject):
             self,
             cache_policy=cache_policy,
             remote_cache=remote_cache,
-            memcache_policy=memcache_policy,
-            memcache_timeout_policy=memcache_timeout_policy,
+            remote_cache_policy=remote_cache_policy,
+            remote_cache_timeout_policy=remote_cache_timeout_policy,
         )
         with context.use():
             yield context

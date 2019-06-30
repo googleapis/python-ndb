@@ -107,18 +107,18 @@ def _default_cache_policy(key):
     return flag
 
 
-def _default_memcache_policy(key):
-    """The default memcache policy.
+def _default_remote_cache_policy(key):
+    """The default remote_cache policy.
 
-    Defers to ``_use_memcache`` on the Model class for the key's kind.
+    Defers to ``_use_remote_cache`` on the Model class for the key's kind.
 
-    See: :meth:`~google.cloud.ndb.context.Context.set_memcache_policy`
+    See: :meth:`~google.cloud.ndb.context.Context.set_remote_cache_policy`
     """
     flag = None
     if key is not None:
         modelclass = model.Model._kind_map.get(key.kind())
         if modelclass is not None:
-            policy = getattr(modelclass, "_use_memcache", None)
+            policy = getattr(modelclass, "_use_remote_cache", None)
             if policy is not None:
                 if isinstance(policy, bool):
                     flag = policy
@@ -128,18 +128,19 @@ def _default_memcache_policy(key):
     return flag
 
 
-def _default_memcache_timeout_policy(key):
-    """The default memcache timeout policy.
+def _default_remote_cache_timeout_policy(key):
+    """The default remote_cache timeout policy.
 
-    Defers to ``_memcache_timeout`` on the Model class for the key's kind.
+    Defers to ``_remote_cache_timeout`` on the Model class for the key's kind.
 
-    See: :meth:`~google.cloud.ndb.context.Context.set_memcache_timeout_policy`
+    See:
+    :meth:`~google.cloud.ndb.context.Context.set_remote_cache_timeout_policy`
     """
     timeout = None
     if key is not None:
         modelclass = model.Model._kind_map.get(key.kind())
         if modelclass is not None:
-            policy = getattr(modelclass, "_memcache_timeout", None)
+            policy = getattr(modelclass, "_remote_cache_timeout", None)
             if policy is not None:
                 if isinstance(policy, int):
                     timeout = policy
@@ -192,8 +193,8 @@ class _Context(_ContextTuple):
         cache=None,
         cache_policy=None,
         remote_cache=None,
-        memcache_policy=None,
-        memcache_timeout_policy=None,
+        remote_cache_policy=None,
+        remote_cache_timeout_policy=None,
     ):
         if eventloop is None:
             eventloop = _eventloop.EventLoop()
@@ -229,8 +230,8 @@ class _Context(_ContextTuple):
         )
 
         context.set_cache_policy(cache_policy)
-        context.set_memcache_policy(memcache_policy)
-        context.set_memcache_timeout_policy(memcache_timeout_policy)
+        context.set_remote_cache_policy(remote_cache_policy)
+        context.set_remote_cache_timeout_policy(remote_cache_timeout_policy)
 
         return context
 
@@ -268,19 +269,21 @@ class Context(_Context):
     def clear_cache(self):
         """Clears the in-memory cache.
 
-        This does not affect memcache.
+        This does not affect remote_cache.
         """
         self.cache.clear()
 
-    def clear_memcache(self):
+    def clear_remote_cache(self):
         """Clears the in-memory cache.
 
-        This does not affect memcache.
+        This does not affect remote_cache.
         """
 
-        keys = set(key for key in self.cache if self._use_memcache(key, None))
+        keys = set(
+            key for key in self.cache if self._use_remote_cache(key, None)
+        )
         if not keys:
-            future = tasklets.Future(info="clear_memcache")
+            future = tasklets.Future(info="clear_remote_cache")
             future.set_result(True)
             return future
         futures = []
@@ -315,8 +318,8 @@ class Context(_Context):
         """
         raise NotImplementedError
 
-    def get_memcache_policy(self):
-        """Return the current memcache policy function.
+    def get_remote_cache_policy(self):
+        """Return the current remote_cache policy function.
 
         Returns:
             Callable: A function that accepts a
@@ -324,10 +327,10 @@ class Context(_Context):
                 positional argument and returns a ``bool`` indicating if it
                 should be cached. May be :data:`None`.
         """
-        return self.memcache_policy
+        return self.remote_cache_policy
 
-    def get_memcache_timeout_policy(self):
-        """Return the current policy function memcache timeout (expiration).
+    def get_remote_cache_timeout_policy(self):
+        """Return the current policy function remote_cache timeout (expiration).
 
         Returns:
             Callable: A function that accepts a
@@ -336,7 +339,7 @@ class Context(_Context):
                 timeout, in seconds, for the key. ``0`` implies the default
                 timeout. May be :data:`None`.
         """
-        return self.memcache_timeout_policy
+        return self.remote_cache_timeout_policy
 
     def set_cache_policy(self, policy):
         """Set the context cache policy function.
@@ -369,8 +372,8 @@ class Context(_Context):
         """
         raise NotImplementedError
 
-    def set_memcache_policy(self, policy):
-        """Set the memcache policy function.
+    def set_remote_cache_policy(self, policy):
+        """Set the remote_cache policy function.
 
         Args:
             policy (Callable): A function that accepts a
@@ -379,7 +382,7 @@ class Context(_Context):
                 should be cached.  May be :data:`None`.
         """
         if policy is None:
-            policy = _default_memcache_policy
+            policy = _default_remote_cache_policy
 
         elif isinstance(policy, bool):
             flag = policy
@@ -387,10 +390,10 @@ class Context(_Context):
             def policy(key):
                 return flag
 
-        self.memcache_policy = policy
+        self.remote_cache_policy = policy
 
-    def set_memcache_timeout_policy(self, policy):
-        """Set the policy function for memcache timeout (expiration).
+    def set_remote_cache_timeout_policy(self, policy):
+        """Set the policy function for remote_cache timeout (expiration).
 
         Args:
             policy (Callable): A function that accepts a
@@ -400,7 +403,7 @@ class Context(_Context):
                 timeout. May be :data:`None`.
         """
         if policy is None:
-            policy = _default_memcache_timeout_policy
+            policy = _default_remote_cache_timeout_policy
 
         elif isinstance(policy, int):
             timeout = policy
@@ -408,7 +411,7 @@ class Context(_Context):
             def policy(key):
                 return timeout
 
-        self.memcache_timeout_policy = policy
+        self.remote_cache_timeout_policy = policy
 
     def call_on_commit(self, callback):
         """Call a callback upon successful commit of a transaction.
@@ -505,24 +508,24 @@ class Context(_Context):
             flag = True
         return flag
 
-    def _use_memcache(self, key, options):
+    def _use_remote_cache(self, key, options):
         """Return whether to use the context cache for this key."""
         flag = None
         if options:
-            flag = options.use_memcache
+            flag = options.use_remote_cache
         if flag is None:
-            flag = self.memcache_policy(key)
+            flag = self.remote_cache_policy(key)
         if flag is None:
             flag = True
         return flag
 
-    def _memcache_timeout(self, key, options):
+    def _remote_cache_timeout(self, key, options):
         """Return whether to use the context cache for this key."""
         timeout = None
         if options:
-            timeout = options.memcache_timeout
+            timeout = options.remote_cache_timeout
         if timeout is None:
-            timeout = self.memcache_timeout_policy(key)
+            timeout = self.remote_cache_timeout_policy(key)
         return timeout
 
 

@@ -36,28 +36,28 @@ class RemoteCacheAdapter:
         return ':'.join(items)
 
     def cache_get_multi(self, keys):
-        """Direct pass-through to memcache client."""
+        """Direct pass-through to remote cache client."""
         raise NotImplementedError
 
     def cache_set_multi(self, values, expire=None):
-        """Direct pass-through to memcache client."""
+        """Direct pass-through to remote cache client."""
         raise NotImplementedError
 
     def cache_start_cas_multi(self, keys):
-        """Direct pass-through to memcache client."""
+        """Direct pass-through to remote cache client."""
         raise NotImplementedError
 
     def cache_cas_multi(self, values, expire=None):
-        """Direct pass-through to memcache client."""
+        """Direct pass-through to remote cache client."""
         raise NotImplementedError
 
     def cache_delete_multi(self, keys):
-        """Direct pass-through to memcache client."""
+        """Direct pass-through to remote cache client."""
         raise NotImplementedError
 
 
 def cache_get(key, **options):
-    """Direct pass-through to memcache client."""
+    """Direct pass-through to remote cache client."""
     if not remote_cache_available():
         return _do_nothing_future()
     batch = _get_batch(_RemoteCacheGetBatch, options)
@@ -65,7 +65,7 @@ def cache_get(key, **options):
 
 
 def cache_set(key, value, **options):
-    """Direct pass-through to memcache client."""
+    """Direct pass-through to remote cache client."""
     if not remote_cache_available():
         return _do_nothing_future()
     batch = _get_batch(_RemoteCacheSetBatch, options)
@@ -73,7 +73,7 @@ def cache_set(key, value, **options):
 
 
 def cache_set_locked(key, **options):
-    """Direct pass-through to memcache client."""
+    """Direct pass-through to remote cache client."""
     if not remote_cache_available():
         return _do_nothing_future()
     value = _LOCKED
@@ -83,7 +83,7 @@ def cache_set_locked(key, **options):
 
 
 def cache_start_cas(key, **options):
-    """Direct pass-through to memcache client."""
+    """Direct pass-through to remote cache client."""
     if not remote_cache_available():
         return _do_nothing_future()
     batch = _get_batch(_RemoteCacheStartCasBatch, options)
@@ -91,7 +91,7 @@ def cache_start_cas(key, **options):
 
 
 def cache_cas(key, value, **options):
-    """Direct pass-through to memcache client."""
+    """Direct pass-through to remote cache client."""
     if not remote_cache_available():
         return _do_nothing_future()
     batch = _get_batch(_RemoteCacheCasBatch, options)
@@ -99,7 +99,7 @@ def cache_cas(key, value, **options):
 
 
 def cache_delete(key, **options):
-    """Direct pass-through to memcache client."""
+    """Direct pass-through to remote cache client."""
     if not remote_cache_available():
         return _do_nothing_future()
     batch = _get_batch(_RemoteCacheDeleteBatch, options)
