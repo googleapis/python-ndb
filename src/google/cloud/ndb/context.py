@@ -128,6 +128,27 @@ def _default_memcache_policy(key):
     return flag
 
 
+def _default_memcache_timeout_policy(key):
+    """The default memcache timeout policy.
+
+    Defers to ``_memcache_timeout`` on the Model class for the key's kind.
+
+    See: :meth:`~google.cloud.ndb.context.Context.set_memcache_timeout_policy`
+    """
+    timeout = None
+    if key is not None:
+        modelclass = model.Model._kind_map.get(key.kind())
+        if modelclass is not None:
+            policy = getattr(modelclass, "_memcache_timeout", None)
+            if policy is not None:
+                if isinstance(policy, int):
+                    timeout = policy
+                else:
+                    timeout = policy(key)
+
+    return timeout
+
+
 _ContextTuple = collections.namedtuple(
     "_ContextTuple",
     [
@@ -171,6 +192,8 @@ class _Context(_ContextTuple):
         cache=None,
         cache_policy=None,
         remote_cache=None,
+        memcache_policy=None,
+        memcache_timeout_policy=None,
     ):
         if eventloop is None:
             eventloop = _eventloop.EventLoop()
@@ -206,7 +229,8 @@ class _Context(_ContextTuple):
         )
 
         context.set_cache_policy(cache_policy)
-        context.set_memcache_policy(None)
+        context.set_memcache_policy(memcache_policy)
+        context.set_memcache_timeout_policy(memcache_timeout_policy)
 
         return context
 
@@ -312,7 +336,7 @@ class Context(_Context):
                 timeout, in seconds, for the key. ``0`` implies the default
                 timeout. May be :data:`None`.
         """
-        raise NotImplementedError
+        return self.memcache_timeout_policy
 
     def set_cache_policy(self, policy):
         """Set the context cache policy function.
@@ -375,7 +399,16 @@ class Context(_Context):
                 timeout, in seconds, for the key. ``0`` implies the default
                 timeout. May be :data:`None`.
         """
-        raise NotImplementedError
+        if policy is None:
+            policy = _default_memcache_timeout_policy
+
+        elif isinstance(policy, int):
+            timeout = policy
+
+            def policy(key):
+                return timeout
+
+        self.memcache_timeout_policy = policy
 
     def call_on_commit(self, callback):
         """Call a callback upon successful commit of a transaction.
@@ -419,20 +452,6 @@ class Context(_Context):
 
         Returns:
             Union[bool, None]: Whether to use datastore.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def default_memcache_timeout_policy(key):
-        """Default memcache timeout policy.
-
-        This defers to ``Model._memcache_timeout``.
-
-        Args:
-            key (google.cloud.ndb.key.Key): The key.
-
-        Returns:
-            Union[int, None]: Memcache timeout to use.
         """
         raise NotImplementedError
 
@@ -496,6 +515,15 @@ class Context(_Context):
         if flag is None:
             flag = True
         return flag
+
+    def _memcache_timeout(self, key, options):
+        """Return whether to use the context cache for this key."""
+        timeout = None
+        if options:
+            timeout = options.memcache_timeout
+        if timeout is None:
+            timeout = self.memcache_timeout_policy(key)
+        return timeout
 
 
 class ContextOptions:

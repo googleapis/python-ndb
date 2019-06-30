@@ -108,7 +108,13 @@ class Client(google_client.ClientWithProject):
             )
 
     @contextlib.contextmanager
-    def context(self, cache_policy=None, remote_cache=None):
+    def context(
+        self,
+        cache_policy=None,
+        remote_cache=None,
+        memcache_policy=None,
+        memcache_timeout_policy=None,
+    ):
         """Establish a context for a set of NDB calls.
 
         This method provides a context manager which establishes the runtime
@@ -147,6 +153,8 @@ class Client(google_client.ClientWithProject):
             self,
             cache_policy=cache_policy,
             remote_cache=remote_cache,
+            memcache_policy=memcache_policy,
+            memcache_timeout_policy=memcache_timeout_policy,
         )
         with context.use():
             yield context

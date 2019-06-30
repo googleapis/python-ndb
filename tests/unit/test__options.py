@@ -55,8 +55,8 @@ class TestOptions:
 
     @staticmethod
     def test_constructor_w_memcache_timeout():
-        with pytest.raises(NotImplementedError):
-            MyOptions(memcache_timeout=20)
+        options = MyOptions(memcache_timeout=20)
+        assert options.memcache_timeout == 20
 
     @staticmethod
     def test_constructor_w_max_memcache_items():

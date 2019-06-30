@@ -876,7 +876,8 @@ class Key:
                 context.cache[self] = result
 
             if use_memcache and result and not remote_cache_locked:
-                yield remote_cache.cache_cas(self, result)
+                expire = context._memcache_timeout(self, _options)
+                yield remote_cache.cache_cas(self, result, expire=expire)
 
             return result
 

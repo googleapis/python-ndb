@@ -31,9 +31,9 @@ class Options:
         "timeout",
         "use_cache",
         "use_memcache",
+        "memcache_timeout",
         # Not yet implemented
         "use_datastore",
-        "memcache_timeout",
         "max_memcache_items",
         # Might or might not implement
         "force_writes",
@@ -137,9 +137,6 @@ class Options:
             )
 
         if self.use_datastore is not None:
-            raise NotImplementedError
-
-        if self.memcache_timeout is not None:
             raise NotImplementedError
 
         if self.max_memcache_items is not None:
