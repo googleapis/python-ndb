@@ -875,7 +875,7 @@ class Key:
             if use_cache:
                 context.cache[self] = result
 
-            if use_memcache and not remote_cache_locked:
+            if use_memcache and result and not remote_cache_locked:
                 yield remote_cache.cache_cas(self, result)
 
             return result
