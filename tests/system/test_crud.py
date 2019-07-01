@@ -151,7 +151,6 @@ def test_insert_entity(dispose_of, ds_client):
     dispose_of(key._key)
 
 
-@pytest.mark.usefixtures("client_context")
 def test_parallel_threads(dispose_of, namespace):
     client = ndb.Client(namespace=namespace)
 
