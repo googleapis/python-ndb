@@ -148,6 +148,15 @@ class Client(google_client.ClientWithProject):
             cache_policy (Optional[Callable[[key.Key], bool]]): The
                 cache policy to use in this context. See:
                 :meth:`~google.cloud.ndb.context.Context.set_cache_policy`.
+            remote_cache (Optional[remote_cache.RemoteCacheAdapter]):
+                The remote cache adapter. See:
+                :class:`~google.cloud.ndb.remote_cache.RemoteCacheAdapter`.
+            remote_cache_policy (Optional[Callable[[key.Key], bool]]): The
+                remote cache policy to use in this context. See:
+                :meth:`~google.cloud.ndb.context.Context.set_remote_cache_policy`.
+            remote_cache_timeout_policy (Optional[Callable[[key.Key], int]]):
+                The remote cache timeout to use in this context. See:
+                :meth:`~google.cloud.ndb.context.Context.set_remote_cache_timeout_policy`.
         """
         context = context_module.Context(
             self,

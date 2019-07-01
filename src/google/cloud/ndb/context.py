@@ -108,7 +108,7 @@ def _default_cache_policy(key):
 
 
 def _default_remote_cache_policy(key):
-    """The default remote_cache policy.
+    """The default remote cache policy.
 
     Defers to ``_use_remote_cache`` on the Model class for the key's kind.
 
@@ -129,7 +129,7 @@ def _default_remote_cache_policy(key):
 
 
 def _default_remote_cache_timeout_policy(key):
-    """The default remote_cache timeout policy.
+    """The default remote cache timeout policy.
 
     Defers to ``_remote_cache_timeout`` on the Model class for the key's kind.
 
@@ -274,9 +274,7 @@ class Context(_Context):
         self.cache.clear()
 
     def clear_remote_cache(self):
-        """Clears the in-memory cache.
-
-        This does not affect remote_cache.
+        """Clears the remote cache.
         """
 
         keys = set(
@@ -319,18 +317,18 @@ class Context(_Context):
         raise NotImplementedError
 
     def get_remote_cache_policy(self):
-        """Return the current remote_cache policy function.
+        """Return the current remote cache policy function.
 
         Returns:
             Callable: A function that accepts a
                 :class:`~google.cloud.ndb.key.Key` instance as a single
                 positional argument and returns a ``bool`` indicating if it
-                should be cached. May be :data:`None`.
+                should be cached remotely. May be :data:`None`.
         """
         return self.remote_cache_policy
 
     def get_remote_cache_timeout_policy(self):
-        """Return the current policy function remote_cache timeout (expiration).
+        """Return the current policy function remote cache timeout (expiration).
 
         Returns:
             Callable: A function that accepts a
@@ -373,13 +371,13 @@ class Context(_Context):
         raise NotImplementedError
 
     def set_remote_cache_policy(self, policy):
-        """Set the remote_cache policy function.
+        """Set the remote cache policy function.
 
         Args:
             policy (Callable): A function that accepts a
                 :class:`~google.cloud.ndb.key.Key` instance as a single
                 positional argument and returns a ``bool`` indicating if it
-                should be cached.  May be :data:`None`.
+                should be cached remotely.  May be :data:`None`.
         """
         if policy is None:
             policy = _default_remote_cache_policy
@@ -393,7 +391,7 @@ class Context(_Context):
         self.remote_cache_policy = policy
 
     def set_remote_cache_timeout_policy(self, policy):
-        """Set the policy function for remote_cache timeout (expiration).
+        """Set the policy function for remote cache timeout (expiration).
 
         Args:
             policy (Callable): A function that accepts a
@@ -509,7 +507,7 @@ class Context(_Context):
         return flag
 
     def _use_remote_cache(self, key, options):
-        """Return whether to use the context cache for this key."""
+        """Return whether to use the remote cache for this key."""
         flag = None
         if options:
             flag = options.use_remote_cache
@@ -520,7 +518,7 @@ class Context(_Context):
         return flag
 
     def _remote_cache_timeout(self, key, options):
-        """Return whether to use the context cache for this key."""
+        """Return remote cache timeout (expiration) for this key."""
         timeout = None
         if options:
             timeout = options.remote_cache_timeout
