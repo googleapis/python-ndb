@@ -14,8 +14,11 @@
 
 
 import pytest
+import unittest.mock
 
 from google.cloud.ndb import key as key_module
+from google.cloud.ndb import model
+from google.cloud.ndb import tasklets
 from google.cloud.ndb import remote_cache
 import tests.unit.utils
 
@@ -95,6 +98,58 @@ class Test__get_batch:
 
         assert remote_cache._get_batch(kls, options) == batch
 
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @unittest.mock.patch(
+        "google.cloud.ndb.remote_cache.RemoteCacheAdapter.cache_get_multi"
+    )
+    def test_batch_get(cache_get_multi, in_context):
+        cache = remote_cache.RemoteCacheAdapter()
+        with in_context.new(remote_cache=cache).use():
+            cache_get_multi.return_value = [None, None]
+            key1 = key_module.Key("SomeKind", 123)
+            fut1 = remote_cache.cache_get(key1)
+            key2 = key_module.Key("SomeKind", 456)
+            fut2 = remote_cache.cache_get(key2)
+            tasklets.wait_all([fut1, fut2])
+            urlsafe_keys = sorted([
+                cache.cache_key(key1),
+                cache.cache_key(key2),
+            ])
+            cache_get_multi.assert_called_once_with(urlsafe_keys)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @unittest.mock.patch(
+        "google.cloud.ndb.remote_cache.RemoteCacheAdapter.cache_set_multi"
+    )
+    def test_batch_set(cache_set_multi, in_context):
+        class Simple(model.Model):
+            pass
+
+        cache = remote_cache.RemoteCacheAdapter()
+        with in_context.new(remote_cache=cache).use():
+            key1 = key_module.Key("Simple", 123)
+            value1 = Simple(key=key1)
+            fut1 = remote_cache.cache_set(key1, value1)
+            key2 = key_module.Key("Simple", 456)
+            value2 = Simple(key=key2)
+            fut2 = remote_cache.cache_set(key2, value2)
+            cache_set_multi.return_value = {
+                cache.cache_key(key1): True,
+                cache.cache_key(key2): True,
+            }
+            tasklets.wait_all([fut1, fut2])
+            pb1 = model._entity_to_protobuf(value1)
+            value_str1 = pb1.SerializePartialToString()
+            pb2 = model._entity_to_protobuf(value2)
+            value_str2 = pb2.SerializePartialToString()
+            mapping = {
+                cache.cache_key(key1): value_str1,
+                cache.cache_key(key2): value_str2,
+            }
+            cache_set_multi.assert_called_once_with(mapping)
+
 
 class Test_remote_cache_available:
     @staticmethod
@@ -119,4 +174,3 @@ class Test_remote_cache_available:
         assert remote_cache.cache_start_cas(key).done()
         assert remote_cache.cache_cas(key, value).done()
         assert remote_cache.cache_delete(key).done()
-

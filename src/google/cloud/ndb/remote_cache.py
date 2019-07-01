@@ -196,7 +196,6 @@ class _RemoteCacheGetBatch:
         Returns:
             tasklets.Future: A future for the eventual result.
         """
-
         future = tasklets.Future(info=self.future_info(key))
         adapter = context_module.get_context().remote_cache
         todo_key = adapter.cache_key(key)
@@ -207,7 +206,7 @@ class _RemoteCacheGetBatch:
         """Perform a Datastore Lookup on all batched Lookup requests."""
         from google.cloud.ndb import model
 
-        keys = self.todo.keys()
+        keys = sorted(self.todo.keys())
 
         # Note: this causes synchronous call
         adapter = context_module.get_context().remote_cache
