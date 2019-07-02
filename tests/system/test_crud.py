@@ -17,6 +17,7 @@ System tests for Create, Update, Delete. (CRUD)
 """
 import functools
 import operator
+import threading
 
 import pytest
 
@@ -146,6 +147,65 @@ def test_insert_entity(dispose_of, ds_client):
     # Make sure strings are stored as strings in datastore
     ds_entity = ds_client.get(key._key)
     assert ds_entity["bar"] == "none"
+
+    dispose_of(key._key)
+
+
+def test_parallel_threads(dispose_of, namespace):
+    client = ndb.Client(namespace=namespace)
+
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+        bar = ndb.StringProperty()
+
+    def insert(foo):
+        with client.context(cache_policy=False):
+            entity = SomeKind(foo=foo, bar="none")
+
+            key = entity.put()
+
+            retrieved = key.get()
+            assert retrieved.foo == foo
+            assert retrieved.bar == "none"
+
+            dispose_of(key._key)
+
+    thread1 = threading.Thread(target=insert, args=[42], name="one")
+    thread2 = threading.Thread(target=insert, args=[144], name="two")
+
+    thread1.start()
+    thread2.start()
+
+    thread1.join()
+    thread2.join()
+
+
+@pytest.mark.usefixtures("client_context")
+def test_large_json_property(dispose_of, ds_client):
+    class SomeKind(ndb.Model):
+        foo = ndb.JsonProperty()
+
+    foo = {str(i): i for i in range(500)}
+    entity = SomeKind(foo=foo)
+    key = entity.put()
+
+    retrieved = key.get()
+    assert retrieved.foo == foo
+
+    dispose_of(key._key)
+
+
+@pytest.mark.usefixtures("client_context")
+def test_large_pickle_property(dispose_of, ds_client):
+    class SomeKind(ndb.Model):
+        foo = ndb.PickleProperty()
+
+    foo = {str(i): i for i in range(500)}
+    entity = SomeKind(foo=foo)
+    key = entity.put()
+
+    retrieved = key.get()
+    assert retrieved.foo == foo
 
     dispose_of(key._key)
 
@@ -415,6 +475,59 @@ def test_insert_entity_with_structured_property(dispose_of):
     assert isinstance(retrieved.bar, OtherKind)
 
     dispose_of(key._key)
+
+
+@pytest.mark.usefixtures("client_context")
+def test_retrieve_entity_with_legacy_structured_property(ds_entity):
+    class OtherKind(ndb.Model):
+        one = ndb.StringProperty()
+        two = ndb.StringProperty()
+
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+        bar = ndb.StructuredProperty(OtherKind)
+
+    entity_id = test_utils.system.unique_resource_id()
+    ds_entity(
+        KIND, entity_id, **{"foo": 42, "bar.one": "hi", "bar.two": "mom"}
+    )
+
+    key = ndb.Key(KIND, entity_id)
+    retrieved = key.get()
+    assert retrieved.foo == 42
+    assert retrieved.bar.one == "hi"
+    assert retrieved.bar.two == "mom"
+
+    assert isinstance(retrieved.bar, OtherKind)
+
+
+@pytest.mark.usefixtures("client_context")
+def test_retrieve_entity_with_legacy_repeated_structured_property(ds_entity):
+    class OtherKind(ndb.Model):
+        one = ndb.StringProperty()
+        two = ndb.StringProperty()
+
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+        bar = ndb.StructuredProperty(OtherKind, repeated=True)
+
+    entity_id = test_utils.system.unique_resource_id()
+    ds_entity(
+        KIND,
+        entity_id,
+        **{"foo": 42, "bar.one": ["hi", "hello"], "bar.two": ["mom", "dad"]}
+    )
+
+    key = ndb.Key(KIND, entity_id)
+    retrieved = key.get()
+    assert retrieved.foo == 42
+    assert retrieved.bar[0].one == "hi"
+    assert retrieved.bar[0].two == "mom"
+    assert retrieved.bar[1].one == "hello"
+    assert retrieved.bar[1].two == "dad"
+
+    assert isinstance(retrieved.bar[0], OtherKind)
+    assert isinstance(retrieved.bar[1], OtherKind)
 
 
 @pytest.mark.usefixtures("client_context")
