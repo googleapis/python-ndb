@@ -8,12 +8,10 @@ which have made necessary in some cases to depart from the original
 implementation, and sometimes even to remove existing functionality
 altogether.
 
-Because one of the main objectives of this rewrite was to be able to use `ndb`
-independently from Google App Engine, the legacy APIs from GAE cannot be
-depended upon. Also, any environment and runtime variables and resources will
-not be available when running outside of GAE. This means that many `ndb` APIs
-that depended on GAE have been changed, and many APIs that accessed GAE
-resources directly have been dropped.
+One of the main objectives of this rewrite was to enable `ndb` for use in any
+Python environment, not just Google App Engine. As a result, many of the `ndb`
+APIs that relied on GAE environment and runtime variables, resources, and
+legacy APIs have been dropped.
 
 Aside from this, there are many differences between the Datastore APIs
 provided by GAE and those provided by the newer Google Cloud Platform. These
@@ -46,10 +44,37 @@ be within the context obtained from this call::
 
     client = ndb.Client()
 
-    with context as client.context():
+    with client.context() as context:
         do_something_with_ndb()
 
-Note that the example above is assuming the google credentials are set in
+The context is not thread safe, so for threaded applications, you need to
+generate one context per thread. This is particularly important for web
+applications, where the best practice would be to generate a context per
+request.
+
+The following code shows how to use the context in a threaded application::
+
+    import threading
+    from google.cloud import datastore
+    from google.cloud import ndb
+
+    client = ndb.Client()
+
+    class Test(ndb.Model):
+        name = ndb.StringProperty()
+
+    def insert(input_name):    
+        with client.context():
+            t = Test(name=input_name)        
+            t.put()        
+
+    thread1 = threading.Thread(target=insert, args=['John'])
+    thread2 = threading.Thread(target=insert, args=['Bob'])
+
+    thread1.start()
+    thread2.start()
+
+Note that the examples above are assuming the google credentials are set in
 the environment.
 
 Keys
@@ -60,6 +85,9 @@ this version of `ndb`:
 
     - Key.from_old_key.
     - Key.to_old_key.
+
+These methods were used to pass keys to and from the db Datastore API, which is
+no longer supported.
 
 Models
 ======
@@ -80,11 +108,12 @@ trip you up when migrating code. Here are some of them, for quick reference:
 - The `BlobProperty` constructor only sets `_compressed` if explicitly
   passed. The original set `_compressed` always.
 - In the exact same fashion the `JsonProperty` constructor only sets
-  `_json_type` if explicitly passed.]
+  `_json_type` if explicitly passed.
 - Similarly, the `DateTimeProperty` constructor only sets `_auto_now` and
   `_auto_now_add` if explicitly passed.
 - `TextProperty(indexed=True)` and `StringProperty(indexed=False)` are no
-  longer supported.
+  longer supported. That is, TextProperty can no longer be indexed, whereas
+  StringProperty is always indexed.
 - The `Property()` constructor (and subclasses) originally accepted both
   `unicode` and `str` (the Python 2 versions) for `name` (and `kind`) but now
   only accept `str`.
@@ -156,6 +185,9 @@ Will be written like this in the new version::
     def function1(arg1, arg2, *, arg3=None, arg4=None)
         pass
 
+Note that this could change if Python 2.7 support is added at some point, which
+is still a possibility.
+
 Exceptions
 ==========
 
@@ -163,7 +195,7 @@ App Engine's legacy exceptions are no longer available, but `ndb` provides
 shims for most of them, which can be imported from the `ndb.exceptions`
 package, like this::
 
-    from ndb.exceptioms import BadRequestError, BadArgumentError
+    from ndb.exceptions import BadRequestError, BadArgumentError
 
 Datastore API
 =============
@@ -172,7 +204,18 @@ There are many differences between the current Datastore API and the legacy App
 Engine Datastore. In most cases, where the public API was generally used, this
 should not be a problem. However, if you relied in your code on the private
 Datastore API, the code that does this will probably need to be rewritten.
-Specifically, any function or method that dealt directly with protocol buffers
+
+Specifically, the old NDB library included some undocumented APIs that dealt
+directly with Datastore protocol buffers. These APIs will no longer work.
+Rewrite any code that used the following classes, properties, or methods:
+
+    - ModelAdapter
+    - Property._db_get_value, Property._db_set_value.
+    - Property._db_set_compressed_meaning and
+      Property._db_set_uncompressed_meaning.
+    - Model._deserialize and Model._serialize.
+    - model.make_connection.
+
 will no longer work. The Datastore `.protobuf` definitions have changed
 significantly from the public API used by App Engine to the current published
 API. Additionally, this version of NDB mostly delegates to
@@ -192,7 +235,7 @@ in the constructor or method arguments that expect a namespace::
 
     client=ndb.Client(namespace="my namespace")
     
-    with context as client.context():
+    with client.context() as context:
         key = ndb.Key("SomeKind", "SomeId")
 
 In this example, the key will be created under the namespace `my namespace`,
@@ -211,24 +254,28 @@ modern Django with a simple class middleware, similar to this::
     class NDBMiddleware(object):
         def __init__(self, get_response):
             self.get_response = get_response
-            client = ndb.Client()
-            self.ndb_context = client.context()
+            self.client = ndb.Client()
 
         def __call__(self, request):
-            request.ndb_context = self.ndb_context
-            response = self.get_response(request)
+            context = self.client.context()
+            request.ndb_context = context
+            with context:
+                response = self.get_response(request)
             return response
 
 The ``__init__`` method is called only once, during server start, so it's a
-good place to create and store an `ndb` context. The ``__call__`` method will
-be called once for every request, so we add our ndb context to the request
-there, before the response is processed. The context will then be available in
-view and template code.
+good place to create and store an `ndb` client. As mentioned above, the
+recommended practice is to have one context per request, so the ``__call__``
+method, which is called once per request, is an ideal place to create it. 
+After we have the context, we add it to the request, right before the response
+is processed. The context will then be available in view and template code.
+Finally, we use the ``with`` statement to generate the response within our
+context.
 
 Another way to get an `ndb` context into a request, would be to use a `context
 processor`, but those are functions called for every request, which means we
 would need to initialize the client and context on each request, or find
-another way to initialize and get the initial context.
+another way to initialize and get the initial client.
 
 Note that the above code, like other `ndb` code, assumes the presence of the
 `GOOGLE_APPLCATION_CREDENTIALS` environment variable when the client is

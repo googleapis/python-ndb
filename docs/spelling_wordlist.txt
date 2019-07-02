@@ -17,6 +17,7 @@ builtin
 composable
 Datastore
 datastore
+deserialize
 deserialized
 Dict
 Django
@@ -68,6 +69,7 @@ RequestHandler
 runtime
 schemas
 stackable
+StringProperty
 subattribute
 subclassed
 subclasses
