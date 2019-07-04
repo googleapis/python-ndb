@@ -86,8 +86,8 @@ this version of `ndb`:
     - Key.from_old_key.
     - Key.to_old_key.
 
-These methods were used to pass keys to and from the db Datastore API, which is
-no longer supported.
+These methods were used to pass keys to and from the `db` Datastore API, which
+is no longer supported (`db` was `ndb`'s predecessor).
 
 Models
 ======
@@ -161,7 +161,6 @@ created and used in this version:
     - ReducedFuture.
     - SerialQueueFuture.
     - set_context.
-    - toplevel.
 
 ndb.utils
 =========
@@ -215,12 +214,6 @@ Rewrite any code that used the following classes, properties, or methods:
       Property._db_set_uncompressed_meaning.
     - Model._deserialize and Model._serialize.
     - model.make_connection.
-
-will no longer work. The Datastore `.protobuf` definitions have changed
-significantly from the public API used by App Engine to the current published
-API. Additionally, this version of NDB mostly delegates to
-`google.cloud.datastore` for parsing data returned by RPCs, which is a
-significant internal refactoring.
 
 Default Namespace
 =================
