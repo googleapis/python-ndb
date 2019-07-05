@@ -252,7 +252,6 @@ import json
 import pickle
 import zlib
 
-from google.cloud.datastore import key as ds_key_module
 from google.cloud.datastore import entity as ds_entity_module
 from google.cloud.datastore import helpers
 from google.cloud.datastore_v1.proto import entity_pb2
