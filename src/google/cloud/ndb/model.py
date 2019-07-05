@@ -253,6 +253,7 @@ import pickle
 import zlib
 
 from google.cloud.datastore import entity as entity_module
+from google.cloud.datastore import key as datastore_key
 from google.cloud.datastore import helpers
 from google.cloud.datastore_v1.proto import entity_pb2
 
@@ -585,6 +586,8 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
                     for sub_value in value
                 ]
             else:
+                if isinstance(value, datastore_key.Key):
+                    value = key_module.Key._from_ds_key(value)
                 value = _BaseValue(value)
 
         prop._store_value(entity, value)
@@ -633,6 +636,10 @@ def _entity_to_ds_entity(entity, set_key=True):
             value = prop._get_base_value_unwrapped_as_list(entity)
             if not prop._repeated:
                 value = value[0]
+
+            if isinstance(value, Key):
+                value = value._key
+
             data[prop._name] = value
 
             if not prop._indexed:
