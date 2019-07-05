@@ -4258,6 +4258,7 @@ class Test_entity_from_protobuf:
             c = model.PickleProperty()
             d = model.StringProperty(repeated=True)
             e = model.PickleProperty(repeated=True)
+            f = model.KeyProperty(kind="OtherKind")
             notaproperty = True
 
         dill = {"sandwiches": ["turkey", "reuben"], "not_sandwiches": "tacos"}
@@ -4274,6 +4275,7 @@ class Test_entity_from_protobuf:
                     pickle.dumps(gherkin, pickle.HIGHEST_PROTOCOL),
                     pickle.dumps(dill, pickle.HIGHEST_PROTOCOL),
                 ],
+                "f": datastore.Key("OtherKind", "id", project="testing"),
                 "notused": 32,
                 "notaproperty": None,
             }
@@ -4287,6 +4289,7 @@ class Test_entity_from_protobuf:
         assert entity.d == ["foo", "bar", "baz"]
         assert entity.e == [gherkin, dill]
         assert entity._key == key_module.Key("ThisKind", 123, app="testing")
+        assert entity.f == key_module.Key("OtherKind", "id", app="testing")
         assert entity.notaproperty is True
 
     @staticmethod
@@ -4422,6 +4425,7 @@ class Test_entity_to_protobuf:
             c = model.PickleProperty()
             d = model.StringProperty(repeated=True)
             e = model.PickleProperty(repeated=True)
+            f = model.KeyProperty(kind='OtherKind')
             notaproperty = True
 
         dill = {"sandwiches": ["turkey", "reuben"], "not_sandwiches": "tacos"}
@@ -4434,6 +4438,7 @@ class Test_entity_to_protobuf:
             c=gherkin,
             d=["foo", "bar", "baz"],
             e=[gherkin, dill],
+            f=key_module.Key('OtherKind', 'id', app="testing")
         )
 
         entity_pb = model._entity_to_protobuf(entity)
@@ -4448,6 +4453,7 @@ class Test_entity_to_protobuf:
         e_values = entity_pb.properties["e"].array_value.values
         assert pickle.loads(e_values[0].blob_value) == gherkin
         assert pickle.loads(e_values[1].blob_value) == dill
+        assert entity_pb.properties["f"].key_value is not None
         assert "__key__" not in entity_pb.properties
 
     @staticmethod
