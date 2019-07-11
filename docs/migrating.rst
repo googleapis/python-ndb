@@ -31,10 +31,12 @@ The most important difference from the previous `ndb` version, is that the new
 This is necessary because `ndb` can now be used in any Python environment, so
 we can no longer assume it's running in the context of a GAE request.
 
-The `ndb` client uses ``google.auth`` for authentication, which is how APIs in
-Google Cloud Platform work. The client can take a `credentials` parameter or
-get the credentials using the `GOOGLE_APPLCATION_CREDENTIALS` environment
-variable, which is the recommended option.
+The `ndb` client uses ``google.auth`` for authentication, consistent with other
+Google Cloud Platform client libraries. The client can take a `credentials`
+parameter or get the credentials using the `GOOGLE_APPLCATION_CREDENTIALS`
+environment variable, which is the recommended option. For more information
+about authentication, consult the `Cloud Storage Client Libraries
+<https://cloud.google.com/storage/docs/reference/libraries>`_ documentation.
 
 After instantiating a client, it's necessary to establish a runtime context,
 using the ``Client.context`` method. All interactions with the database must
@@ -50,7 +52,9 @@ be within the context obtained from this call::
 The context is not thread safe, so for threaded applications, you need to
 generate one context per thread. This is particularly important for web
 applications, where the best practice would be to generate a context per
-request.
+request. However, please note that for cases where multiple threads are used
+for a single request, a new context should be generated for every thread that
+will use the `ndb` library.
 
 The following code shows how to use the context in a threaded application::
 
