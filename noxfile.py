@@ -106,7 +106,7 @@ def blacken(session):
     run_black(session)
 
 
-@nox.session(python=DEFAULT_INTERPRETER)
+@nox.session(py=DEFAULT_INTERPRETER)
 def docs(session):
     """Build the docs for this library."""
 
