@@ -111,7 +111,9 @@ def docs(session):
     """Build the docs for this library."""
 
     session.install("-e", ".")
-    session.install("sphinx", "alabaster", "recommonmark", "sphinxcontrib.spelling")
+    session.install(
+        "sphinx", "alabaster", "recommonmark", "sphinxcontrib.spelling"
+    )
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
     session.run(
@@ -179,4 +181,6 @@ def system(session):
     if system_test_exists:
         session.run("py.test", "--quiet", system_test_path, *session.posargs)
     if system_test_folder_exists:
-        session.run("py.test", "--quiet", system_test_folder_path, *session.posargs)
+        session.run(
+            "py.test", "--quiet", system_test_folder_path, *session.posargs
+        )
