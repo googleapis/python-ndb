@@ -382,7 +382,7 @@ class _GlobalCacheDeleteBatch(_GlobalCacheBatch):
 
 
 def global_watch(key):
-    """Start optimistic transaction with remote cache.
+    """Start optimistic transaction with global cache.
 
     A future call to :func:`global_compare_and_swap` will only set the value
     if the value hasn't changed in the cache since the call to this function.

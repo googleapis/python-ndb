@@ -424,6 +424,10 @@ class Context(_Context):
             flag = True
         return flag
 
+    def _use_global_cache(self, key, options):
+        """Return whether to use the context cache for this key."""
+        return False
+
 
 class ContextOptions:
     __slots__ = ()

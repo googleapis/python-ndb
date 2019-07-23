@@ -171,7 +171,7 @@ def lookup(key, options):
         entity_pb = yield batch.add(key)
 
     if use_global_cache and not key_locked and entity_pb is not _NOT_FOUND:
-        expires = context._remote_cache_timeout(key, options)
+        expires = context._global_cache_timeout(key, options)
         serialized = entity_pb.SerializeToString()
         yield _cache.global_compare_and_swap(cache_key, serialized,
                                              expires=expires)
@@ -378,7 +378,7 @@ def put(entity, options):
             (datastore.Key) for the entity.
     """
     context = context_module.get_context()
-    use_global_cache = context._use_remote_cache(entity.key)
+    use_global_cache = context._use_global_cache(entity.key, options)
     cache_key = _serialize_key(entity.key)
     if use_global_cache and not entity.key.is_partial:
         yield _cache.global_lock(cache_key)
@@ -393,6 +393,8 @@ def put(entity, options):
     key_pb = yield batch.put(entity_pb)
     if key_pb:
         key = helpers.key_from_protobuf(key_pb)
+    else:
+        key = None
 
     if use_global_cache:
         yield _cache.global_delete(cache_key)

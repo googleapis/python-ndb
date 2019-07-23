@@ -17,9 +17,13 @@ from unittest import mock
 import pytest
 
 from google.cloud import _http
+from google.cloud.datastore import entity
+from google.cloud.datastore import helpers
+from google.cloud.datastore import key as ds_key_module
 from google.cloud.datastore_v1.proto import datastore_pb2
 from google.cloud.datastore_v1.proto import entity_pb2
 from google.cloud.ndb import context as context_module
+from google.cloud.ndb import _batch
 from google.cloud.ndb import _datastore_api as _api
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import _options
@@ -151,52 +155,37 @@ class TestLookup:
     def test_it(context):
         eventloop = mock.Mock(spec=("add_idle", "run"))
         with context.new(eventloop=eventloop).use() as context:
-            future1 = _api.lookup(_mock_key("foo"), _options.ReadOptions())
-            future2 = _api.lookup(_mock_key("foo"), _options.ReadOptions())
-            future3 = _api.lookup(_mock_key("bar"), _options.ReadOptions())
+            _api.lookup(_mock_key("foo"), _options.ReadOptions())
+            _api.lookup(_mock_key("foo"), _options.ReadOptions())
+            _api.lookup(_mock_key("bar"), _options.ReadOptions())
 
             batch = context.batches[_api._LookupBatch][()]
-            assert batch.todo["foo"] == [future1, future2]
-            assert batch.todo["bar"] == [future3]
+            assert len(batch.todo["foo"]) == 2
+            assert len(batch.todo["bar"]) == 1
             assert context.eventloop.add_idle.call_count == 1
 
     @staticmethod
     def test_it_with_options(context):
         eventloop = mock.Mock(spec=("add_idle", "run"))
         with context.new(eventloop=eventloop).use() as context:
-            future1 = _api.lookup(_mock_key("foo"), _options.ReadOptions())
-            future2 = _api.lookup(
+            _api.lookup(_mock_key("foo"), _options.ReadOptions())
+            _api.lookup(
                 _mock_key("foo"),
                 _options.ReadOptions(read_consistency=_api.EVENTUAL),
             )
-            future3 = _api.lookup(_mock_key("bar"), _options.ReadOptions())
+            _api.lookup(_mock_key("bar"), _options.ReadOptions())
 
             batches = context.batches[_api._LookupBatch]
             batch1 = batches[()]
-            assert batch1.todo["foo"] == [future1]
-            assert batch1.todo["bar"] == [future3]
+            assert len(batch1.todo["foo"]) == 1
+            assert len(batch1.todo["bar"]) == 1
 
             batch2 = batches[(("read_consistency", _api.EVENTUAL),)]
-            assert batch2.todo == {"foo": [future2]}
+            assert len(batch2.todo) == 1
+            assert len(batch2.todo["foo"]) == 1
 
             add_idle = context.eventloop.add_idle
             assert add_idle.call_count == 2
-
-    @staticmethod
-    def test_idle_callback(context):
-        eventloop = mock.Mock(spec=("add_idle", "run"))
-        with context.new(eventloop=eventloop).use() as context:
-            future = _api.lookup(_mock_key("foo"), _options.ReadOptions())
-
-            batches = context.batches[_api._LookupBatch]
-            batch = batches[()]
-            assert batch.todo["foo"] == [future]
-
-            idle = context.eventloop.add_idle.call_args[0][0]
-            batch.idle_callback = mock.Mock()
-            idle()
-            batch.idle_callback.assert_called_once_with()
-            assert () not in batches
 
 
 class Test_LookupBatch:
@@ -453,24 +442,29 @@ class Test_put:
                 self.upsert = upsert
 
             def __eq__(self, other):
-                return self.upsert is other.upsert
+                return self.upsert == other.upsert
 
-        eventloop = mock.Mock(spec=("add_idle", "run"))
-        with in_context.new(eventloop=eventloop).use() as context:
-            datastore_pb2.Mutation = Mutation
+        def MockEntity(*path):
+            key = ds_key_module.Key(*path, project="testing")
+            return entity.Entity(key=key)
 
-            entity1, entity2, entity3 = object(), object(), object()
-            future1 = _api.put(entity1, _options.Options())
-            future2 = _api.put(entity2, _options.Options())
-            future3 = _api.put(entity3, _options.Options())
+        datastore_pb2.Mutation = Mutation
 
-            batch = context.batches[_api._NonTransactionalCommitBatch][()]
-            assert batch.mutations == [
-                Mutation(upsert=entity1),
-                Mutation(upsert=entity2),
-                Mutation(upsert=entity3),
-            ]
-            assert batch.futures == [future1, future2, future3]
+        entity1 = MockEntity("a", "1")
+        _api.put(entity1, _options.Options())
+
+        entity2 = MockEntity("a")
+        _api.put(entity2, _options.Options())
+
+        entity3 = MockEntity("b")
+        _api.put(entity3, _options.Options())
+
+        batch = in_context.batches[_api._NonTransactionalCommitBatch][()]
+        assert batch.mutations == [
+            Mutation(upsert=helpers.entity_to_protobuf(entity1)),
+            Mutation(upsert=helpers.entity_to_protobuf(entity2)),
+            Mutation(upsert=helpers.entity_to_protobuf(entity3)),
+        ]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api.datastore_pb2")
@@ -480,45 +474,35 @@ class Test_put:
                 self.upsert = upsert
 
             def __eq__(self, other):
-                return self.upsert is other.upsert
-
-        class PathElement:
-            id = None
-
-            def __init__(self, name):
-                self.name = name
+                return self.upsert == other.upsert
 
         def MockEntity(*path):
-            path = [PathElement(name) for name in path]
-            return mock.Mock(key=mock.Mock(path=path))
+            key = ds_key_module.Key(*path, project="testing")
+            return entity.Entity(key=key)
 
-        eventloop = mock.Mock(spec=("add_idle", "run"))
-        context = in_context.new(eventloop=eventloop, transaction=b"123")
-        with context.use() as context:
+        with in_context.new(transaction=b"123").use() as context:
             datastore_pb2.Mutation = Mutation
 
             entity1 = MockEntity("a", "1")
-            future1 = _api.put(entity1, _options.Options())
+            _api.put(entity1, _options.Options())
 
-            entity2 = MockEntity("a", None)
-            future2 = _api.put(entity2, _options.Options())
+            entity2 = MockEntity("a")
+            _api.put(entity2, _options.Options())
 
-            entity3 = MockEntity()
-            future3 = _api.put(entity3, _options.Options())
+            entity3 = MockEntity("b")
+            _api.put(entity3, _options.Options())
 
             batch = context.commit_batches[b"123"]
             assert batch.mutations == [
-                Mutation(upsert=entity1),
-                Mutation(upsert=entity2),
-                Mutation(upsert=entity3),
+                Mutation(upsert=helpers.entity_to_protobuf(entity1)),
+                Mutation(upsert=helpers.entity_to_protobuf(entity2)),
+                Mutation(upsert=helpers.entity_to_protobuf(entity3)),
             ]
-            assert batch.futures == [future1, future2, future3]
             assert batch.transaction == b"123"
             assert batch.incomplete_mutations == [
-                Mutation(upsert=entity2),
-                Mutation(upsert=entity3),
+                Mutation(upsert=helpers.entity_to_protobuf(entity2)),
+                Mutation(upsert=helpers.entity_to_protobuf(entity3)),
             ]
-            assert batch.incomplete_futures == [future2, future3]
 
 
 class Test_delete:
@@ -532,24 +516,21 @@ class Test_delete:
             def __eq__(self, other):
                 return self.delete == other.delete
 
-        eventloop = mock.Mock(spec=("add_idle", "run"))
-        with in_context.new(eventloop=eventloop).use() as context:
-            datastore_pb2.Mutation = Mutation
+        datastore_pb2.Mutation = Mutation
 
-            key1 = key_module.Key("SomeKind", 1)._key
-            key2 = key_module.Key("SomeKind", 2)._key
-            key3 = key_module.Key("SomeKind", 3)._key
-            future1 = _api.delete(key1, _options.Options())
-            future2 = _api.delete(key2, _options.Options())
-            future3 = _api.delete(key3, _options.Options())
+        key1 = key_module.Key("SomeKind", 1)._key
+        key2 = key_module.Key("SomeKind", 2)._key
+        key3 = key_module.Key("SomeKind", 3)._key
+        _api.delete(key1, _options.Options())
+        _api.delete(key2, _options.Options())
+        _api.delete(key3, _options.Options())
 
-            batch = context.batches[_api._NonTransactionalCommitBatch][()]
-            assert batch.mutations == [
-                Mutation(delete=key1.to_protobuf()),
-                Mutation(delete=key2.to_protobuf()),
-                Mutation(delete=key3.to_protobuf()),
-            ]
-            assert batch.futures == [future1, future2, future3]
+        batch = in_context.batches[_api._NonTransactionalCommitBatch][()]
+        assert batch.mutations == [
+            Mutation(delete=key1.to_protobuf()),
+            Mutation(delete=key2.to_protobuf()),
+            Mutation(delete=key3.to_protobuf()),
+        ]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api.datastore_pb2")
@@ -570,9 +551,9 @@ class Test_delete:
             key1 = key_module.Key("SomeKind", 1)._key
             key2 = key_module.Key("SomeKind", 2)._key
             key3 = key_module.Key("SomeKind", 3)._key
-            future1 = _api.delete(key1, _options.Options())
-            future2 = _api.delete(key2, _options.Options())
-            future3 = _api.delete(key3, _options.Options())
+            _api.delete(key1, _options.Options())
+            _api.delete(key2, _options.Options())
+            _api.delete(key3, _options.Options())
 
             batch = context.commit_batches[b"tx123"]
             assert batch.mutations == [
@@ -580,7 +561,6 @@ class Test_delete:
                 Mutation(delete=key2.to_protobuf()),
                 Mutation(delete=key3.to_protobuf()),
             ]
-            assert batch.futures == [future1, future2, future3]
 
 
 class Test_NonTransactionalCommitBatch:
@@ -926,7 +906,7 @@ class Test_datastore_commit:
 def test_allocate():
     options = _options.Options()
     future = _api.allocate(["one", "two"], options)
-    batch = _api._get_batch(_api._AllocateIdsBatch, options)
+    batch = _batch.get_batch(_api._AllocateIdsBatch, options)
     assert batch.keys == ["one", "two"]
     assert batch.futures == future._dependencies
 
