@@ -52,7 +52,7 @@ export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
 # cd "$PACKAGE"
 
 # Some system tests require indexes. Use gclod to create to create them.
-gcloud info --run-diagnostics
+gcloud --quiet datastore indexes cleanup tests/system/index.yaml
 gcloud --quiet datastore indexes create tests/system/index.yaml
 
 # Remove old nox
