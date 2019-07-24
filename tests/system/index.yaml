@@ -1,17 +1,17 @@
 indexes:
 
-- kind: !!str "SomeKind"
+- kind: SomeKind
   properties:
-  - name: !!str "bar"
-  - name: !!str "foo"
+  - name: bar
+  - name: foo
 
-- kind: !!str "SomeKind"
+- kind: SomeKind
   properties:
-  - name: !!str "bar.one"
-  - name: !!str "bar.two"
-  - name: !!str "foo"
+  - name: bar.one
+  - name: bar.two
+  - name: foo
 
-- kind: !!str "SomeKind"
+- kind: SomeKind
   properties:
-  - name: !!str "bar.three"
-  - name: !!str "foo"
+  - name: bar.three
+  - name: foo
