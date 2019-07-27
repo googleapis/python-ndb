@@ -101,7 +101,7 @@ class GlobalCache(abc.ABC):
     def compare_and_swap(self, items, expires=None):
         """Like :meth:`set` but using an optimistic transaction.
 
-        Only keys whose value hasn't changed since a preceeding call to
+        Only keys whose values haven't changed since a preceeding call to
         :meth:`watch` will be changed.
 
         Arguments:
@@ -144,11 +144,18 @@ class _InProcessGlobalCache(GlobalCache):
         """Implements :meth:`GlobalCache.get`."""
         now = time.time()
         results = [self.cache.get(key) for key in keys]
-        return [
-            _future_result(value)
-            for value, expires in results
-            if expires and expires < now
-        ]
+        entity_pbs = []
+        for result in results:
+            if result is not None:
+                entity_pb, expires = result
+                if expires and expires > now:
+                    entity_pb = None
+            else:
+                entity_pb = None
+
+            entity_pbs.append(entity_pb)
+
+        return entity_pbs
 
     def set(self, items, expires=None):
         """Implements :meth:`GlobalCache.set`."""
@@ -219,7 +226,6 @@ def global_get(key):
         tasklets.Future: Eventual result will be the entity (``bytes``) or
             ``None``.
     """
-    key = _PREFIX + key
     batch = _batch.get_batch(_GlobalCacheGetBatch)
     return batch.add(key)
 
@@ -275,7 +281,7 @@ class _GlobalCacheGetBatch(_GlobalCacheBatch):
     def make_call(self):
         """Make the actual call. To be overridden."""
         cache = context_module.get_context().global_cache
-        return cache.get(self.todo.values())
+        return cache.get(self.todo.keys())
 
     def future_info(self, key):
         """Generate info string for Future. To be overridden."""
@@ -298,7 +304,6 @@ def global_set(key, value, expires=None):
     else:
         options = None
 
-    key = _PREFIX + key
     batch = _batch.get_batch(_GlobalCacheSetBatch, options)
     return batch.add(key, value)
 
@@ -323,7 +328,7 @@ class _GlobalCacheSetBatch(_GlobalCacheBatch):
         """
         future = tasklets.Future(info=self.future_info(key, value))
         self.todo[key] = value
-        self.futures.add(future)
+        self.futures.append(future)
         return future
 
     def make_call(self):
@@ -345,7 +350,6 @@ def global_delete(key):
     Returns:
         tasklets.Future: Eventual result will be ``None``.
     """
-    key = _PREFIX + key
     batch = _batch.get_batch(_GlobalCacheDeleteBatch)
     return batch.add(key)
 
@@ -368,7 +372,7 @@ class _GlobalCacheDeleteBatch(_GlobalCacheBatch):
         """
         future = tasklets.Future(info=self.future_info(key))
         self.keys.append(key)
-        self.futures.add(future)
+        self.futures.append(future)
         return future
 
     def make_call(self):
@@ -393,7 +397,6 @@ def global_watch(key):
     Returns:
         tasklets.Future: Eventual result will be ``None``.
     """
-    key = _PREFIX + key
     batch = _batch.get_batch(_GlobalCacheWatchBatch)
     return batch.add(key)
 
@@ -429,12 +432,10 @@ def global_compare_and_swap(key, value, expires=None):
     Returns:
         tasklets.Future: Eventual result will be ``None``.
     """
+    options = {}
     if expires:
-        options = {"expires": expires}
-    else:
-        options = None
+        options["expires"] = expires
 
-    key = _PREFIX + key
     batch = _batch.get_batch(_GlobalCacheCompareAndSwapBatch, options)
     return batch.add(key, value)
 
@@ -471,3 +472,15 @@ def is_locked_value(value):
         bool: Whether the value is the special reserved value for key lock.
     """
     return value == _LOCKED
+
+
+def global_cache_key(key):
+    """Convert Datastore key to ``bytes`` to use for global cache key.
+
+    Args:
+        key (datastore.Key): The Datastore key.
+
+    Returns:
+        bytes: The cache key.
+    """
+    return _PREFIX + key.to_protobuf().SerializeToString()

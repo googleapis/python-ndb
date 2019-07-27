@@ -30,13 +30,15 @@ class Options:
         "retries",
         "timeout",
         "use_cache",
+        "use_global_cache",
+        "use_memcache",            # backwards compatibility
+        "global_cache_timeout",
+        "memcache_timeout",        # backwards compatibility
         # Not yet implemented
-        "use_memcache",
         "use_datastore",
-        "memcache_timeout",
-        "max_memcache_items",
         # Might or might not implement
         "force_writes",
+        "max_memcache_items",
         # Deprecated
         "propagation",
     )
@@ -136,13 +138,7 @@ class Options:
                 )
             )
 
-        if self.use_memcache is not None:
-            raise NotImplementedError
-
         if self.use_datastore is not None:
-            raise NotImplementedError
-
-        if self.memcache_timeout is not None:
             raise NotImplementedError
 
         if self.max_memcache_items is not None:

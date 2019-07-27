@@ -23,6 +23,7 @@ import os
 from unittest import mock
 
 from google.cloud import environment_vars
+from google.cloud.ndb import _cache
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import model
@@ -51,6 +52,7 @@ def reset_state(environ):
     yield
     model.Property._FIND_METHODS_CACHE.clear()
     model.Model._kind_map.clear()
+    _cache._InProcessGlobalCache.cache.clear()
 
 
 @pytest.fixture

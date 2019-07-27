@@ -119,18 +119,6 @@ def make_call(rpc_name, request, retries=None, timeout=None):
     return rpc_call()
 
 
-def _serialize_key(key):
-    """Get serialized protocol buffer for Datastore key.
-
-    Arguments:
-        key (datastore.Key): The key to serialize.
-
-    Returns:
-        bytes: The serialized key.
-    """
-    return key.to_protobuf().SerializeToString()
-
-
 @tasklets.tasklet
 def lookup(key, options):
     """Look up a Datastore entity.
@@ -154,7 +142,7 @@ def lookup(key, options):
     key_locked = False
 
     if use_global_cache:
-        cache_key = _serialize_key(key)
+        cache_key = _cache.global_cache_key(key)
         result = yield _cache.global_get(cache_key)
         key_locked == _cache.is_locked_value(key)
         if not key_locked:
@@ -379,7 +367,7 @@ def put(entity, options):
     """
     context = context_module.get_context()
     use_global_cache = context._use_global_cache(entity.key, options)
-    cache_key = _serialize_key(entity.key)
+    cache_key = _cache.global_cache_key(entity.key)
     if use_global_cache and not entity.key.is_partial:
         yield _cache.global_lock(cache_key)
 
@@ -421,7 +409,7 @@ def delete(key, options):
     use_global_cache = context._use_global_cache(key, options)
 
     if use_global_cache:
-        cache_key = _serialize_key(key)
+        cache_key = _cache.global_cache_key(key)
         yield _cache.global_lock(cache_key)
 
     transaction = _get_transaction(options)
