@@ -246,7 +246,7 @@ class _Context(_ContextTuple):
         are affected.
         """
         keys = [
-            _cache.global_cache_key(key)
+            _cache.global_cache_key(key._key)
             for key in self.cache
             if self._use_global_cache(key)
         ]

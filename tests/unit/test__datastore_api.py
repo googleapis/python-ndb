@@ -22,14 +22,22 @@ from google.cloud.datastore import helpers
 from google.cloud.datastore import key as ds_key_module
 from google.cloud.datastore_v1.proto import datastore_pb2
 from google.cloud.datastore_v1.proto import entity_pb2
-from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _batch
+from google.cloud.ndb import _cache
+from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _datastore_api as _api
 from google.cloud.ndb import key as key_module
+from google.cloud.ndb import model
 from google.cloud.ndb import _options
 from google.cloud.ndb import tasklets
 
 from tests.unit import utils
+
+
+def future_result(result):
+    future = tasklets.Future()
+    future.set_result(result)
+    return future
 
 
 class TestStub:
@@ -150,7 +158,7 @@ def _mock_key(key_str):
     return key
 
 
-class TestLookup:
+class Test_lookup:
     @staticmethod
     def test_it(context):
         eventloop = mock.Mock(spec=("add_idle", "run"))
@@ -186,6 +194,89 @@ class TestLookup:
 
             add_idle = context.eventloop.add_idle
             assert add_idle.call_count == 2
+
+
+class Test_lookup_WithGlobalCache:
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
+    def test_cache_miss(_LookupBatch, global_cache):
+        class SomeKind(model.Model):
+            pass
+
+        key = key_module.Key("SomeKind", 1)
+        cache_key = _cache.global_cache_key(key._key)
+
+        entity = SomeKind(key=key)
+        entity_pb = model._entity_to_protobuf(entity)
+        cache_value = entity_pb.SerializeToString()
+
+        batch = _LookupBatch.return_value
+        batch.add.return_value = future_result(entity_pb)
+
+        future = _api.lookup(key._key, _options.ReadOptions())
+        assert future.result() == entity_pb
+
+        assert global_cache.get([cache_key]).result() == [cache_value]
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
+    def test_cache_hit(_LookupBatch, global_cache):
+        class SomeKind(model.Model):
+            pass
+
+        key = key_module.Key("SomeKind", 1)
+        cache_key = _cache.global_cache_key(key._key)
+
+        entity = SomeKind(key=key)
+        entity_pb = model._entity_to_protobuf(entity)
+        cache_value = entity_pb.SerializeToString()
+
+        global_cache.set({cache_key: cache_value})
+
+        batch = _LookupBatch.return_value
+        batch.add.side_effect = Exception("Shouldn't get called.")
+
+        future = _api.lookup(key._key, _options.ReadOptions())
+        assert future.result() == entity_pb
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
+    def test_cache_locked(_LookupBatch, global_cache):
+        class SomeKind(model.Model):
+            pass
+
+        key = key_module.Key("SomeKind", 1)
+        cache_key = _cache.global_cache_key(key._key)
+
+        entity = SomeKind(key=key)
+        entity_pb = model._entity_to_protobuf(entity)
+
+        global_cache.set({cache_key: _cache._LOCKED})
+
+        batch = _LookupBatch.return_value
+        batch.add.return_value = future_result(entity_pb)
+
+        future = _api.lookup(key._key, _options.ReadOptions())
+        assert future.result() == entity_pb
+
+        assert global_cache.get([cache_key]).result() == [_cache._LOCKED]
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
+    def test_cache_not_found(_LookupBatch, global_cache):
+        class SomeKind(model.Model):
+            pass
+
+        key = key_module.Key("SomeKind", 1)
+        cache_key = _cache.global_cache_key(key._key)
+
+        batch = _LookupBatch.return_value
+        batch.add.return_value = future_result(_api._NOT_FOUND)
+
+        future = _api.lookup(key._key, _options.ReadOptions())
+        assert future.result() is _api._NOT_FOUND
+
+        assert global_cache.get([cache_key]).result() == [_cache._LOCKED]
 
 
 class Test_LookupBatch:
@@ -505,6 +596,49 @@ class Test_put:
             ]
 
 
+class Test_put_WithGlobalCache:
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
+    def test_no_key_returned(Batch, global_cache):
+        class SomeKind(model.Model):
+            pass
+
+        key = key_module.Key("SomeKind", 1)
+        cache_key = _cache.global_cache_key(key._key)
+
+        entity = SomeKind(key=key)
+        batch = Batch.return_value
+        batch.put.return_value = future_result(None)
+
+        future = _api.put(
+            model._entity_to_ds_entity(entity), _options.Options()
+        )
+        assert future.result() is None
+
+        assert global_cache.get([cache_key]).result() == [None]
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
+    def test_key_returned(Batch, global_cache):
+        class SomeKind(model.Model):
+            pass
+
+        key = key_module.Key("SomeKind", 1)
+        key_pb = key._key.to_protobuf()
+        cache_key = _cache.global_cache_key(key._key)
+
+        entity = SomeKind(key=key)
+        batch = Batch.return_value
+        batch.put.return_value = future_result(key_pb)
+
+        future = _api.put(
+            model._entity_to_ds_entity(entity), _options.Options()
+        )
+        assert future.result() == key._key
+
+        assert global_cache.get([cache_key]).result() == [None]
+
+
 class Test_delete:
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api.datastore_pb2")
@@ -561,6 +695,38 @@ class Test_delete:
                 Mutation(delete=key2.to_protobuf()),
                 Mutation(delete=key3.to_protobuf()),
             ]
+
+
+class Test_delete_WithGlobalCache:
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
+    def test_cache_enabled(Batch, global_cache):
+        key = key_module.Key("SomeKind", 1)
+        cache_key = _cache.global_cache_key(key._key)
+
+        batch = Batch.return_value
+        batch.delete.return_value = future_result(None)
+
+        future = _api.delete(key._key, _options.Options())
+        assert future.result() is None
+
+        assert global_cache.get([cache_key]).result() == [None]
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
+    def test_cache_disabled(Batch, global_cache):
+        key = key_module.Key("SomeKind", 1)
+        cache_key = _cache.global_cache_key(key._key)
+
+        batch = Batch.return_value
+        batch.delete.return_value = future_result(None)
+
+        future = _api.delete(
+            key._key, _options.Options(use_global_cache=False)
+        )
+        assert future.result() is None
+
+        assert global_cache.get([cache_key]).result() == [None]
 
 
 class Test_NonTransactionalCommitBatch:
@@ -1089,3 +1255,15 @@ def test__datastore_rollback(stub, datastore_pb2):
 
     request = datastore_pb2.RollbackRequest.return_value
     assert api.Rollback.future.called_once_with(request)
+
+
+def test__complete():
+    class MockElement:
+        def __init__(self, id=None, name=None):
+            self.id = id
+            self.name = name
+
+    assert not _api._complete(mock.Mock(path=[]))
+    assert not _api._complete(mock.Mock(path=[MockElement()]))
+    assert _api._complete(mock.Mock(path=[MockElement(id=1)]))
+    assert _api._complete(mock.Mock(path=[MockElement(name="himom")]))

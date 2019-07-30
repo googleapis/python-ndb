@@ -97,3 +97,14 @@ def in_context(context):
     with context.use():
         yield context
     assert not context_module._state.context
+
+
+@pytest.fixture
+def global_cache(context):
+    assert not context_module._state.context
+
+    global_cache = _cache._InProcessGlobalCache()
+    with context.new(global_cache=global_cache).use():
+        yield global_cache
+
+    assert not context_module._state.context

@@ -144,7 +144,7 @@ def lookup(key, options):
     if use_global_cache:
         cache_key = _cache.global_cache_key(key)
         result = yield _cache.global_get(cache_key)
-        key_locked == _cache.is_locked_value(key)
+        key_locked = _cache.is_locked_value(result)
         if not key_locked:
             if result is not None:
                 entity_pb = entity_pb2.Entity()
@@ -161,8 +161,9 @@ def lookup(key, options):
     if use_global_cache and not key_locked and entity_pb is not _NOT_FOUND:
         expires = context._global_cache_timeout(key, options)
         serialized = entity_pb.SerializeToString()
-        yield _cache.global_compare_and_swap(cache_key, serialized,
-                                             expires=expires)
+        yield _cache.global_compare_and_swap(
+            cache_key, serialized, expires=expires
+        )
 
     return entity_pb
 
@@ -762,8 +763,10 @@ def _complete(key_pb):
     A new key may be left incomplete so that the id can be allocated by the
     database. A key is considered incomplete if the last element of the path
     has neither a ``name`` or an ``id``.
+
     Args:
         key_pb (entity_pb2.Key): The key to check.
+
     Returns:
         boolean: :data:`True` if key is incomplete, otherwise :data:`False`.
     """

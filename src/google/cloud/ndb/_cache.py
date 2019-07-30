@@ -33,6 +33,7 @@ class ContextCache(collections.UserDict):
     returning a result, in order to handle cases where the entity's key was
     modified but the cache's key was not updated.
     """
+
     def get_and_validate(self, key):
         """Verify that the entity's key has not changed since it was added
            to the cache. If it has changed, consider this a cache miss.
@@ -137,6 +138,7 @@ class _InProcessGlobalCache(GlobalCache):
     Relies on atomicity of ``__setitem__`` for thread safety. See:
     http://effbot.org/pyfaq/what-kinds-of-global-value-mutation-are-thread-safe.htm
     """
+
     def __init__(self):
         self._watch_keys = {}
 
@@ -148,14 +150,14 @@ class _InProcessGlobalCache(GlobalCache):
         for result in results:
             if result is not None:
                 entity_pb, expires = result
-                if expires and expires > now:
+                if expires and expires < now:
                     entity_pb = None
             else:
                 entity_pb = None
 
             entity_pbs.append(entity_pb)
 
-        return entity_pbs
+        return _future_result(entity_pbs)
 
     def set(self, items, expires=None):
         """Implements :meth:`GlobalCache.set`."""
@@ -163,14 +165,14 @@ class _InProcessGlobalCache(GlobalCache):
             expires = time.time() + expires
 
         for key, value in items.items():
-            self.cache[key] = (value, expires)     # Supposedly threadsafe
+            self.cache[key] = (value, expires)  # Supposedly threadsafe
 
         return _future_result(None)
 
     def delete(self, keys):
         """Implements :meth:`GlobalCache.delete`."""
         for key in keys:
-            self.cache.pop(key, None)   # Threadsafe?
+            self.cache.pop(key, None)  # Threadsafe?
 
         return _future_result(None)
 
@@ -196,7 +198,6 @@ class _InProcessGlobalCache(GlobalCache):
 
 
 class _GlobalCacheBatch:
-
     def idle_callback(self):
         """Get keys from the global cache."""
         cache_call = self.make_call()
@@ -299,10 +300,9 @@ def global_set(key, value, expires=None):
     Returns:
         tasklets.Future: Eventual result will be ``None``.
     """
+    options = {}
     if expires:
         options = {"expires": expires}
-    else:
-        options = None
 
     batch = _batch.get_batch(_GlobalCacheSetBatch, options)
     return batch.add(key, value)
