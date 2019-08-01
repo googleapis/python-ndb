@@ -56,131 +56,18 @@ class TestContextCache:
             cache.get_and_validate("nonexistent_key")
 
 
-class TestGlobalCache:
-    def make_one(self):
-        class MockImpl(_cache.GlobalCache):
-            def get(self, keys):
-                return super(MockImpl, self).get(keys)
-
-            def set(self, items, expires=None):
-                return super(MockImpl, self).set(items, expires=expires)
-
-            def delete(self, keys):
-                return super(MockImpl, self).delete(keys)
-
-            def watch(self, keys):
-                return super(MockImpl, self).watch(keys)
-
-            def compare_and_swap(self, items, expires=None):
-                return super(MockImpl, self).compare_and_swap(
-                    items, expires=expires
-                )
-
-        return MockImpl()
-
-    def test_get(self):
-        cache = self.make_one()
-        with pytest.raises(NotImplementedError):
-            cache.get(b"foo")
-
-    def test_set(self):
-        cache = self.make_one()
-        with pytest.raises(NotImplementedError):
-            cache.set({b"foo": "bar"})
-
-    def test_delete(self):
-        cache = self.make_one()
-        with pytest.raises(NotImplementedError):
-            cache.delete(b"foo")
-
-    def test_watch(self):
-        cache = self.make_one()
-        with pytest.raises(NotImplementedError):
-            cache.watch(b"foo")
-
-    def test_compare_and_swap(self):
-        cache = self.make_one()
-        with pytest.raises(NotImplementedError):
-            cache.compare_and_swap({b"foo": "bar"})
-
-
-class TestInProcessGlobalCache:
+class Test_GlobalCacheBatch:
     @staticmethod
-    def test_set_get_delete():
-        cache = _cache._InProcessGlobalCache()
-        future = cache.set({b"one": b"foo", b"two": b"bar", b"three": b"baz"})
-        assert future.result() is None
-
-        future = cache.get([b"two", b"three", b"one"])
-        assert future.result() == [b"bar", b"baz", b"foo"]
-
-        cache = _cache._InProcessGlobalCache()
-        future = cache.get([b"two", b"three", b"one"])
-        assert future.result() == [b"bar", b"baz", b"foo"]
-
-        future = cache.delete([b"one", b"two", b"three"])
-        assert future.result() is None
-
-        future = cache.get([b"two", b"three", b"one"])
-        assert future.result() == [None, None, None]
+    def test_make_call():
+        batch = _cache._GlobalCacheBatch()
+        with pytest.raises(NotImplementedError):
+            batch.make_call()
 
     @staticmethod
-    @mock.patch("google.cloud.ndb._cache.time")
-    def test_set_get_delete_w_expires(time):
-        time.time.return_value = 0
-
-        cache = _cache._InProcessGlobalCache()
-        future = cache.set(
-            {b"one": b"foo", b"two": b"bar", b"three": b"baz"}, expires=5
-        )
-        assert future.result() is None
-
-        future = cache.get([b"two", b"three", b"one"])
-        assert future.result() == [b"bar", b"baz", b"foo"]
-
-        time.time.return_value = 10
-        future = cache.get([b"two", b"three", b"one"])
-        assert future.result() == [None, None, None]
-
-    @staticmethod
-    def test_watch_compare_and_swap():
-        cache = _cache._InProcessGlobalCache()
-        future = cache.watch([b"one", b"two", b"three"])
-        assert future.result() is None
-
-        cache.cache[b"two"] = (b"hamburgers", None)
-
-        future = cache.compare_and_swap(
-            {b"one": b"foo", b"two": b"bar", b"three": b"baz"}
-        )
-        assert future.result() is None
-
-        future = cache.get([b"one", b"two", b"three"])
-        assert future.result() == [b"foo", b"hamburgers", b"baz"]
-
-    @staticmethod
-    @mock.patch("google.cloud.ndb._cache.time")
-    def test_watch_compare_and_swap_with_expires(time):
-        time.time.return_value = 0
-
-        cache = _cache._InProcessGlobalCache()
-        future = cache.watch([b"one", b"two", b"three"])
-        assert future.result() is None
-
-        cache.cache[b"two"] = (b"hamburgers", None)
-
-        future = cache.compare_and_swap(
-            {b"one": b"foo", b"two": b"bar", b"three": b"baz"}, expires=5
-        )
-        assert future.result() is None
-
-        future = cache.get([b"one", b"two", b"three"])
-        assert future.result() == [b"foo", b"hamburgers", b"baz"]
-
-        time.time.return_value = 10
-
-        future = cache.get([b"one", b"two", b"three"])
-        assert future.result() == [None, b"hamburgers", None]
+    def test_future_info():
+        batch = _cache._GlobalCacheBatch()
+        with pytest.raises(NotImplementedError):
+            batch.future_info(None)
 
 
 @mock.patch("google.cloud.ndb._cache._batch")

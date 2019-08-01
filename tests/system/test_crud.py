@@ -28,6 +28,7 @@ import test_utils.system
 
 from google.cloud import ndb
 from google.cloud.ndb import _cache
+from google.cloud.ndb import global_cache as global_cache_module
 
 from tests.system import KIND, eventually
 
@@ -84,8 +85,8 @@ def test_retrieve_entity_with_global_cache(ds_entity, client_context):
         bar = ndb.StringProperty()
         baz = ndb.StringProperty()
 
-    global_cache = _cache._InProcessGlobalCache()
-    cache_dict = _cache._InProcessGlobalCache.cache
+    global_cache = global_cache_module._InProcessGlobalCache()
+    cache_dict = global_cache_module._InProcessGlobalCache.cache
     with client_context.new(global_cache=global_cache).use() as context:
         context.set_global_cache_policy(None)  # Use default
 
@@ -289,8 +290,8 @@ def test_insert_entity_with_global_cache(dispose_of, client_context):
         foo = ndb.IntegerProperty()
         bar = ndb.StringProperty()
 
-    global_cache = _cache._InProcessGlobalCache()
-    cache_dict = _cache._InProcessGlobalCache.cache
+    global_cache = global_cache_module._InProcessGlobalCache()
+    cache_dict = global_cache_module._InProcessGlobalCache.cache
     with client_context.new(global_cache=global_cache).use() as context:
         context.set_global_cache_policy(None)  # Use default
 
@@ -436,8 +437,8 @@ def test_delete_entity_with_global_cache(ds_entity, client_context):
 
     key = ndb.Key(KIND, entity_id)
     cache_key = _cache.global_cache_key(key._key)
-    global_cache = _cache._InProcessGlobalCache()
-    cache_dict = _cache._InProcessGlobalCache.cache
+    global_cache = global_cache_module._InProcessGlobalCache()
+    cache_dict = global_cache_module._InProcessGlobalCache.cache
 
     with client_context.new(global_cache=global_cache).use():
         assert key.get().foo == 42

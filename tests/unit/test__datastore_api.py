@@ -216,7 +216,7 @@ class Test_lookup_WithGlobalCache:
         future = _api.lookup(key._key, _options.ReadOptions())
         assert future.result() == entity_pb
 
-        assert global_cache.get([cache_key]).result() == [cache_value]
+        assert global_cache.get([cache_key]) == [cache_value]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
@@ -259,7 +259,7 @@ class Test_lookup_WithGlobalCache:
         future = _api.lookup(key._key, _options.ReadOptions())
         assert future.result() == entity_pb
 
-        assert global_cache.get([cache_key]).result() == [_cache._LOCKED]
+        assert global_cache.get([cache_key]) == [_cache._LOCKED]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
@@ -276,7 +276,7 @@ class Test_lookup_WithGlobalCache:
         future = _api.lookup(key._key, _options.ReadOptions())
         assert future.result() is _api._NOT_FOUND
 
-        assert global_cache.get([cache_key]).result() == [_cache._LOCKED]
+        assert global_cache.get([cache_key]) == [_cache._LOCKED]
 
 
 class Test_LookupBatch:
@@ -615,7 +615,7 @@ class Test_put_WithGlobalCache:
         )
         assert future.result() is None
 
-        assert global_cache.get([cache_key]).result() == [None]
+        assert global_cache.get([cache_key]) == [None]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
@@ -636,7 +636,7 @@ class Test_put_WithGlobalCache:
         )
         assert future.result() == key._key
 
-        assert global_cache.get([cache_key]).result() == [None]
+        assert global_cache.get([cache_key]) == [None]
 
 
 class Test_delete:
@@ -710,7 +710,7 @@ class Test_delete_WithGlobalCache:
         future = _api.delete(key._key, _options.Options())
         assert future.result() is None
 
-        assert global_cache.get([cache_key]).result() == [None]
+        assert global_cache.get([cache_key]) == [None]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
@@ -726,7 +726,7 @@ class Test_delete_WithGlobalCache:
         )
         assert future.result() is None
 
-        assert global_cache.get([cache_key]).result() == [None]
+        assert global_cache.get([cache_key]) == [None]
 
 
 class Test_NonTransactionalCommitBatch:

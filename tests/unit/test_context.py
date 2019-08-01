@@ -19,6 +19,7 @@ from google.cloud.ndb import _cache
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import exceptions
+from google.cloud.ndb import global_cache
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import model
 from google.cloud.ndb import _options
@@ -101,7 +102,9 @@ class TestContext:
         assert not context.cache
 
     def test__clear_global_cache(self):
-        context = self._make_one(global_cache=_cache._InProcessGlobalCache())
+        context = self._make_one(
+            global_cache=global_cache._InProcessGlobalCache()
+        )
         with context.use():
             key = key_module.Key("SomeKind", 1)
             cache_key = _cache.global_cache_key(key._key)
@@ -113,7 +116,9 @@ class TestContext:
         assert context.global_cache.cache == {"anotherkey": "otherdata"}
 
     def test__clear_global_cache_nothing_to_do(self):
-        context = self._make_one(global_cache=_cache._InProcessGlobalCache())
+        context = self._make_one(
+            global_cache=global_cache._InProcessGlobalCache()
+        )
         with context.use():
             context.global_cache.cache["anotherkey"] = "otherdata"
             context._clear_global_cache().result()

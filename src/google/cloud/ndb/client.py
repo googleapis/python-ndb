@@ -148,9 +148,9 @@ class Client(google_client.ClientWithProject):
             cache_policy (Optional[Callable[[key.Key], bool]]): The
                 cache policy to use in this context. See:
                 :meth:`~google.cloud.ndb.context.Context.set_cache_policy`.
-            global_cache (Optional[_cache.GlobalCache]):
+            global_cache (Optional[global_cache.GlobalCache]):
                 The global cache for this context. See:
-                :class:`~google.cloud.ndb._cache.GlobalCache`.
+                :class:`~google.cloud.ndb.global_cache.GlobalCache`.
             global_cache_policy (Optional[Callable[[key.Key], bool]]): The
                 global cache policy to use in this context. See:
                 :meth:`~google.cloud.ndb.context.Context.set_global_cache_policy`.
