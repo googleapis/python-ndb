@@ -534,7 +534,7 @@ def test_polymodel_query(ds_entity):
         foo = ndb.IntegerProperty()
 
     class Cat(Animal):
-        foo = ndb.IntegerProperty()
+        pass
 
     animal = Animal(foo=1)
     animal.put()
