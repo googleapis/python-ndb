@@ -528,6 +528,35 @@ def test_fetch_page(dispose_of):
     assert not more
 
 
+@pytest.mark.usefixtures("client_context")
+def test_polymodel_query(ds_entity):
+    class Animal(ndb.PolyModel):
+        foo = ndb.IntegerProperty()
+
+    class Cat(Animal):
+        foo = ndb.IntegerProperty()
+
+    animal = Animal(foo=1)
+    animal.put()
+    cat = Cat(foo=2)
+    cat.put()
+
+    query = Animal.query()
+    results = eventually(query.fetch, _length_equals(2))
+
+    results = sorted(results, key=operator.attrgetter("foo"))
+    assert isinstance(results[0], Animal)
+    assert not isinstance(results[0], Cat)
+    assert isinstance(results[1], Animal)
+    assert isinstance(results[1], Cat)
+
+    query = Cat.query()
+    results = eventually(query.fetch, _length_equals(1))
+
+    assert isinstance(results[0], Animal)
+    assert isinstance(results[0], Cat)
+
+
 @pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_query_repeated_property(ds_entity):
