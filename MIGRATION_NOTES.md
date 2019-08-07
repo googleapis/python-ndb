@@ -226,9 +226,9 @@ facing, private API:
 - `tasklets.MultiFuture` has been renamed to `tasklets._MultiFuture`, removed
   from top level exports, and has a much simpler interface.
 
-These options classes appear not have been used directly by users and are not
-implemented—public facing API used keyword arguments instead, which are still
-supported:
+These options classes appear not to have been used directly by users and are
+not implemented—public facing API used keyword arguments instead, which are
+still supported:
 
 - `ContextOptions`
 - `TransactionOptions`
