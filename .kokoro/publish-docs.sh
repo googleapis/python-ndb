@@ -31,10 +31,6 @@ sudo add-apt-repository universe
 sudo apt-get update
 sudo apt-get -y install jq
 
-# Need enchant for spell check
-sudo apt-get -y install dictionaries-common aspell aspell-en \
-                    hunspell-en-us libenchant1c2a enchant
-
 # create metadata
 python3 -m docuploader create-metadata \
   --name=$(jq --raw-output '.name // empty' .repo-metadata.json) \
