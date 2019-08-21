@@ -541,9 +541,9 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
         # default. This handles the case of reading structured properties from
         # older NDB datastore instances.
         #
-        # Turns this is also useful when doing projection queries with repeated
-        # structured properties, in which case, due to oddities with how
-        # Datastore handles these things, we'll get a scalar value for the
+        # Turns out this is also useful when doing projection queries with
+        # repeated structured properties, in which case, due to oddities with
+        # how Datastore handles these things, we'll get a scalar value for the
         # subvalue, instead of an array, like you'd expect when just
         # marshalling the entity normally (instead of in a projection query).
         #
@@ -4515,6 +4515,8 @@ class Model(metaclass=MetaModel):
         """
         self._projection = tuple(projection)
 
+        # Handle projections for structured properties by recursively setting
+        # projections on sub-entities.
         by_prefix = {}
         for name in projection:
             if "." in name:

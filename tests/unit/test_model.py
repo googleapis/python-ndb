@@ -4514,30 +4514,7 @@ class Test_entity_from_protobuf:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_legacy_repeated_structured_property():
-        class OtherKind(model.Model):
-            foo = model.IntegerProperty()
-            bar = model.StringProperty()
-
-        class ThisKind(model.Model):
-            baz = model.StructuredProperty(OtherKind, repeated=True)
-            copacetic = model.BooleanProperty()
-
-        key = datastore.Key("ThisKind", 123, project="testing")
-        datastore_entity = datastore.Entity(key=key)
-        datastore_entity.update(
-            {"baz.foo": 42, "baz.bar": "himom", "copacetic": True}
-        )
-        protobuf = helpers.entity_to_protobuf(datastore_entity)
-        entity = model._entity_from_protobuf(protobuf)
-        assert isinstance(entity, ThisKind)
-        assert entity.baz[0].foo == 42
-        assert entity.baz[0].bar == "himom"
-        assert entity.copacetic is True
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
-    def test_repeated_structured_property_projection():
+    def test_repeated_structured_property():
         class OtherKind(model.Model):
             foo = model.IntegerProperty()
             bar = model.StringProperty()
@@ -4562,6 +4539,29 @@ class Test_entity_from_protobuf:
         assert entity.baz[0].bar == "himom"
         assert entity.baz[1].foo == 144
         assert entity.baz[1].bar == "hellodad"
+        assert entity.copacetic is True
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_legacy_repeated_structured_property_projection():
+        class OtherKind(model.Model):
+            foo = model.IntegerProperty()
+            bar = model.StringProperty()
+
+        class ThisKind(model.Model):
+            baz = model.StructuredProperty(OtherKind, repeated=True)
+            copacetic = model.BooleanProperty()
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        datastore_entity.update(
+            {"baz.foo": 42, "baz.bar": "himom", "copacetic": True}
+        )
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        assert isinstance(entity, ThisKind)
+        assert entity.baz[0].foo == 42
+        assert entity.baz[0].bar == "himom"
         assert entity.copacetic is True
 
 
