@@ -762,11 +762,7 @@ class Key:
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
             read_policy: DEPRECATED: Synonym for ``read_consistency``.
 
         Returns:
@@ -823,11 +819,7 @@ class Key:
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
             read_policy: DEPRECATED: Synonym for ``read_consistency``.
 
         Returns:
@@ -912,11 +904,7 @@ class Key:
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
         """
         future = self.delete_async(_options=_options)
         if not _transaction.in_transaction():
@@ -957,11 +945,7 @@ class Key:
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
         """
         from google.cloud.ndb import model  # avoid circular import
 

@@ -4709,11 +4709,7 @@ class Model(metaclass=MetaModel):
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
 
         Returns:
             key.Key: The key for the entity. This is always a complete key.
@@ -4760,11 +4756,7 @@ class Model(metaclass=MetaModel):
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
 
         Returns:
             tasklets.Future: The eventual result will be the key for the
@@ -4918,11 +4910,7 @@ class Model(metaclass=MetaModel):
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
 
         Returns:
             tuple(key.Key): Keys for the newly allocated IDs.
@@ -4975,11 +4963,7 @@ class Model(metaclass=MetaModel):
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
 
         Returns:
             tasklets.Future: Eventual result is ``tuple(key.Key)``: Keys for
@@ -5085,11 +5069,7 @@ class Model(metaclass=MetaModel):
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
 
         Returns:
             Optional[Model]: The retrieved entity, if one is found.
@@ -5168,11 +5148,7 @@ class Model(metaclass=MetaModel):
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
 
         Returns:
             tasklets.Future: Optional[Model]: The retrieved entity, if one is
@@ -5276,11 +5252,7 @@ class Model(metaclass=MetaModel):
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
 
         Returns:
             Model: The entity that was either just retrieved or created.
@@ -5366,11 +5338,7 @@ class Model(metaclass=MetaModel):
                 Datastore; overrides Datastore policy for this operation.
             memcache_timeout (int): Maximum lifetime for entities in memcache;
                 overrides memcache timeout policy for this operation.
-            max_memcache_items (int): Maximum batch size for the auto-batching
-                feature of the Context memcache methods. For example, with the
-                default size of max_memcache_items (100), up to 100 memcache
-                set operations will be combined into a single set_multi
-                operation.
+            max_memcache_items (int): No longer supported.
 
         Returns:
             tasklets.Future: Model: The entity that was either just retrieved
@@ -5655,11 +5623,7 @@ def get_multi_async(
             Datastore; overrides Datastore policy for this operation.
         memcache_timeout (int): Maximum lifetime for entities in memcache;
             overrides memcache timeout policy for this operation.
-        max_memcache_items (int): Maximum batch size for the auto-batching
-            feature of the Context memcache methods. For example, with the
-            default size of max_memcache_items (100), up to 100 memcache
-            set operations will be combined into a single set_multi
-            operation.
+        max_memcache_items (int): No longer supported.
         read_policy: DEPRECATED: Synonym for ``read_consistency``.
 
     Returns:
@@ -5716,11 +5680,7 @@ def get_multi(
             Datastore; overrides Datastore policy for this operation.
         memcache_timeout (int): Maximum lifetime for entities in memcache;
             overrides memcache timeout policy for this operation.
-        max_memcache_items (int): Maximum batch size for the auto-batching
-            feature of the Context memcache methods. For example, with the
-            default size of max_memcache_items (100), up to 100 memcache
-            set operations will be combined into a single set_multi
-            operation.
+        max_memcache_items (int): No longer supported.
         read_policy: DEPRECATED: Synonym for ``read_consistency``.
 
     Returns:
@@ -5768,11 +5728,7 @@ def put_multi_async(
             Datastore; overrides Datastore policy for this operation.
         memcache_timeout (int): Maximum lifetime for entities in memcache;
             overrides memcache timeout policy for this operation.
-        max_memcache_items (int): Maximum batch size for the auto-batching
-            feature of the Context memcache methods. For example, with the
-            default size of max_memcache_items (100), up to 100 memcache
-            set operations will be combined into a single set_multi
-            operation.
+        max_memcache_items (int): No longer supported.
 
     Returns:
         List[:class:`~google.cloud.ndb.tasklets.Future`]: List of futures.
@@ -5817,11 +5773,7 @@ def put_multi(
             Datastore; overrides Datastore policy for this operation.
         memcache_timeout (int): Maximum lifetime for entities in memcache;
             overrides memcache timeout policy for this operation.
-        max_memcache_items (int): Maximum batch size for the auto-batching
-            feature of the Context memcache methods. For example, with the
-            default size of max_memcache_items (100), up to 100 memcache
-            set operations will be combined into a single set_multi
-            operation.
+        max_memcache_items (int): No longer supported.
 
     Returns:
         List[:class:`~google.cloud.ndb.key.Key`]: A list with the stored keys.
@@ -5867,11 +5819,7 @@ def delete_multi_async(
             Datastore; overrides Datastore policy for this operation.
         memcache_timeout (int): Maximum lifetime for entities in memcache;
             overrides memcache timeout policy for this operation.
-        max_memcache_items (int): Maximum batch size for the auto-batching
-            feature of the Context memcache methods. For example, with the
-            default size of max_memcache_items (100), up to 100 memcache
-            set operations will be combined into a single set_multi
-            operation.
+        max_memcache_items (int): No longer supported.
 
     Returns:
         List[:class:`~google.cloud.ndb.tasklets.Future`]: List of futures.
@@ -5916,11 +5864,7 @@ def delete_multi(
             Datastore; overrides Datastore policy for this operation.
         memcache_timeout (int): Maximum lifetime for entities in memcache;
             overrides memcache timeout policy for this operation.
-        max_memcache_items (int): Maximum batch size for the auto-batching
-            feature of the Context memcache methods. For example, with the
-            default size of max_memcache_items (100), up to 100 memcache
-            set operations will be combined into a single set_multi
-            operation.
+        max_memcache_items (int): No longer supported.
 
     Returns:
         List[:data:`None`]: A list whose items are all None, one per deleted

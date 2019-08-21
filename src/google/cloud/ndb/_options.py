@@ -35,8 +35,8 @@ class Options:
         "use_datastore",
         # Might or might not implement
         "force_writes",
-        "max_memcache_items",
         # Deprecated
+        "max_memcache_items",
         "propagation",
     )
 
@@ -155,7 +155,7 @@ class Options:
             )
 
         if self.max_memcache_items is not None:
-            raise NotImplementedError
+            raise exceptions.NoLongerImplementedError()
 
         if self.force_writes is not None:
             raise NotImplementedError
