@@ -212,6 +212,7 @@ that are affected are: `memcache_add`, `memcache_cas`, `memcache_decr`,
   from GAE to GCP.
 - The `max_memcache_items` option is no longer supported. 
 - The `force_writes` option is no longer supported.
+- `Query.map` and `Query.map_async` are no longer supported.
 
 ## Privatization
 
