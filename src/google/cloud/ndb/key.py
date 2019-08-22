@@ -725,8 +725,10 @@ class Key:
         deadline=None,
         force_writes=None,
         use_cache=None,
-        use_memcache=None,
+        use_global_cache=None,
         use_datastore=None,
+        global_cache_timeout=None,
+        use_memcache=None,
         memcache_timeout=None,
         max_memcache_items=None,
         _options=None,
@@ -756,12 +758,16 @@ class Key:
                 user controlled read-only periods.)
             use_cache (bool): Specifies whether to store entities in in-process
                 cache; overrides in-process cache policy for this operation.
-            use_memcache (bool): Specifies whether to store entities in
-                memcache; overrides memcache policy for this operation.
+            use_global_cache (bool): Specifies whether to store entities in
+                global cache; overrides global cache policy for this operation.
             use_datastore (bool): Specifies whether to store entities in
                 Datastore; overrides Datastore policy for this operation.
-            memcache_timeout (int): Maximum lifetime for entities in memcache;
-                overrides memcache timeout policy for this operation.
+            global_cache_timeout (int): Maximum lifetime for entities in global
+                cache; overrides global cache timeout policy for this
+                operation.
+            use_memcache (bool): DEPRECATED: Synonym for ``use_global_cache``.
+            memcache_timeout (int): DEPRECATED: Synonym for
+                ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
             read_policy: DEPRECATED: Synonym for ``read_consistency``.
 
@@ -782,8 +788,10 @@ class Key:
         deadline=None,
         force_writes=None,
         use_cache=None,
-        use_memcache=None,
+        use_global_cache=None,
         use_datastore=None,
+        global_cache_timeout=None,
+        use_memcache=None,
         memcache_timeout=None,
         max_memcache_items=None,
         _options=None,
@@ -813,12 +821,16 @@ class Key:
                 user controlled read-only periods.)
             use_cache (bool): Specifies whether to store entities in in-process
                 cache; overrides in-process cache policy for this operation.
-            use_memcache (bool): Specifies whether to store entities in
-                memcache; overrides memcache policy for this operation.
+            use_global_cache (bool): Specifies whether to store entities in
+                global cache; overrides global cache policy for this operation.
             use_datastore (bool): Specifies whether to store entities in
                 Datastore; overrides Datastore policy for this operation.
-            memcache_timeout (int): Maximum lifetime for entities in memcache;
-                overrides memcache timeout policy for this operation.
+            global_cache_timeout (int): Maximum lifetime for entities in global
+                cache; overrides global cache timeout policy for this
+                operation.
+            use_memcache (bool): DEPRECATED: Synonym for ``use_global_cache``.
+            memcache_timeout (int): DEPRECATED: Synonym for
+                ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
             read_policy: DEPRECATED: Synonym for ``read_consistency``.
 
@@ -871,8 +883,10 @@ class Key:
         deadline=None,
         force_writes=None,
         use_cache=None,
-        use_memcache=None,
+        use_global_cache=None,
         use_datastore=None,
+        global_cache_timeout=None,
+        use_memcache=None,
         memcache_timeout=None,
         max_memcache_items=None,
         _options=None,
@@ -898,12 +912,16 @@ class Key:
                 user controlled read-only periods.)
             use_cache (bool): Specifies whether to store entities in in-process
                 cache; overrides in-process cache policy for this operation.
-            use_memcache (bool): Specifies whether to store entities in
-                memcache; overrides memcache policy for this operation.
+            use_global_cache (bool): Specifies whether to store entities in
+                global cache; overrides global cache policy for this operation.
             use_datastore (bool): Specifies whether to store entities in
                 Datastore; overrides Datastore policy for this operation.
-            memcache_timeout (int): Maximum lifetime for entities in memcache;
-                overrides memcache timeout policy for this operation.
+            global_cache_timeout (int): Maximum lifetime for entities in global
+                cache; overrides global cache timeout policy for this
+                operation.
+            use_memcache (bool): DEPRECATED: Synonym for ``use_global_cache``.
+            memcache_timeout (int): DEPRECATED: Synonym for
+                ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
         """
         future = self.delete_async(_options=_options)
@@ -919,8 +937,10 @@ class Key:
         deadline=None,
         force_writes=None,
         use_cache=None,
-        use_memcache=None,
+        use_global_cache=None,
         use_datastore=None,
+        global_cache_timeout=None,
+        use_memcache=None,
         memcache_timeout=None,
         max_memcache_items=None,
         _options=None,
@@ -939,12 +959,16 @@ class Key:
                 user controlled read-only periods.)
             use_cache (bool): Specifies whether to store entities in in-process
                 cache; overrides in-process cache policy for this operation.
-            use_memcache (bool): Specifies whether to store entities in
-                memcache; overrides memcache policy for this operation.
+            use_global_cache (bool): Specifies whether to store entities in
+                global cache; overrides global cache policy for this operation.
             use_datastore (bool): Specifies whether to store entities in
                 Datastore; overrides Datastore policy for this operation.
-            memcache_timeout (int): Maximum lifetime for entities in memcache;
-                overrides memcache timeout policy for this operation.
+            global_cache_timeout (int): Maximum lifetime for entities in global
+                cache; overrides global cache timeout policy for this
+                operation.
+            use_memcache (bool): DEPRECATED: Synonym for ``use_global_cache``.
+            memcache_timeout (int): DEPRECATED: Synonym for
+                ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
         """
         from google.cloud.ndb import model  # avoid circular import
