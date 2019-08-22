@@ -723,7 +723,6 @@ class Key:
         retries=None,
         timeout=None,
         deadline=None,
-        force_writes=None,
         use_cache=None,
         use_global_cache=None,
         use_datastore=None,
@@ -731,6 +730,7 @@ class Key:
         use_memcache=None,
         memcache_timeout=None,
         max_memcache_items=None,
+        force_writes=None,
         _options=None,
     ):
         """Synchronously get the entity for this key.
@@ -753,9 +753,6 @@ class Key:
                 once, with no retries.
             timeout (float): Override the gRPC timeout, in seconds.
             deadline (float): DEPRECATED: Synonym for ``timeout``.
-            force_writes (bool): Specifies whether a write request should
-                succeed even if the app is read-only. (This only applies to
-                user controlled read-only periods.)
             use_cache (bool): Specifies whether to store entities in in-process
                 cache; overrides in-process cache policy for this operation.
             use_global_cache (bool): Specifies whether to store entities in
@@ -770,6 +767,7 @@ class Key:
                 ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
             read_policy: DEPRECATED: Synonym for ``read_consistency``.
+            force_writes (bool): No longer supported.
 
         Returns:
             Union[:class:`.Model`, :data:`None`]
@@ -786,7 +784,6 @@ class Key:
         retries=None,
         timeout=None,
         deadline=None,
-        force_writes=None,
         use_cache=None,
         use_global_cache=None,
         use_datastore=None,
@@ -794,6 +791,7 @@ class Key:
         use_memcache=None,
         memcache_timeout=None,
         max_memcache_items=None,
+        force_writes=None,
         _options=None,
     ):
         """Asynchronously get the entity for this key.
@@ -816,9 +814,6 @@ class Key:
                 once, with no retries.
             timeout (float): Override the gRPC timeout, in seconds.
             deadline (float): DEPRECATED: Synonym for ``timeout``.
-            force_writes (bool): Specifies whether a write request should
-                succeed even if the app is read-only. (This only applies to
-                user controlled read-only periods.)
             use_cache (bool): Specifies whether to store entities in in-process
                 cache; overrides in-process cache policy for this operation.
             use_global_cache (bool): Specifies whether to store entities in
@@ -833,6 +828,7 @@ class Key:
                 ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
             read_policy: DEPRECATED: Synonym for ``read_consistency``.
+            force_writes (bool): No longer supported.
 
         Returns:
             :class:`~google.cloud.ndb.tasklets.Future`
@@ -881,7 +877,6 @@ class Key:
         retries=None,
         timeout=None,
         deadline=None,
-        force_writes=None,
         use_cache=None,
         use_global_cache=None,
         use_datastore=None,
@@ -889,6 +884,7 @@ class Key:
         use_memcache=None,
         memcache_timeout=None,
         max_memcache_items=None,
+        force_writes=None,
         _options=None,
     ):
         """Synchronously delete the entity for this key.
@@ -907,9 +903,6 @@ class Key:
         Args:
             timeout (float): Override the gRPC timeout, in seconds.
             deadline (float): DEPRECATED: Synonym for ``timeout``.
-            force_writes (bool): Specifies whether a write request should
-                succeed even if the app is read-only. (This only applies to
-                user controlled read-only periods.)
             use_cache (bool): Specifies whether to store entities in in-process
                 cache; overrides in-process cache policy for this operation.
             use_global_cache (bool): Specifies whether to store entities in
@@ -923,6 +916,7 @@ class Key:
             memcache_timeout (int): DEPRECATED: Synonym for
                 ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
+            force_writes (bool): No longer supported.
         """
         future = self.delete_async(_options=_options)
         if not _transaction.in_transaction():
@@ -935,7 +929,6 @@ class Key:
         retries=None,
         timeout=None,
         deadline=None,
-        force_writes=None,
         use_cache=None,
         use_global_cache=None,
         use_datastore=None,
@@ -943,6 +936,7 @@ class Key:
         use_memcache=None,
         memcache_timeout=None,
         max_memcache_items=None,
+        force_writes=None,
         _options=None,
     ):
         """Schedule deletion of the entity for this key.
@@ -954,9 +948,6 @@ class Key:
         Args:
             timeout (float): Override the gRPC timeout, in seconds.
             deadline (float): DEPRECATED: Synonym for ``timeout``.
-            force_writes (bool): Specifies whether a write request should
-                succeed even if the app is read-only. (This only applies to
-                user controlled read-only periods.)
             use_cache (bool): Specifies whether to store entities in in-process
                 cache; overrides in-process cache policy for this operation.
             use_global_cache (bool): Specifies whether to store entities in
@@ -970,6 +961,7 @@ class Key:
             memcache_timeout (int): DEPRECATED: Synonym for
                 ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
+            force_writes (bool): No longer supported.
         """
         from google.cloud.ndb import model  # avoid circular import
 

@@ -33,9 +33,8 @@ class Options:
         "use_global_cache",
         "global_cache_timeout",
         "use_datastore",
-        # Might or might not implement
-        "force_writes",
         # Deprecated
+        "force_writes",
         "max_memcache_items",
         "propagation",
     )
@@ -158,7 +157,7 @@ class Options:
             raise exceptions.NoLongerImplementedError()
 
         if self.force_writes is not None:
-            raise NotImplementedError
+            raise exceptions.NoLongerImplementedError()
 
         if self.propagation is not None:
             raise exceptions.NoLongerImplementedError()

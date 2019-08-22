@@ -211,6 +211,7 @@ that are affected are: `memcache_add`, `memcache_cas`, `memcache_decr`,
   implemented, as the support in Datastore for these functions has disappeared
   from GAE to GCP.
 - The `max_memcache_items` option is no longer supported. 
+- The `force_writes` option is no longer supported.
 
 ## Privatization
 
