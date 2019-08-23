@@ -3637,7 +3637,7 @@ class TestModel:
         assert not entity1 == entity2
 
     @staticmethod
-    def test__eq__expando_w_different_properties():
+    def test__eq__expando():
         class SomeKind(model.Expando):
             foo = model.IntegerProperty()
 
