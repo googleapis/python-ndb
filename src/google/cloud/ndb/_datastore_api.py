@@ -387,9 +387,7 @@ def put(entity, options):
         )
 
     if not use_datastore and entity.key.is_partial:
-        raise TypeError(
-            "Can't store partial keys when use_datastore is False"
-        )
+        raise TypeError("Can't store partial keys when use_datastore is False")
 
     entity_pb = helpers.entity_to_protobuf(entity)
     cache_key = _cache.global_cache_key(entity.key)
