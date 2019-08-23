@@ -1,4 +1,5 @@
 indexes:
+
 - kind: SomeKind
   properties:
   - name: bar
@@ -14,3 +15,9 @@ indexes:
   properties:
   - name: bar.three
   - name: foo
+
+- kind: SomeKind
+  properties:
+  - name: foo
+  - name: bar.one
+  - name: bar.two

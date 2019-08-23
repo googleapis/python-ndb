@@ -14,6 +14,7 @@
 
 import datetime
 import pickle
+import pytz
 import types
 import unittest.mock
 import zlib
@@ -1347,11 +1348,11 @@ class Test__validate_key:
 
         value = model.Key(Mine, "yours")
         entity = unittest.mock.Mock(spec=Mine)
-        entity._class_name.return_value = "Mine"
+        entity._get_kind.return_value = "Mine"
 
         result = model._validate_key(value, entity=entity)
         assert result is value
-        entity._class_name.assert_called_once_with()
+        entity._get_kind.assert_called_once_with()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1361,13 +1362,13 @@ class Test__validate_key:
 
         value = model.Key(Mine, "yours")
         entity = unittest.mock.Mock(spec=Mine)
-        entity._class_name.return_value = "NotMine"
+        entity._get_kind.return_value = "NotMine"
 
         with pytest.raises(model.KindError):
             model._validate_key(value, entity=entity)
 
         calls = [unittest.mock.call(), unittest.mock.call()]
-        entity._class_name.assert_has_calls(calls)
+        entity._get_kind.assert_has_calls(calls)
 
 
 class TestModelKey:
@@ -2427,6 +2428,13 @@ class TestDateTimeProperty:
             prop._validate(None)
 
     @staticmethod
+    def test__validate_with_tz():
+        prop = model.DateTimeProperty(name="dt_val")
+        value = datetime.datetime.now(tz=pytz.utc)
+        with pytest.raises(exceptions.BadValueError):
+            prop._validate(value)
+
+    @staticmethod
     def test__now():
         dt_val = model.DateTimeProperty._now()
         assert isinstance(dt_val, datetime.datetime)
@@ -2485,6 +2493,18 @@ class TestDateTimeProperty:
         prop = model.DateTimeProperty(name="dt_val")
         with pytest.raises(NotImplementedError):
             prop._db_get_value(None, None)
+
+    @staticmethod
+    def test__from_base_type_no_timezone():
+        prop = model.DateTimeProperty(name="dt_val")
+        value = datetime.datetime.now()
+        assert prop._from_base_type(value) is None
+
+    @staticmethod
+    def test__from_base_type_timezone():
+        prop = model.DateTimeProperty(name="dt_val")
+        value = datetime.datetime(2010, 5, 12, tzinfo=pytz.utc)
+        assert prop._from_base_type(value) == datetime.datetime(2010, 5, 12)
 
 
 class TestDateProperty:
@@ -2631,7 +2651,7 @@ class TestStructuredProperty:
         class MineToo(model.Model):
             bar = model.StructuredProperty(Mine)
 
-        minetoo = MineToo(projection=("bar.foo",))
+        minetoo = MineToo(projection=("saywhat",))
         with pytest.raises(model.UnprojectedPropertyError):
             MineToo.bar._get_value(minetoo)
 
@@ -3403,6 +3423,50 @@ class TestModel:
         }
 
     @staticmethod
+    def test_constructor_with_structured_property_projection():
+        class Author(model.Model):
+            first_name = model.StringProperty()
+            last_name = model.StringProperty()
+
+        class Book(model.Model):
+            pages = model.IntegerProperty()
+            author = model.StructuredProperty(Author)
+            publisher = model.StringProperty()
+
+        entity = Book(
+            pages=287,
+            author=Author(first_name="Tim", last_name="Robert"),
+            projection=("author.first_name", "author.last_name"),
+        )
+        assert entity._projection == ("author.first_name", "author.last_name")
+        assert entity.author._projection == ("first_name", "last_name")
+
+    @staticmethod
+    def test_constructor_with_repeated_structured_property_projection():
+        class Author(model.Model):
+            first_name = model.StringProperty()
+            last_name = model.StringProperty()
+
+        class Book(model.Model):
+            pages = model.IntegerProperty()
+            authors = model.StructuredProperty(Author, repeated=True)
+            publisher = model.StringProperty()
+
+        entity = Book(
+            pages=287,
+            authors=[
+                Author(first_name="Tim", last_name="Robert"),
+                Author(first_name="Jim", last_name="Bobert"),
+            ],
+            projection=("authors.first_name", "authors.last_name"),
+        )
+        assert entity._projection == (
+            "authors.first_name",
+            "authors.last_name",
+        )
+        assert entity.authors[0]._projection == ("first_name", "last_name")
+
+    @staticmethod
     def test_constructor_non_existent_property():
         with pytest.raises(AttributeError):
             model.Model(pages=287)
@@ -3610,11 +3674,19 @@ class TestModel:
         _datastore_api.put.return_value = future = tasklets.Future()
         future.set_result(None)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put() == entity.key
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options()
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3624,14 +3696,22 @@ class TestModel:
         _datastore_api.put.return_value = future = tasklets.Future()
 
         key = key_module.Key("SomeKind", 123)
-        future.set_result(key._key.to_protobuf())
+        future.set_result(key._key)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put(use_cache=False) == key
         assert not in_context.cache
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options(use_cache=False)
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options(use_cache=False)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3641,15 +3721,23 @@ class TestModel:
         _datastore_api.put.return_value = future = tasklets.Future()
 
         key = key_module.Key("SomeKind", 123)
-        future.set_result(key._key.to_protobuf())
+        future.set_result(key._key)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put(use_cache=True) == key
         assert in_context.cache[key] == entity
         assert in_context.cache.get_and_validate(key) == entity
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options(use_cache=True)
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options(use_cache=True)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3659,13 +3747,21 @@ class TestModel:
         _datastore_api.put.return_value = future = tasklets.Future()
 
         key = key_module.Key("SomeKind", 123)
-        future.set_result(key._key.to_protobuf())
+        future.set_result(key._key)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put() == key
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options()
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3675,14 +3771,22 @@ class TestModel:
         _datastore_api.put.return_value = future = tasklets.Future()
 
         key = key_module.Key("SomeKind", 123)
-        future.set_result(key._key.to_protobuf())
+        future.set_result(key._key)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         tasklet_future = entity._put_async()
         assert tasklet_future.result() == key
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options()
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3718,11 +3822,19 @@ class TestModel:
         _datastore_api.put.return_value = future = tasklets.Future()
         future.set_result(None)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put() == entity.key
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options()
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options()
 
         assert entity.pre_put_calls == [((), {})]
         assert entity.post_put_calls == [((), {})]
@@ -4422,7 +4534,7 @@ class Test_entity_from_protobuf:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_legacy_repeated_structured_property():
+    def test_repeated_structured_property():
         class OtherKind(model.Model):
             foo = model.IntegerProperty()
             bar = model.StringProperty()
@@ -4447,6 +4559,29 @@ class Test_entity_from_protobuf:
         assert entity.baz[0].bar == "himom"
         assert entity.baz[1].foo == 144
         assert entity.baz[1].bar == "hellodad"
+        assert entity.copacetic is True
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_legacy_repeated_structured_property_projection():
+        class OtherKind(model.Model):
+            foo = model.IntegerProperty()
+            bar = model.StringProperty()
+
+        class ThisKind(model.Model):
+            baz = model.StructuredProperty(OtherKind, repeated=True)
+            copacetic = model.BooleanProperty()
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        datastore_entity.update(
+            {"baz.foo": 42, "baz.bar": "himom", "copacetic": True}
+        )
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        assert isinstance(entity, ThisKind)
+        assert entity.baz[0].foo == 42
+        assert entity.baz[0].bar == "himom"
         assert entity.copacetic is True
 
 

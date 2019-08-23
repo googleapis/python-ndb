@@ -21,11 +21,14 @@ import grpc
 
 from google.cloud import _helpers
 from google.cloud import _http
+from google.cloud.datastore import helpers
 from google.cloud.datastore_v1.proto import datastore_pb2
 from google.cloud.datastore_v1.proto import datastore_pb2_grpc
 from google.cloud.datastore_v1.proto import entity_pb2
 
 from google.cloud.ndb import context as context_module
+from google.cloud.ndb import _batch
+from google.cloud.ndb import _cache
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import _options
 from google.cloud.ndb import _remote
@@ -116,12 +119,12 @@ def make_call(rpc_name, request, retries=None, timeout=None):
     return rpc_call()
 
 
+@tasklets.tasklet
 def lookup(key, options):
     """Look up a Datastore entity.
 
-    Gets an entity from Datastore, asynchronously. Actually adds the request to
-    a batch and fires off a Datastore Lookup call as soon as some code asks for
-    the result of one of the batched requests.
+    Gets an entity from Datastore, asynchronously. Checks the global cache,
+    first, if appropriate. Uses batching.
 
     Args:
         key (~datastore.Key): The key for the entity to retrieve.
@@ -132,52 +135,48 @@ def lookup(key, options):
         :class:`~tasklets.Future`: If not an exception, future's result will be
             either an entity protocol buffer or _NOT_FOUND.
     """
-    batch = _get_batch(_LookupBatch, options)
-    return batch.add(key)
-
-
-def _get_batch(batch_cls, options):
-    """Gets a data structure for storing batched calls to Datastore Lookup.
-
-    The batch data structure is stored in the current context. If there is
-    not already a batch started, a new structure is created and an idle
-    callback is added to the current event loop which will eventually perform
-    the batch look up.
-
-    Args:
-        batch_cls (type): Class representing the kind of operation being
-            batched.
-        options (_options.ReadOptions): The options for the request. Calls with
-            different options will be placed in different batches.
-
-    Returns:
-        batch_cls: An instance of the batch class.
-    """
     context = context_module.get_context()
-    batches = context.batches.get(batch_cls)
-    if batches is None:
-        context.batches[batch_cls] = batches = {}
+    use_datastore = context._use_datastore(key, options)
+    in_transaction = bool(_get_transaction(options))
+    if use_datastore and in_transaction:
+        use_global_cache = False
+    else:
+        use_global_cache = context._use_global_cache(key, options)
 
-    options_key = tuple(
-        sorted(
-            (
-                (key, value)
-                for key, value in options.items()
-                if value is not None
-            )
+    if not (use_global_cache or use_datastore):
+        raise TypeError(
+            "use_global_cache and use_datastore can't both be False"
         )
-    )
-    batch = batches.get(options_key)
-    if batch is not None:
-        return batch
 
-    def idle():
-        batch = batches.pop(options_key)
-        batch.idle_callback()
+    entity_pb = _NOT_FOUND
+    key_locked = False
 
-    batches[options_key] = batch = batch_cls(options)
-    _eventloop.add_idle(idle)
-    return batch
+    if use_global_cache:
+        cache_key = _cache.global_cache_key(key)
+        result = yield _cache.global_get(cache_key)
+        key_locked = _cache.is_locked_value(result)
+        if not key_locked:
+            if result is not None:
+                entity_pb = entity_pb2.Entity()
+                entity_pb.MergeFromString(result)
+
+            elif use_datastore:
+                yield _cache.global_lock(cache_key)
+                yield _cache.global_watch(cache_key)
+
+    if entity_pb is _NOT_FOUND and use_datastore:
+        batch = _batch.get_batch(_LookupBatch, options)
+        entity_pb = yield batch.add(key)
+
+        # Do not cache misses
+        if use_global_cache and not key_locked and entity_pb is not _NOT_FOUND:
+            expires = context._global_cache_timeout(key, options)
+            serialized = entity_pb.SerializeToString()
+            yield _cache.global_compare_and_swap(
+                cache_key, serialized, expires=expires
+            )
+
+    return entity_pb
 
 
 class _LookupBatch:
@@ -252,11 +251,12 @@ class _LookupBatch:
 
         # Process results, which are divided into found, missing, and deferred
         results = rpc.result()
+        log.debug(results)
 
         # For all deferred keys, batch them up again with their original
         # futures
         if results.deferred:
-            next_batch = _get_batch(type(self), self.options)
+            next_batch = _batch.get_batch(type(self), self.options)
             for key in results.deferred:
                 todo_key = key.SerializeToString()
                 next_batch.todo.setdefault(todo_key, []).extend(
@@ -363,29 +363,59 @@ def _get_transaction(options):
     return transaction
 
 
-def put(entity_pb, options):
+@tasklets.tasklet
+def put(entity, options):
     """Store an entity in datastore.
 
     The entity can be a new entity to be saved for the first time or an
     existing entity that has been updated.
 
     Args:
-        entity_pb (datastore_v1.types.Entity): The entity to be stored.
+        entity_pb (datastore.Entity): The entity to be stored.
         options (_options.Options): Options for this request.
 
     Returns:
         tasklets.Future: Result will be completed datastore key
-            (entity_pb2.Key) for the entity.
+            (datastore.Key) for the entity.
     """
-    transaction = _get_transaction(options)
-    if transaction:
-        batch = _get_commit_batch(transaction, options)
-    else:
-        batch = _get_batch(_NonTransactionalCommitBatch, options)
+    context = context_module.get_context()
+    use_global_cache = context._use_global_cache(entity.key, options)
+    use_datastore = context._use_datastore(entity.key, options)
+    if not (use_global_cache or use_datastore):
+        raise TypeError(
+            "use_global_cache and use_datastore can't both be False"
+        )
 
-    return batch.put(entity_pb)
+    entity_pb = helpers.entity_to_protobuf(entity)
+    cache_key = _cache.global_cache_key(entity.key)
+    if use_global_cache and not entity.key.is_partial:
+        if use_datastore:
+            yield _cache.global_lock(cache_key)
+        else:
+            expires = context._global_cache_timeout(entity.key, options)
+            cache_value = entity_pb.SerializeToString()
+            yield _cache.global_set(cache_key, cache_value, expires=expires)
+
+    if use_datastore:
+        transaction = _get_transaction(options)
+        if transaction:
+            batch = _get_commit_batch(transaction, options)
+        else:
+            batch = _batch.get_batch(_NonTransactionalCommitBatch, options)
+
+        key_pb = yield batch.put(entity_pb)
+        if key_pb:
+            key = helpers.key_from_protobuf(key_pb)
+        else:
+            key = None
+
+        if use_global_cache:
+            yield _cache.global_delete(cache_key)
+
+        return key
 
 
+@tasklets.tasklet
 def delete(key, options):
     """Delete an entity from Datastore.
 
@@ -400,13 +430,27 @@ def delete(key, options):
         tasklets.Future: Will be finished when entity is deleted. Result will
             always be :data:`None`.
     """
-    transaction = _get_transaction(options)
-    if transaction:
-        batch = _get_commit_batch(transaction, options)
-    else:
-        batch = _get_batch(_NonTransactionalCommitBatch, options)
+    context = context_module.get_context()
+    use_global_cache = context._use_global_cache(key, options)
+    use_datastore = context._use_datastore(key, options)
 
-    return batch.delete(key)
+    if use_global_cache:
+        cache_key = _cache.global_cache_key(key)
+
+    if use_datastore:
+        if use_global_cache:
+            yield _cache.global_lock(cache_key)
+
+        transaction = _get_transaction(options)
+        if transaction:
+            batch = _get_commit_batch(transaction, options)
+        else:
+            batch = _batch.get_batch(_NonTransactionalCommitBatch, options)
+
+        yield batch.delete(key)
+
+    if use_global_cache:
+        yield _cache.global_delete(cache_key)
 
 
 class _NonTransactionalCommitBatch:
@@ -747,8 +791,10 @@ def _complete(key_pb):
     A new key may be left incomplete so that the id can be allocated by the
     database. A key is considered incomplete if the last element of the path
     has neither a ``name`` or an ``id``.
+
     Args:
         key_pb (entity_pb2.Key): The key to check.
+
     Returns:
         boolean: :data:`True` if key is incomplete, otherwise :data:`False`.
     """
@@ -805,7 +851,7 @@ def allocate(keys, options):
     Returns:
         tasklets.Future: A future for the key completed with the allocated id.
     """
-    batch = _get_batch(_AllocateIdsBatch, options)
+    batch = _batch.get_batch(_AllocateIdsBatch, options)
     return batch.add(keys)
 
 

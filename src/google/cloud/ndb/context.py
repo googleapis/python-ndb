@@ -18,10 +18,12 @@ import collections
 import contextlib
 import threading
 
+from google.cloud.ndb import _cache
 from google.cloud.ndb import _datastore_api
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import model
+from google.cloud.ndb import tasklets
 
 
 __all__ = [
@@ -63,44 +65,71 @@ def get_context():
     raise exceptions.ContextError()
 
 
-class _Cache(collections.UserDict):
-    """An in-memory entity cache.
+def _default_policy(attr_name, value_type):
+    """Factory for producing default policies.
 
-    This cache verifies the fetched entity has the correct key before
-    returning a result, in order to handle cases where the entity's key was
-    modified but the cache's key was not updated."""
+    Born of the observation that all default policies are more less the
+    same—they defer to some attribute on the model class for the key's kind and
+    expects the value to be either of a particular type or a callable.
 
-    def get_and_validate(self, key):
-        """Verify that the entity's key has not changed since it was added
-           to the cache. If it has changed, consider this a cache miss.
-           See issue 13.  http://goo.gl/jxjOP"""
-        entity = self.data[key]  # May be None, meaning "doesn't exist".
-        if entity is None or entity._key == key:
-            return entity
-        else:
-            del self.data[key]
-            raise KeyError(key)
-
-
-def _default_cache_policy(key):
-    """The default cache policy.
-
-    Defers to ``_use_cache`` on the Model class for the key's kind.
-
-    See: :meth:`~google.cloud.ndb.context.Context.set_cache_policy`
+    Returns:
+        Callable[[key], value_type]: A policy function suitable for use as a
+            default policy.
     """
-    flag = None
-    if key is not None:
-        modelclass = model.Model._kind_map.get(key.kind())
-        if modelclass is not None:
-            policy = getattr(modelclass, "_use_cache", None)
-            if policy is not None:
-                if isinstance(policy, bool):
-                    flag = policy
-                else:
-                    flag = policy(key)
 
-    return flag
+    def policy(key):
+        value = None
+        if key is not None:
+            kind = key.kind
+            if callable(kind):
+                kind = kind()
+            modelclass = model.Model._kind_map.get(kind)
+            if modelclass is not None:
+                policy = getattr(modelclass, attr_name, None)
+                if policy is not None:
+                    if isinstance(policy, value_type):
+                        value = policy
+                    else:
+                        value = policy(key)
+
+        return value
+
+    return policy
+
+
+_default_cache_policy = _default_policy("_use_cache", bool)
+"""The default cache policy.
+
+Defers to ``_use_cache`` on the Model class for the key's kind.
+
+See: :meth:`~google.cloud.ndb.context.Context.set_cache_policy`
+"""
+
+_default_global_cache_policy = _default_policy("_use_global_cache", bool)
+"""The default global cache policy.
+
+Defers to ``_use_global_cache`` on the Model class for the key's kind.
+
+See: :meth:`~google.cloud.ndb.context.Context.set_global_cache_policy`
+"""
+
+_default_global_cache_timeout_policy = _default_policy(
+    "_global_cache_timeout", int
+)
+"""The default global cache timeout policy.
+
+Defers to ``_global_cache_timeout`` on the Model class for the key's kind.
+
+See: :meth:`~google.cloud.ndb.context.Context.set_global_cache_timeout_policy`
+"""
+
+_default_datastore_policy = _default_policy("_use_datastore", bool)
+"""The default datastore policy.
+
+Defers to ``_use_datastore`` on the Model class for the key's kind.
+
+See: :meth:`~google.cloud.ndb.context.Context.set_datastore_policy`
+"""
 
 
 _ContextTuple = collections.namedtuple(
@@ -113,6 +142,8 @@ _ContextTuple = collections.namedtuple(
         "commit_batches",
         "transaction",
         "cache",
+        "global_cache",
+        "on_commit_callbacks",
     ],
 )
 
@@ -144,6 +175,11 @@ class _Context(_ContextTuple):
         transaction=None,
         cache=None,
         cache_policy=None,
+        global_cache=None,
+        global_cache_policy=None,
+        global_cache_timeout_policy=None,
+        datastore_policy=None,
+        on_commit_callbacks=None,
     ):
         if eventloop is None:
             eventloop = _eventloop.EventLoop()
@@ -159,12 +195,9 @@ class _Context(_ContextTuple):
 
         # Create a cache and, if an existing cache was passed into this
         # method, duplicate its entries.
+        new_cache = _cache.ContextCache()
         if cache:
-            new_cache = _Cache()
             new_cache.update(cache)
-            cache = new_cache
-        else:
-            cache = _Cache()
 
         context = super(_Context, cls).__new__(
             cls,
@@ -174,10 +207,15 @@ class _Context(_ContextTuple):
             batches=batches,
             commit_batches=commit_batches,
             transaction=transaction,
-            cache=cache,
+            cache=new_cache,
+            global_cache=global_cache,
+            on_commit_callbacks=on_commit_callbacks,
         )
 
         context.set_cache_policy(cache_policy)
+        context.set_global_cache_policy(global_cache_policy)
+        context.set_global_cache_timeout_policy(global_cache_timeout_policy)
+        context.set_datastore_policy(datastore_policy)
 
         return context
 
@@ -187,7 +225,8 @@ class _Context(_ContextTuple):
         New context will be the same as context except values from ``kwargs``
         will be substituted.
         """
-        state = {name: getattr(self, name) for name in self._fields}
+        fields = self._fields + tuple(self.__dict__.keys())
+        state = {name: getattr(self, name) for name in fields}
         state.update(kwargs)
         return type(self)(**state)
 
@@ -208,6 +247,61 @@ class _Context(_ContextTuple):
                 prev_context.cache.update(self.cache)
             _state.context = prev_context
 
+    @tasklets.tasklet
+    def _clear_global_cache(self):
+        """Clears the global cache.
+
+        Clears keys from the global cache that appear in the local context
+        cache. In this way, only keys that were touched in the current context
+        are affected.
+        """
+        keys = [
+            _cache.global_cache_key(key._key)
+            for key in self.cache
+            if self._use_global_cache(key)
+        ]
+        if keys:
+            yield [_cache.global_delete(key) for key in keys]
+
+    def _use_cache(self, key, options):
+        """Return whether to use the context cache for this key."""
+        flag = options.use_cache
+        if flag is None:
+            flag = self.cache_policy(key)
+        if flag is None:
+            flag = True
+        return flag
+
+    def _use_global_cache(self, key, options=None):
+        """Return whether to use the global cache for this key."""
+        if self.global_cache is None:
+            return False
+
+        flag = options.use_global_cache if options else None
+        if flag is None:
+            flag = self.global_cache_policy(key)
+        if flag is None:
+            flag = True
+        return flag
+
+    def _global_cache_timeout(self, key, options):
+        """Return  global cache timeout (expiration) for this key."""
+        timeout = None
+        if options:
+            timeout = options.global_cache_timeout
+        if timeout is None:
+            timeout = self.global_cache_timeout_policy(key)
+        return timeout
+
+    def _use_datastore(self, key, options=None):
+        """Return whether to use the Datastore for this key."""
+        flag = options.use_datastore if options else None
+        if flag is None:
+            flag = self.datastore_policy(key)
+        if flag is None:
+            flag = True
+        return flag
+
 
 class Context(_Context):
     """User management of cache and other policy."""
@@ -215,13 +309,13 @@ class Context(_Context):
     def clear_cache(self):
         """Clears the in-memory cache.
 
-        This does not affect memcache.
+        This does not affect global cache.
         """
         self.cache.clear()
 
     def flush(self):
         """Force any pending batch operations to go ahead and run."""
-        raise NotImplementedError
+        self.eventloop.run()
 
     def get_cache_policy(self):
         """Return the current context cache policy function.
@@ -245,8 +339,8 @@ class Context(_Context):
         """
         raise NotImplementedError
 
-    def get_memcache_policy(self):
-        """Return the current memcache policy function.
+    def get_global_cache_policy(self):
+        """Return the current global cache policy function.
 
         Returns:
             Callable: A function that accepts a
@@ -254,10 +348,12 @@ class Context(_Context):
                 positional argument and returns a ``bool`` indicating if it
                 should be cached. May be :data:`None`.
         """
-        raise NotImplementedError
+        return self.global_cache_policy
 
-    def get_memcache_timeout_policy(self):
-        """Return the current policy function memcache timeout (expiration).
+    get_memcache_policy = get_global_cache_policy  # backwards compatability
+
+    def get_global_cache_timeout_policy(self):
+        """Return the current policy function global cache timeout (expiration).
 
         Returns:
             Callable: A function that accepts a
@@ -266,7 +362,9 @@ class Context(_Context):
                 timeout, in seconds, for the key. ``0`` implies the default
                 timeout. May be :data:`None`.
         """
-        raise NotImplementedError
+        return self.global_cache_timeout_policy
+
+    get_memcache_timeout_policy = get_global_cache_timeout_policy
 
     def set_cache_policy(self, policy):
         """Set the context cache policy function.
@@ -297,10 +395,19 @@ class Context(_Context):
                 positional argument and returns a ``bool`` indicating if it
                 should use the datastore.  May be :data:`None`.
         """
-        raise NotImplementedError
+        if policy is None:
+            policy = _default_datastore_policy
 
-    def set_memcache_policy(self, policy):
-        """Set the memcache policy function.
+        elif isinstance(policy, bool):
+            flag = policy
+
+            def policy(key):
+                return flag
+
+        self.datastore_policy = policy
+
+    def set_global_cache_policy(self, policy):
+        """Set the global cache policy function.
 
         Args:
             policy (Callable): A function that accepts a
@@ -308,10 +415,21 @@ class Context(_Context):
                 positional argument and returns a ``bool`` indicating if it
                 should be cached.  May be :data:`None`.
         """
-        raise NotImplementedError
+        if policy is None:
+            policy = _default_global_cache_policy
 
-    def set_memcache_timeout_policy(self, policy):
-        """Set the policy function for memcache timeout (expiration).
+        elif isinstance(policy, bool):
+            flag = policy
+
+            def policy(key):
+                return flag
+
+        self.global_cache_policy = policy
+
+    set_memcache_policy = set_global_cache_policy  # backwards compatibility
+
+    def set_global_cache_timeout_policy(self, policy):
+        """Set the policy function for global cache timeout (expiration).
 
         Args:
             policy (Callable): A function that accepts a
@@ -320,7 +438,18 @@ class Context(_Context):
                 timeout, in seconds, for the key. ``0`` implies the default
                 timeout. May be :data:`None`.
         """
-        raise NotImplementedError
+        if policy is None:
+            policy = _default_global_cache_timeout_policy
+
+        elif isinstance(policy, int):
+            timeout = policy
+
+            def policy(key):
+                return timeout
+
+        self.global_cache_timeout_policy = policy
+
+    set_memcache_timeout_policy = set_global_cache_timeout_policy
 
     def call_on_commit(self, callback):
         """Call a callback upon successful commit of a transaction.
@@ -342,7 +471,10 @@ class Context(_Context):
         Args:
             callback (Callable): The callback function.
         """
-        raise NotImplementedError
+        if self.in_transaction():
+            self.on_commit_callbacks.append(callback)
+        else:
+            callback()
 
     def in_transaction(self):
         """Get whether a transaction is currently active.
@@ -353,111 +485,59 @@ class Context(_Context):
         """
         return self.transaction is not None
 
-    @staticmethod
-    def default_datastore_policy(key):
-        """Default cache policy.
-
-        This defers to ``Model._use_datastore``.
-
-        Args:
-            key (google.cloud.ndb.key.Key): The key.
-
-        Returns:
-            Union[bool, None]: Whether to use datastore.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def default_memcache_policy(key):
-        """Default memcache policy.
-
-        This defers to ``Model._use_memcache``.
-
-        Args:
-            key (google.cloud.ndb.key.Key): The key.
-
-        Returns:
-            Union[bool, None]: Whether to cache the key.
-        """
-        raise NotImplementedError
-
-    @staticmethod
-    def default_memcache_timeout_policy(key):
-        """Default memcache timeout policy.
-
-        This defers to ``Model._memcache_timeout``.
-
-        Args:
-            key (google.cloud.ndb.key.Key): The key.
-
-        Returns:
-            Union[int, None]: Memcache timeout to use.
-        """
-        raise NotImplementedError
-
     def memcache_add(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
     def memcache_cas(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
-
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
     def memcache_decr(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
     def memcache_delete(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
     def memcache_get(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
     def memcache_gets(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
     def memcache_incr(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
     def memcache_replace(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
     def memcache_set(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
     def urlfetch(self, *args, **kwargs):
         """Fetch a resource using HTTP."""
-        raise NotImplementedError
-
-    def _use_cache(self, key, options):
-        """Return whether to use the context cache for this key."""
-        flag = options.use_cache
-        if flag is None:
-            flag = self.cache_policy(key)
-        if flag is None:
-            flag = True
-        return flag
+        raise exceptions.NoLongerImplementedError()
 
 
 class ContextOptions:
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
 
 class TransactionOptions:
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
-        raise NotImplementedError
+        raise exceptions.NoLongerImplementedError()
 
 
 class AutoBatcher:

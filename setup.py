@@ -23,7 +23,10 @@ def main():
     readme_filename = os.path.join(package_root, "README.md")
     with io.open(readme_filename, encoding="utf-8") as readme_file:
         readme = readme_file.read()
-    dependencies = ["google-cloud-datastore >= 1.7.0"]
+    dependencies = [
+        "google-cloud-datastore >= 1.7.0",
+        "redis",
+    ]
 
     setuptools.setup(
         name="google-cloud-ndb",
@@ -35,6 +38,10 @@ def main():
         author_email="googleapis-packages@google.com",
         license="Apache 2.0",
         url="https://github.com/googleapis/python-ndb",
+        project_urls={
+            'Documentation': 'https://googleapis.dev/python/python-ndb/latest',
+            'Issue Tracker': 'https://github.com/googleapis/python-ndb/issues'
+        },
         classifiers=[
             "Development Status :: 3 - Alpha",
             "Intended Audience :: Developers",

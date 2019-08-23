@@ -80,13 +80,13 @@ def test_fetch_lots_of_a_kind(dispose_of):
     class SomeKind(ndb.Model):
         foo = ndb.IntegerProperty()
 
-    @ndb.tasklet
+    @ndb.toplevel
     def make_entities():
         entities = [SomeKind(foo=i) for i in range(n_entities)]
         keys = yield [entity.put_async() for entity in entities]
         return keys
 
-    for key in make_entities().result():
+    for key in make_entities():
         dispose_of(key._key)
 
     query = SomeKind.query()
@@ -228,7 +228,7 @@ def test_filter_or(dispose_of):
         foo = ndb.IntegerProperty()
         bar = ndb.StringProperty()
 
-    @ndb.tasklet
+    @ndb.toplevel
     def make_entities():
         keys = yield (
             SomeKind(foo=1, bar="a").put_async(),
@@ -238,7 +238,7 @@ def test_filter_or(dispose_of):
         for key in keys:
             dispose_of(key._key)
 
-    make_entities().check_success()
+    make_entities()
     eventually(SomeKind.query().fetch, _length_equals(3))
 
     query = SomeKind.query(ndb.OR(SomeKind.foo == 1, SomeKind.bar == "c"))
@@ -279,7 +279,6 @@ def test_order_by_descending(ds_entity):
     assert [entity.foo for entity in results] == [4, 3, 2, 1, 0]
 
 
-@pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_order_by_with_or_filter(dispose_of):
     """
@@ -291,7 +290,7 @@ def test_order_by_with_or_filter(dispose_of):
         foo = ndb.IntegerProperty()
         bar = ndb.StringProperty()
 
-    @ndb.tasklet
+    @ndb.toplevel
     def make_entities():
         keys = yield (
             SomeKind(foo=0, bar="a").put_async(),
@@ -302,7 +301,7 @@ def test_order_by_with_or_filter(dispose_of):
         for key in keys:
             dispose_of(key._key)
 
-    make_entities().check_success()
+    make_entities()
     query = SomeKind.query(ndb.OR(SomeKind.bar == "a", SomeKind.bar == "b"))
     query = query.order(SomeKind.foo)
     results = eventually(query.fetch, _length_equals(4))
@@ -348,14 +347,13 @@ def test_offset_and_limit(ds_entity):
     assert [entity.foo for entity in results] == [2, 3]
 
 
-@pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_offset_and_limit_with_or_filter(dispose_of):
     class SomeKind(ndb.Model):
         foo = ndb.IntegerProperty()
         bar = ndb.StringProperty()
 
-    @ndb.tasklet
+    @ndb.toplevel
     def make_entities():
         keys = yield (
             SomeKind(foo=0, bar="a").put_async(),
@@ -368,7 +366,7 @@ def test_offset_and_limit_with_or_filter(dispose_of):
         for key in keys:
             dispose_of(key._key)
 
-    make_entities().check_success()
+    make_entities()
     eventually(SomeKind.query().fetch, _length_equals(6))
 
     query = SomeKind.query(ndb.OR(SomeKind.bar == "a", SomeKind.bar == "b"))
@@ -500,13 +498,13 @@ def test_fetch_page(dispose_of):
     class SomeKind(ndb.Model):
         foo = ndb.IntegerProperty()
 
-    @ndb.tasklet
+    @ndb.toplevel
     def make_entities():
         entities = [SomeKind(foo=i) for i in range(n_entities)]
         keys = yield [entity.put_async() for entity in entities]
         return keys
 
-    for key in make_entities().result():
+    for key in make_entities():
         dispose_of(key._key)
 
     query = SomeKind.query().order(SomeKind.foo)
@@ -528,7 +526,35 @@ def test_fetch_page(dispose_of):
     assert not more
 
 
-@pytest.mark.skip("Requires an index")
+@pytest.mark.usefixtures("client_context")
+def test_polymodel_query(ds_entity):
+    class Animal(ndb.PolyModel):
+        foo = ndb.IntegerProperty()
+
+    class Cat(Animal):
+        pass
+
+    animal = Animal(foo=1)
+    animal.put()
+    cat = Cat(foo=2)
+    cat.put()
+
+    query = Animal.query()
+    results = eventually(query.fetch, _length_equals(2))
+
+    results = sorted(results, key=operator.attrgetter("foo"))
+    assert isinstance(results[0], Animal)
+    assert not isinstance(results[0], Cat)
+    assert isinstance(results[1], Animal)
+    assert isinstance(results[1], Cat)
+
+    query = Cat.query()
+    results = eventually(query.fetch, _length_equals(1))
+
+    assert isinstance(results[0], Animal)
+    assert isinstance(results[0], Cat)
+
+
 @pytest.mark.usefixtures("client_context")
 def test_query_repeated_property(ds_entity):
     entity_id = test_utils.system.unique_resource_id()
@@ -554,7 +580,6 @@ def test_query_repeated_property(ds_entity):
     assert results[1].foo == 2
 
 
-@pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_query_structured_property(dispose_of):
     class OtherKind(ndb.Model):
@@ -603,7 +628,6 @@ def test_query_structured_property(dispose_of):
     assert results[1].foo == 2
 
 
-@pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_query_legacy_structured_property(ds_entity):
     class OtherKind(ndb.Model):
@@ -655,7 +679,64 @@ def test_query_legacy_structured_property(ds_entity):
     assert results[1].foo == 2
 
 
-@pytest.mark.skip("Requires an index")
+@pytest.mark.usefixtures("client_context")
+def test_query_structured_property_with_projection(dispose_of):
+    class OtherKind(ndb.Model):
+        one = ndb.StringProperty()
+        two = ndb.StringProperty()
+        three = ndb.StringProperty()
+
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+        bar = ndb.StructuredProperty(OtherKind)
+
+    @ndb.synctasklet
+    def make_entities():
+        entity1 = SomeKind(
+            foo=1, bar=OtherKind(one="pish", two="posh", three="pash")
+        )
+        entity2 = SomeKind(
+            foo=2, bar=OtherKind(one="bish", two="bosh", three="bush")
+        )
+        entity3 = SomeKind(
+            foo=3,
+            bar=OtherKind(one="pish", two="moppish", three="pass the peas"),
+        )
+
+        keys = yield (
+            entity1.put_async(),
+            entity2.put_async(),
+            entity3.put_async(),
+        )
+        return keys
+
+    keys = make_entities()
+    eventually(SomeKind.query().fetch, _length_equals(3))
+    for key in keys:
+        dispose_of(key._key)
+
+    query = (
+        SomeKind.query(projection=("foo", "bar.one", "bar.two"))
+        .filter(SomeKind.foo < 3)
+        .order(SomeKind.foo)
+    )
+
+    results = query.fetch()
+    assert len(results) == 2
+    assert results[0].foo == 1
+    assert results[0].bar.one == "pish"
+    assert results[0].bar.two == "posh"
+    assert results[1].foo == 2
+    assert results[1].bar.one == "bish"
+    assert results[1].bar.two == "bosh"
+
+    with pytest.raises(ndb.UnprojectedPropertyError):
+        results[0].bar.three
+
+    with pytest.raises(ndb.UnprojectedPropertyError):
+        results[1].bar.three
+
+
 @pytest.mark.usefixtures("client_context")
 def test_query_repeated_structured_property_with_properties(dispose_of):
     class OtherKind(ndb.Model):
@@ -715,7 +796,6 @@ def test_query_repeated_structured_property_with_properties(dispose_of):
     assert results[1].foo == 2
 
 
-@pytest.mark.skip("Requires an index")
 @pytest.mark.usefixtures("client_context")
 def test_query_repeated_structured_property_with_entity_twice(dispose_of):
     class OtherKind(ndb.Model):
@@ -777,7 +857,92 @@ def test_query_repeated_structured_property_with_entity_twice(dispose_of):
     assert results[0].foo == 1
 
 
-@pytest.mark.skip("Requires an index")
+@pytest.mark.usefixtures("client_context")
+def test_query_repeated_structured_property_with_projection(dispose_of):
+    class OtherKind(ndb.Model):
+        one = ndb.StringProperty()
+        two = ndb.StringProperty()
+        three = ndb.StringProperty()
+
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+        bar = ndb.StructuredProperty(OtherKind, repeated=True)
+
+    @ndb.synctasklet
+    def make_entities():
+        entity1 = SomeKind(
+            foo=1,
+            bar=[
+                OtherKind(one="angle", two="cankle", three="pash"),
+                OtherKind(one="bangle", two="dangle", three="bash"),
+            ],
+        )
+        entity2 = SomeKind(
+            foo=2,
+            bar=[
+                OtherKind(one="bish", two="bosh", three="bass"),
+                OtherKind(one="pish", two="posh", three="pass"),
+            ],
+        )
+        entity3 = SomeKind(
+            foo=3,
+            bar=[
+                OtherKind(one="pish", two="fosh", three="fash"),
+                OtherKind(one="bish", two="posh", three="bash"),
+            ],
+        )
+
+        keys = yield (
+            entity1.put_async(),
+            entity2.put_async(),
+            entity3.put_async(),
+        )
+        return keys
+
+    keys = make_entities()
+    eventually(SomeKind.query().fetch, _length_equals(3))
+    for key in keys:
+        dispose_of(key._key)
+
+    query = SomeKind.query(projection=("bar.one", "bar.two")).filter(
+        SomeKind.foo < 2
+    )
+
+    # This counter-intuitive result is consistent with Legacy NDB behavior and
+    # is a result of the odd way Datastore handles projection queries with
+    # array valued properties:
+    #
+    # https://cloud.google.com/datastore/docs/concepts/queries#projections_and_array-valued_properties
+    #
+    results = query.fetch()
+    assert len(results) == 4
+
+    def sort_key(result):
+        return (result.bar[0].one, result.bar[0].two)
+
+    results = sorted(results, key=sort_key)
+
+    assert results[0].bar[0].one == "angle"
+    assert results[0].bar[0].two == "cankle"
+    with pytest.raises(ndb.UnprojectedPropertyError):
+        results[0].bar[0].three
+
+    assert results[1].bar[0].one == "angle"
+    assert results[1].bar[0].two == "dangle"
+    with pytest.raises(ndb.UnprojectedPropertyError):
+        results[1].bar[0].three
+
+    assert results[2].bar[0].one == "bangle"
+    assert results[2].bar[0].two == "cankle"
+    with pytest.raises(ndb.UnprojectedPropertyError):
+        results[2].bar[0].three
+
+    assert results[3].bar[0].one == "bangle"
+    assert results[3].bar[0].two == "dangle"
+    with pytest.raises(ndb.UnprojectedPropertyError):
+        results[3].bar[0].three
+
+
 @pytest.mark.usefixtures("client_context")
 def test_query_legacy_repeated_structured_property(ds_entity):
     class OtherKind(ndb.Model):
