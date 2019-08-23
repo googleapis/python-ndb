@@ -26,7 +26,6 @@ from google.cloud.ndb import _batch
 from google.cloud.ndb import _cache
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _datastore_api as _api
-from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import model
 from google.cloud.ndb import _options
