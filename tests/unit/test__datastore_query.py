@@ -721,7 +721,6 @@ class Test_MultiQueryIteratorImpl:
                 results.append(iterator.next())
             raise tasklets.Return(results)
 
-
         assert iterate().result() == [
             "a",
             "c",
