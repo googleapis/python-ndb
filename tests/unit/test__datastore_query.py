@@ -491,7 +491,7 @@ class Test_PostFilterQueryIteratorImpl:
             results = []
             while (yield iterator.has_next_async()):
                 results.append(iterator.next())
-            return results
+            raise tasklets.Return(results)
 
         assert iterate().result() == [2, 4, 6]
 
@@ -515,7 +515,7 @@ class Test_PostFilterQueryIteratorImpl:
             results = []
             while (yield iterator.has_next_async()):
                 results.append(iterator.next())
-            return results
+            raise tasklets.Return(results)
 
         assert iterate().result() == [
             MockResult(2),
@@ -543,7 +543,7 @@ class Test_PostFilterQueryIteratorImpl:
             results = []
             while (yield iterator.has_next_async()):
                 results.append(iterator.next())
-            return results
+            raise tasklets.Return(results)
 
         assert iterate().result() == [4, 6]
 
@@ -719,7 +719,8 @@ class Test_MultiQueryIteratorImpl:
             results = []
             while (yield iterator.has_next_async()):
                 results.append(iterator.next())
-            return results
+            raise tasklets.Return(results)
+
 
         assert iterate().result() == [
             "a",
@@ -755,7 +756,7 @@ class Test_MultiQueryIteratorImpl:
             results = []
             while (yield iterator.has_next_async()):
                 results.append(iterator.next())
-            return results
+            raise tasklets.Return(results)
 
         assert iterate().result() == [
             MockResult("a"),
@@ -792,7 +793,7 @@ class Test_MultiQueryIteratorImpl:
             results = []
             while (yield iterator.has_next_async()):
                 results.append(iterator.next())
-            return results
+            raise tasklets.Return(results)
 
         assert iterate().result() == [
             "a",
@@ -828,7 +829,7 @@ class Test_MultiQueryIteratorImpl:
             results = []
             while (yield iterator.has_next_async()):
                 results.append(iterator.next())
-            return results
+            raise tasklets.Return(results)
 
         assert iterate().result() == ["f", "g", "h", "i"]
 
