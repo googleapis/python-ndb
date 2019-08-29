@@ -111,7 +111,7 @@ def make_call(rpc_name, request, retries=None, timeout=None):
         log.debug("timeout={}".format(timeout))
 
         result = yield rpc
-        return result
+        raise tasklets.Return(result)
 
     if retries:
         rpc_call = _retry.retry_async(rpc_call, retries=retries)
@@ -176,7 +176,7 @@ def lookup(key, options):
                 cache_key, serialized, expires=expires
             )
 
-    return entity_pb
+    raise tasklets.Return(entity_pb)
 
 
 class _LookupBatch:
@@ -386,6 +386,9 @@ def put(entity, options):
             "use_global_cache and use_datastore can't both be False"
         )
 
+    if not use_datastore and entity.key.is_partial:
+        raise TypeError("Can't store partial keys when use_datastore is False")
+
     entity_pb = helpers.entity_to_protobuf(entity)
     cache_key = _cache.global_cache_key(entity.key)
     if use_global_cache and not entity.key.is_partial:
@@ -412,7 +415,7 @@ def put(entity, options):
         if use_global_cache:
             yield _cache.global_delete(cache_key)
 
-        return key
+        raise tasklets.Return(key)
 
 
 @tasklets.tasklet
@@ -957,7 +960,7 @@ def begin_transaction(read_only, retries=None, timeout=None):
     response = yield _datastore_begin_transaction(
         read_only, retries=retries, timeout=timeout
     )
-    return response.transaction
+    raise tasklets.Return(response.transaction)
 
 
 def _datastore_begin_transaction(read_only, retries=None, timeout=None):

@@ -114,7 +114,7 @@ def _transaction_async(context, callback, read_only=False):
             yield _datastore_api.commit(transaction_id, retries=0)
 
         # Rollback if there is an error
-        except:
+        except:  # noqa: E722
             yield _datastore_api.rollback(transaction_id)
             raise
 
@@ -122,7 +122,7 @@ def _transaction_async(context, callback, read_only=False):
         for callback in on_commit_callbacks:
             callback()
 
-        return result
+        raise tasklets.Return(result)
 
 
 def transactional(

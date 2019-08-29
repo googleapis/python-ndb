@@ -1326,7 +1326,7 @@ class Test__validate_key:
     @pytest.mark.usefixtures("in_context")
     def test_unchecked_model_type():
         value = model.Key("This", 1)
-        entity = object.__new__(model.Model)
+        entity = model.Model()
 
         result = model._validate_key(value, entity=entity)
         assert result is value
@@ -1335,7 +1335,7 @@ class Test__validate_key:
     @pytest.mark.usefixtures("in_context")
     def test_unchecked_expando_type():
         value = model.Key("This", 1)
-        entity = object.__new__(model.Expando)
+        entity = model.Expando()
 
         result = model._validate_key(value, entity=entity)
         assert result is value
@@ -1408,7 +1408,7 @@ class TestModelKey:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test__set_value():
-        entity = object.__new__(model.Model)
+        entity = model.Model()
         value = key_module.Key("Map", 8898)
 
         model.ModelKey._set_value(entity, value)
@@ -1673,6 +1673,16 @@ class TestBlobProperty:
         original = b"abc" * 10
         z_val = zlib.compress(original)
         value = model._CompressedValue(z_val)
+        converted = prop._from_base_type(value)
+
+        assert converted == original
+
+    @staticmethod
+    def test__from_base_type_no_compressed_value():
+        prop = model.BlobProperty(name="blob")
+        original = b"abc" * 10
+        value = zlib.compress(original)
+        prop._compressed = True
         converted = prop._from_base_type(value)
 
         assert converted == original
@@ -4690,6 +4700,39 @@ class Test_entity_from_protobuf:
         assert isinstance(entity, ThisKind)
         assert entity.baz[0].foo == 42
         assert entity.baz[0].bar == "himom"
+        assert entity.copacetic is True
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_legacy_repeated_structured_property_uneven():
+        class OtherKind(model.Model):
+            foo = model.IntegerProperty()
+            bar = model.StringProperty()
+
+        class ThisKind(model.Model):
+            baz = model.StructuredProperty(OtherKind, repeated=True)
+            copacetic = model.BooleanProperty()
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        datastore_entity.items = unittest.mock.Mock(
+            return_value=(
+                # Order counts for coverage
+                ("baz.foo", [42, 144]),
+                ("baz.bar", ["himom", "hellodad", "iminjail"]),
+                ("copacetic", True),
+            )
+        )
+
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        assert isinstance(entity, ThisKind)
+        assert entity.baz[0].foo == 42
+        assert entity.baz[0].bar == "himom"
+        assert entity.baz[1].foo == 144
+        assert entity.baz[1].bar == "hellodad"
+        assert entity.baz[2].foo is None
+        assert entity.baz[2].bar == "iminjail"
         assert entity.copacetic is True
 
 

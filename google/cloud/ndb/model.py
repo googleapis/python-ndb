@@ -45,8 +45,8 @@ We can now create a Person entity and write it to Cloud Datastore::
     person = Person(name='Arthur Dent', age=42)
     key = person.put()
 
-The return value from put() is a Key (see the documentation for ``ndb/key.py``),
-which can be used to retrieve the same entity later::
+The return value from put() is a Key (see the documentation for
+``ndb/key.py``), which can be used to retrieve the same entity later::
 
     person2 = key.get()
     person2 == person  # Returns True
@@ -68,38 +68,38 @@ indexed, their default value, and more.
 Many different Property types exist.  Most are indexed by default, the
 exceptions are indicated in the list below:
 
-- :class:`StringProperty`: a short text string, limited to at most 1500 bytes (when
-  UTF-8 encoded from :class:`str` to bytes).
+- :class:`StringProperty`: a short text string, limited to at most 1500 bytes
+  (when UTF-8 encoded from :class:`str` to bytes).
 - :class:`TextProperty`: an unlimited text string; unindexed.
 - :class:`BlobProperty`: an unlimited byte string; unindexed.
 - :class:`IntegerProperty`: a 64-bit signed integer.
 - :class:`FloatProperty`: a double precision floating point number.
 - :class:`BooleanProperty`: a bool value.
-- :class:`DateTimeProperty`: a datetime object.  Note: Datastore always uses UTC as the
-  timezone.
+- :class:`DateTimeProperty`: a datetime object. Note: Datastore always uses
+  UTC as the timezone.
 - :class:`DateProperty`: a date object.
 - :class:`TimeProperty`: a time object.
 - :class:`GeoPtProperty`: a geographical location, i.e. (latitude, longitude).
-- :class:`KeyProperty`: a Cloud Datastore Key value, optionally constrained to referring
-  to a specific kind.
+- :class:`KeyProperty`: a Cloud Datastore Key value, optionally constrained to
+  referring to a specific kind.
 - :class:`UserProperty`: a User object (for backwards compatibility only)
-- :class:`StructuredProperty`: a field that is itself structured like an entity; see
-  below for more details.
+- :class:`StructuredProperty`: a field that is itself structured like an
+  entity; see below for more details.
 - :class:`LocalStructuredProperty`: like StructuredProperty but the on-disk
   representation is an opaque blob; unindexed.
-- :class:`ComputedProperty`: a property whose value is computed from other properties by
-  a user-defined function.  The property value is written to Cloud Datastore so
-  that it can be used in queries, but the value from Cloud Datastore is not
-  used when the entity is read back.
-- :class:`GenericProperty`: a property whose type is not constrained; mostly used by the
-  Expando class (see below) but also usable explicitly.
-- :class:`JsonProperty`: a property whose value is any object that can be serialized
-  using JSON; the value written to Cloud Datastore is a JSON representation of
-  that object.
-- :class:`PickleProperty`: a property whose value is any object that can be serialized
-  using Python's pickle protocol; the value written to the Cloud Datastore is
-  the pickled representation of that object, using the highest available pickle
-  protocol
+- :class:`ComputedProperty`: a property whose value is computed from other
+  properties by a user-defined function. The property value is written to Cloud
+  Datastore so that it can be used in queries, but the value from Cloud
+  Datastore is not used when the entity is read back.
+- :class:`GenericProperty`: a property whose type is not constrained; mostly
+  used by the Expando class (see below) but also usable explicitly.
+- :class:`JsonProperty`: a property whose value is any object that can be
+  serialized using JSON; the value written to Cloud Datastore is a JSON
+  representation of that object.
+- :class:`PickleProperty`: a property whose value is any object that can be
+  serialized using Python's pickle protocol; the value written to the Cloud
+  Datastore is the pickled representation of that object, using the highest
+  available pickle protocol
 
 Most Property classes have similar constructor signatures.  They
 accept several optional keyword arguments:
@@ -220,7 +220,8 @@ is equivalent to::
 
     Person.query().filter(Person.name == 'Harry Potter', Person.age >= 11)
 
-Keyword arguments passed to .query() are passed along to the Query() constructor.
+Keyword arguments passed to .query() are passed along to the Query()
+constructor.
 
 It is possible to query for field values of structured properties. For
 example::
@@ -250,6 +251,7 @@ import functools
 import inspect
 import json
 import pickle
+import six
 import zlib
 
 from google.cloud.datastore import entity as ds_entity_module
@@ -547,6 +549,9 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
         # subvalue, instead of an array, like you'd expect when just
         # marshalling the entity normally (instead of in a projection query).
         #
+        def new_entity(key):
+            return _BaseValue(ds_entity_module.Entity(key))
+
         if prop is None and "." in name:
             supername, subname = name.split(".", 1)
             structprop = getattr(model_class, supername, None)
@@ -559,27 +564,33 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
                     if structprop._repeated:
                         if isinstance(subvalue, list):
                             # Not a projection
-                            value = [
-                                _BaseValue(ds_entity_module.Entity(key._key))
-                                for _ in subvalue
-                            ]
+                            value = [new_entity(key._key) for _ in subvalue]
                         else:
                             # Is a projection, so subvalue is scalar. Only need
                             # one subentity.
-                            value = [
-                                _BaseValue(ds_entity_module.Entity(key._key))
-                            ]
+                            value = [new_entity(key._key)]
                     else:
-                        value = ds_entity_module.Entity(key._key)
-                        value = _BaseValue(value)
+                        value = new_entity(key._key)
 
                     structprop._store_value(entity, value)
 
                 if structprop._repeated:
-                    # Branch coverage bug,
-                    # See: https://github.com/nedbat/coveragepy/issues/817
                     if isinstance(subvalue, list):
                         # Not a projection
+
+                        # In the rare case of using a repeated
+                        # StructuredProperty where the sub-model is an Expando,
+                        # legacy NDB could write repeated properties of
+                        # different lengths for the subproperties, which was a
+                        # bug. We work around this when reading out such values
+                        # by making sure our repeated property is the same
+                        # length as the longest suproperty.
+                        while len(subvalue) > len(value):
+                            # Need to make some more subentities
+                            value.append(new_entity(key._key))
+
+                        # Branch coverage bug,
+                        # See: https://github.com/nedbat/coveragepy/issues/817
                         for subentity, subsubvalue in zip(  # pragma no branch
                             value, subvalue
                         ):
@@ -2187,14 +2198,12 @@ class FloatProperty(Property):
         return float(value)
 
 
-class _CompressedValue:
+class _CompressedValue(six.binary_type):
     """A marker object wrapping compressed values.
 
     Args:
         z_val (bytes): A return value of ``zlib.compress``.
     """
-
-    __slots__ = ("z_val",)
 
     def __init__(self, z_val):
         self.z_val = z_val
@@ -2354,6 +2363,9 @@ class BlobProperty(Property):
             indicate that the value didn't need to be unwrapped and
             decompressed.
         """
+        if self._compressed and not isinstance(value, _CompressedValue):
+            value = _CompressedValue(value)
+
         if isinstance(value, _CompressedValue):
             return zlib.decompress(value.z_val)
 
@@ -2939,7 +2951,8 @@ class UserProperty(Property):
             >>>
             >>> entity.put()
             >>> # Reload without the cached values
-            >>> entity = entity.key.get(use_cache=False, use_global_cache=False)
+            >>> entity = entity.key.get(use_cache=False,
+            ...     use_global_cache=False)
             >>> entity.u.user_id()
             '...9174...'
 
@@ -3989,19 +4002,19 @@ class GenericProperty(Property):
 class ComputedProperty(GenericProperty):
     """A Property whose value is determined by a user-supplied function.
     Computed properties cannot be set directly, but are instead generated by a
-    function when required. They are useful to provide fields in Cloud Datastore
-    that can be used for filtering or sorting without having to manually set the
-    value in code - for example, sorting on the length of a BlobProperty, or
-    using an equality filter to check if another field is not empty.
-    ComputedProperty can be declared as a regular property, passing a function as
-    the first argument, or it can be used as a decorator for the function that
-    does the calculation.
+    function when required. They are useful to provide fields in Cloud
+    Datastore that can be used for filtering or sorting without having to
+    manually set the value in code - for example, sorting on the length of a
+    BlobProperty, or using an equality filter to check if another field is not
+    empty. ComputedProperty can be declared as a regular property, passing a
+    function as the first argument, or it can be used as a decorator for the
+    function that does the calculation.
 
     Example:
 
     >>> class DatastoreFile(ndb.Model):
     ...   name = ndb.model.StringProperty()
-    ...   name_lower = ndb.model.ComputedProperty(lambda self: self.name.lower())
+    ...   n_lower = ndb.model.ComputedProperty(lambda self: self.name.lower())
     ...
     ...   data = ndb.model.BlobProperty()
     ...
@@ -4023,8 +4036,8 @@ class ComputedProperty(GenericProperty):
 
         Args:
 
-        func: A function that takes one argument, the model instance, and returns
-            a calculated value.
+        func: A function that takes one argument, the model instance, and
+            returns a calculated value.
         """
         super(ComputedProperty, self).__init__(
             name=name,
@@ -4530,8 +4543,8 @@ class Model(metaclass=MetaModel):
         if model_class is None:
             raise KindError(
                 (
-                    "No model class found for the kind '{}'. Did you forget to "
-                    "import it?"
+                    "No model class found for the kind '{}'. Did you forget "
+                    "to import it?"
                 ).format(kind)
             )
         return model_class
@@ -4564,15 +4577,15 @@ class Model(metaclass=MetaModel):
 
     @classmethod
     def _check_properties(cls, property_names, require_indexed=True):
-        """Internal helper to check the given properties exist and meet specified
-        requirements.
+        """Internal helper to check the given properties exist and meet
+        specified requirements.
 
         Called from query.py.
 
         Args:
-            property_names (list): List or tuple of property names -- each being
-            a string, possibly containing dots (to address subproperties of
-            structured properties).
+            property_names (list): List or tuple of property names -- each
+            being a string, possibly containing dots (to address subproperties
+            of structured properties).
 
         Raises:
             InvalidPropertyError: if one of the properties is invalid.
@@ -4794,7 +4807,7 @@ class Model(metaclass=MetaModel):
             if context._use_cache(self._key, _options):
                 context.cache[self._key] = self
 
-            return self._key
+            raise tasklets.Return(self._key)
 
         self._prepare_for_put()
         future = put(self)
@@ -5022,7 +5035,7 @@ class Model(metaclass=MetaModel):
                     for key_pb in key_pbs
                 )
             )
-            return keys
+            raise tasklets.Return(keys)
 
         future = allocate_ids()
         future.add_done_callback(
@@ -5422,13 +5435,13 @@ class Model(metaclass=MetaModel):
                 entity._key = key
                 yield entity.put_async(_options=_options)
 
-                return entity
+                raise tasklets.Return(entity)
 
             # We don't need to start a transaction just to check if the entity
             # exists already
             entity = yield key.get_async(_options=_options)
             if entity is not None:
-                return entity
+                raise tasklets.Return(entity)
 
             if _transaction.in_transaction():
                 entity = yield insert()
@@ -5436,7 +5449,7 @@ class Model(metaclass=MetaModel):
             else:
                 entity = yield _transaction.transaction_async(insert)
 
-            return entity
+            raise tasklets.Return(entity)
 
         return get_or_insert()
 
@@ -5557,8 +5570,8 @@ class Expando(Model):
              'superpower': StringProperty('superpower')}
 
     Note: You can inspect the properties of an expando instance using the
-    _properties attribute, as shown above. This property exists for plain Model instances
-    too; it is just not as interesting for those.
+    _properties attribute, as shown above. This property exists for plain Model
+    instances too; it is just not as interesting for those.
     """
 
     # Set this to False (in an Expando subclass or entity) to make

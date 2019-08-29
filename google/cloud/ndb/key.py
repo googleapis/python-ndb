@@ -81,7 +81,8 @@ On the gVisor Google App Engine runtime (e.g. Python 3.7), the namespace
 manager is not available so the default is to have an unset or empty
 namespace. To explicitly select the empty namespace pass ``namespace=""``.
 
-.. _overview: https://cloud.google.com/appengine/docs/standard/python/multitenancy/
+.. _overview:
+  https://cloud.google.com/appengine/docs/standard/python/multitenancy/
 """
 
 
@@ -626,7 +627,7 @@ class Key:
         flat = self.flat()
         pairs = []
         for i in range(0, len(flat), 2):
-            pairs.append(flat[i : i + 2])
+            pairs.append(flat[i : i + 2])  # noqa: E203
         return tuple(pairs)
 
     def flat(self):
@@ -851,9 +852,11 @@ class Key:
             if use_cache:
                 try:
                     # This result may be None, if None is cached for this key.
-                    return context.cache.get_and_validate(self)
+                    result = context.cache.get_and_validate(self)
                 except KeyError:
                     pass
+                else:
+                    raise tasklets.Return(result)
 
             entity_pb = yield _datastore_api.lookup(self._key, _options)
             if entity_pb is not _datastore_api._NOT_FOUND:
@@ -864,7 +867,7 @@ class Key:
             if use_cache:
                 context.cache[self] = result
 
-            return result
+            raise tasklets.Return(result)
 
         future = get()
         if cls:
@@ -980,7 +983,7 @@ class Key:
             if context._use_cache(self, _options):
                 context.cache[self] = None
 
-            return result
+            raise tasklets.Return(result)
 
         future = delete()
 

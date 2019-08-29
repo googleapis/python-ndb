@@ -171,7 +171,7 @@ def test_nested_tasklet(ds_entity):
     @ndb.tasklet
     def get_foo(key):
         entity = yield key.get_async()
-        return entity.foo
+        raise ndb.Return(entity.foo)
 
     key = ndb.Key(KIND, entity_id)
     assert get_foo(key).result() == 42
@@ -194,7 +194,7 @@ def test_retrieve_two_entities_in_parallel(ds_entity):
     @ndb.tasklet
     def get_two_entities():
         entity1, entity2 = yield key1.get_async(), key2.get_async()
-        return entity1, entity2
+        raise ndb.Return(entity1, entity2)
 
     entity1, entity2 = get_two_entities().result()
 
@@ -276,6 +276,36 @@ def test_large_json_property(dispose_of, ds_client):
         foo = ndb.JsonProperty()
 
     foo = {str(i): i for i in range(500)}
+    entity = SomeKind(foo=foo)
+    key = entity.put()
+
+    retrieved = key.get()
+    assert retrieved.foo == foo
+
+    dispose_of(key._key)
+
+
+@pytest.mark.usefixtures("client_context")
+def test_compressed_json_property(dispose_of, ds_client):
+    class SomeKind(ndb.Model):
+        foo = ndb.JsonProperty(compressed=True)
+
+    foo = {str(i): i for i in range(500)}
+    entity = SomeKind(foo=foo)
+    key = entity.put()
+
+    retrieved = key.get()
+    assert retrieved.foo == foo
+
+    dispose_of(key._key)
+
+
+@pytest.mark.usefixtures("client_context")
+def test_compressed_blob_property(dispose_of, ds_client):
+    class SomeKind(ndb.Model):
+        foo = ndb.BlobProperty(compressed=True)
+
+    foo = b"abc" * 100
     entity = SomeKind(foo=foo)
     key = entity.put()
 
@@ -471,7 +501,7 @@ def test_parallel_transactions():
             transaction = ndb.get_context().transaction
             yield ndb.sleep(delay)
             assert ndb.get_context().transaction == transaction
-            return transaction
+            raise ndb.Return(transaction)
 
         return callback
 
