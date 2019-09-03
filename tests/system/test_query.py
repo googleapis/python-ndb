@@ -1168,9 +1168,9 @@ def test_query_repeated_structured_property_with_projection_legacy_data(
             SomeKind.foo < 2
         )
 
-        # This counter-intuitive result is consistent with Legacy NDB behavior and
-        # is a result of the odd way Datastore handles projection queries with
-        # array valued properties:
+        # This counter-intuitive result is consistent with Legacy NDB behavior
+        # and is a result of the odd way Datastore handles projection queries
+        # with array valued properties:
         #
         # https://cloud.google.com/datastore/docs/concepts/queries#projections_and_array-valued_properties
         #

@@ -3933,11 +3933,13 @@ class StructuredProperty(Property):
                 continue
 
             for prop in _properties_of(value):
-                keys.extend(prop._to_datastore(
-                    value, data, prefix=next_prefix, repeated=next_repeated
-                ))
+                keys.extend(
+                    prop._to_datastore(
+                        value, data, prefix=next_prefix, repeated=next_repeated
+                    )
+                )
 
-        return keys
+        return set(keys)
 
 
 class LocalStructuredProperty(BlobProperty):
