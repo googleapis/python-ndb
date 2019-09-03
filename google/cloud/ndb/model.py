@@ -324,7 +324,7 @@ __all__ = [
 
 
 _MEANING_PREDEFINED_ENTITY_USER = 20
-_MEANING_URI_COMPRESSED = "ZLIB"
+_MEANING_URI_COMPRESSED = 22
 _MAX_STRING_LENGTH = 1500
 Key = key_module.Key
 BlobKey = _datastore_types.BlobKey
@@ -604,6 +604,12 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
 
                 continue
 
+        if value is not None and isinstance(prop, BlobProperty):
+            if name in ds_entity._meanings:
+                meaning, value = ds_entity._meanings[name]
+                if meaning == _MEANING_URI_COMPRESSED:
+                    prop._compressed = True
+
         if not (prop is not None and isinstance(prop, Property)):
             if value is not None and isinstance(  # pragma: no branch
                 entity, Expando
@@ -628,6 +634,8 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
                 value = _BaseValue(value)
 
         prop._store_value(entity, value)
+
+    entity._meanings = ds_entity._meanings
 
     return entity
 
@@ -722,6 +730,8 @@ def _entity_to_ds_entity(entity, set_key=True):
             exclude_from_indexes=exclude_from_indexes
         )
     ds_entity.update(data)
+
+    ds_entity._meanings = entity._meanings
 
     return ds_entity
 
@@ -2434,6 +2444,14 @@ class BlobProperty(Property):
             NotImplementedError: Always. No longer implemented.
         """
         raise exceptions.NoLongerImplementedError()
+
+    def _prepare_for_put(self, entity):
+        """Set up meanings for backwards compatibility."""
+        if self._compressed:
+            entity._meanings[self._name] = (
+                _MEANING_URI_COMPRESSED,
+                self._to_base_type(self._get_user_value(entity)),
+            )
 
 
 class TextProperty(Property):
@@ -4377,6 +4395,9 @@ class Model(metaclass=MetaModel):
     _values = None
     _projection = ()  # Tuple of names of projected properties.
 
+    # Backwards compatibility. Only useful for compressed values right now.
+    _meanings = {}
+
     # Hardcoded pseudo-property for the key.
     _key = ModelKey()
     key = _key
@@ -4435,6 +4456,7 @@ class Model(metaclass=MetaModel):
             )
 
         self._values = {}
+        self._meanings = {}
         self._set_attributes(kwargs)
         # Set the projection last, otherwise it will prevent _set_attributes().
         if projection:
