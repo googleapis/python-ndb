@@ -1772,7 +1772,7 @@ class TestBlobProperty:
         assert entity._meanings == {}
         entity._prepare_for_put()
         assert "foo" in entity._meanings
-        assert entity._meanings["foo"][0] == model._MEANING_URI_COMPRESSED
+        assert entity._meanings["foo"][0] == model._MEANING_COMPRESSED
         assert entity._meanings["foo"][1] == compressed_value
 
     @staticmethod
@@ -4894,7 +4894,7 @@ class Test_entity_from_ds_entity:
         uncompressed_value = b"abc" * 1000
         compressed_value = zlib.compress(uncompressed_value)
         datastore_entity.update({"foo": compressed_value})
-        meanings = {"foo": (model._MEANING_URI_COMPRESSED, compressed_value)}
+        meanings = {"foo": (model._MEANING_COMPRESSED, compressed_value)}
         datastore_entity._meanings = meanings
         protobuf = helpers.entity_to_protobuf(datastore_entity)
         entity = model._entity_from_protobuf(protobuf)

@@ -324,7 +324,7 @@ __all__ = [
 
 
 _MEANING_PREDEFINED_ENTITY_USER = 20
-_MEANING_URI_COMPRESSED = 22
+_MEANING_COMPRESSED = 22
 _MAX_STRING_LENGTH = 1500
 Key = key_module.Key
 BlobKey = _datastore_types.BlobKey
@@ -607,7 +607,7 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
         if value is not None and isinstance(prop, BlobProperty):
             if name in ds_entity._meanings:
                 meaning, value = ds_entity._meanings[name]
-                if meaning == _MEANING_URI_COMPRESSED:
+                if meaning == _MEANING_COMPRESSED:
                     prop._compressed = True
 
         if not (prop is not None and isinstance(prop, Property)):
@@ -2449,7 +2449,7 @@ class BlobProperty(Property):
         """Set up meanings for backwards compatibility."""
         if self._compressed:
             entity._meanings[self._name] = (
-                _MEANING_URI_COMPRESSED,
+                _MEANING_COMPRESSED,
                 self._to_base_type(self._get_user_value(entity)),
             )
 
