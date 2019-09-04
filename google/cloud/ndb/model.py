@@ -3900,7 +3900,7 @@ class StructuredProperty(Property):
         return len(values)
 
     def _to_datastore(self, entity, data, prefix="", repeated=False):
-        """Override of :method:`StructuredProperty._to_datastore`.
+        """Override of :method:`Property._to_datastore`.
 
         If ``legacy_data`` is ``True``, then we need to override the default
         behavior to store everything in a single Datastore entity that uses
