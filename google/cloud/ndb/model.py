@@ -325,6 +325,12 @@ __all__ = [
 
 _MEANING_PREDEFINED_ENTITY_USER = 20
 _MEANING_COMPRESSED = 22
+
+# As produced by zlib. Indicates compressed byte sequence using DEFLATE at
+# default compression level, with a 32K window size.
+# From https://github.com/madler/zlib/blob/master/doc/rfc1950.txt
+_ZLIB_COMPRESSION_MARKER = b"x\x9c"
+
 _MAX_STRING_LENGTH = 1500
 Key = key_module.Key
 BlobKey = _datastore_types.BlobKey
@@ -2442,7 +2448,7 @@ class BlobProperty(Property):
             decompressed.
         """
         if self._compressed and not isinstance(value, _CompressedValue):
-            if not value.startswith(b"x\x9c"):
+            if not value.startswith(_ZLIB_COMPRESSION_MARKER):
                 value = zlib.compress(value)
             value = _CompressedValue(value)
 
@@ -2463,7 +2469,7 @@ class BlobProperty(Property):
             if isinstance(value, _CompressedValue):
                 value = value.z_val
                 data[self._name] = value
-            if not value.startswith(b"x\x9c"):
+            if not value.startswith(_ZLIB_COMPRESSION_MARKER):
                 value = zlib.compress(value)
                 data[self._name] = value
             data.setdefault("_meanings", {})[self._name] = (
@@ -2479,7 +2485,7 @@ class BlobProperty(Property):
         indicate we are getting a compressed value.
         """
         if self._name in ds_entity._meanings:
-            meaning, dummy = ds_entity._meanings[self._name]
+            meaning = ds_entity._meanings[self._name][0]
             if meaning == _MEANING_COMPRESSED and not self._compressed:
                 value.b_val = zlib.decompress(value.b_val)
         return value
