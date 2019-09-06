@@ -68,7 +68,7 @@ class TestPolyModel:
     @staticmethod
     def test_constructor():
         model = polymodel.PolyModel()
-        assert model.__dict__ == {"_values": {}, "_meanings": {}}
+        assert model.__dict__ == {"_values": {}}
 
     @staticmethod
     def test_class_property():

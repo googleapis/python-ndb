@@ -1722,12 +1722,19 @@ class TestBlobProperty:
         assert converted == original
 
     @staticmethod
-    def test__from_base_type_no_compressed_value():
-        prop = model.BlobProperty(name="blob")
+    def test__from_base_type_no_compressed_value_uncompressed():
+        prop = model.BlobProperty(name="blob", compressed=True)
         original = b"abc" * 10
-        value = zlib.compress(original)
-        prop._compressed = True
-        converted = prop._from_base_type(value)
+        converted = prop._from_base_type(original)
+
+        assert converted == original
+
+    @staticmethod
+    def test__from_base_type_no_compressed_value_compressed():
+        prop = model.BlobProperty(name="blob", compressed=True)
+        original = b"abc" * 10
+        z_val = zlib.compress(original)
+        converted = prop._from_base_type(z_val)
 
         assert converted == original
 
@@ -1762,29 +1769,98 @@ class TestBlobProperty:
             prop._db_get_value(None, None)
 
     @staticmethod
-    def test__prepare_for_put_compressed():
+    @pytest.mark.usefixtures("in_context")
+    def test__to_datastore_compressed():
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=True)
 
         uncompressed_value = b"abc" * 1000
         compressed_value = zlib.compress(uncompressed_value)
         entity = ThisKind(foo=uncompressed_value)
-        assert entity._meanings == {}
-        entity._prepare_for_put()
-        assert "foo" in entity._meanings
-        assert entity._meanings["foo"][0] == model._MEANING_COMPRESSED
-        assert entity._meanings["foo"][1] == compressed_value
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert "foo" in ds_entity._meanings
+        assert ds_entity._meanings["foo"][0] == model._MEANING_COMPRESSED
+        assert ds_entity._meanings["foo"][1] == compressed_value
 
     @staticmethod
-    def test__prepare_for_put_uncompressed():
+    @pytest.mark.usefixtures("in_context")
+    def test__to_datastore_uncompressed():
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=False)
 
         uncompressed_value = b"abc"
         entity = ThisKind(foo=uncompressed_value)
-        assert entity._meanings == {}
-        entity._prepare_for_put()
-        assert entity._meanings == {}
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert "foo" not in ds_entity._meanings
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_compressed_to_uncompressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=False)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value = b"abc" * 1000
+        compressed_value = zlib.compress(uncompressed_value)
+        datastore_entity.update({"foo": compressed_value})
+        meanings = {"foo": (model._MEANING_COMPRESSED, compressed_value)}
+        datastore_entity._meanings = meanings
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        assert entity.foo == uncompressed_value
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == uncompressed_value
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_compressed_to_compressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value = b"abc" * 1000
+        compressed_value = zlib.compress(uncompressed_value)
+        datastore_entity.update({"foo": compressed_value})
+        meanings = {"foo": (model._MEANING_COMPRESSED, compressed_value)}
+        datastore_entity._meanings = meanings
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == compressed_value
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_uncompressed_to_uncompressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=False)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value = b"abc" * 1000
+        datastore_entity.update({"foo": uncompressed_value})
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        assert entity.foo == uncompressed_value
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == uncompressed_value
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_uncompressed_to_compressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value = b"abc" * 1000
+        compressed_value = zlib.compress(uncompressed_value)
+        datastore_entity.update({"foo": uncompressed_value})
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == compressed_value
 
 
 class TestTextProperty:
@@ -3509,58 +3585,38 @@ class TestModel:
     @staticmethod
     def test_constructor_defaults():
         entity = model.Model()
-        assert entity.__dict__ == {"_values": {}, "_meanings": {}}
+        assert entity.__dict__ == {"_values": {}}
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_constructor_key():
         key = key_module.Key("Foo", "bar")
         entity = model.Model(key=key)
-        assert entity.__dict__ == {
-            "_values": {},
-            "_entity_key": key,
-            "_meanings": {},
-        }
+        assert entity.__dict__ == {"_values": {}, "_entity_key": key}
 
         entity = model.Model(_key=key)
-        assert entity.__dict__ == {
-            "_values": {},
-            "_entity_key": key,
-            "_meanings": {},
-        }
+        assert entity.__dict__ == {"_values": {}, "_entity_key": key}
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_constructor_key_parts():
         entity = model.Model(id=124)
         key = key_module.Key("Model", 124)
-        assert entity.__dict__ == {
-            "_values": {},
-            "_entity_key": key,
-            "_meanings": {},
-        }
+        assert entity.__dict__ == {"_values": {}, "_entity_key": key}
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_constructor_app():
         entity = model.Model(app="thisproject")
         key = key_module.Key("Model", None, project="thisproject")
-        assert entity.__dict__ == {
-            "_values": {},
-            "_entity_key": key,
-            "_meanings": {},
-        }
+        assert entity.__dict__ == {"_values": {}, "_entity_key": key}
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_constructor_project():
         entity = model.Model(project="thisproject")
         key = key_module.Key("Model", None, project="thisproject")
-        assert entity.__dict__ == {
-            "_values": {},
-            "_entity_key": key,
-            "_meanings": {},
-        }
+        assert entity.__dict__ == {"_values": {}, "_entity_key": key}
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3581,7 +3637,7 @@ class TestModel:
             key = model.IntegerProperty()
 
         entity = SecretMap(key=1001)
-        assert entity.__dict__ == {"_values": {"key": 1001}, "_meanings": {}}
+        assert entity.__dict__ == {"_values": {"key": 1001}}
 
     @staticmethod
     def test_constructor_with_projection():
@@ -3596,7 +3652,6 @@ class TestModel:
         assert entity.__dict__ == {
             "_values": {"pages": 287, "author": "Tim Robert"},
             "_projection": ("pages", "author"),
-            "_meanings": {},
         }
 
     @staticmethod
@@ -4882,40 +4937,6 @@ class Test_entity_from_ds_entity:
         assert entity.baz[2].foo is None
         assert entity.baz[2].bar == "iminjail"
         assert entity.copacetic is True
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
-    def test_legacy_blob_property_compressed():
-        class ThisKind(model.Model):
-            foo = model.BlobProperty(compressed=False)
-
-        key = datastore.Key("ThisKind", 123, project="testing")
-        datastore_entity = datastore.Entity(key=key)
-        uncompressed_value = b"abc" * 1000
-        compressed_value = zlib.compress(uncompressed_value)
-        datastore_entity.update({"foo": compressed_value})
-        meanings = {"foo": (model._MEANING_COMPRESSED, compressed_value)}
-        datastore_entity._meanings = meanings
-        protobuf = helpers.entity_to_protobuf(datastore_entity)
-        entity = model._entity_from_protobuf(protobuf)
-        assert entity.foo == uncompressed_value
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
-    def test_legacy_blob_property_compressed_unknown_meaning():
-        class ThisKind(model.Model):
-            foo = model.BlobProperty(compressed=False)
-
-        key = datastore.Key("ThisKind", 123, project="testing")
-        datastore_entity = datastore.Entity(key=key)
-        uncompressed_value = b"abc" * 1000
-        compressed_value = zlib.compress(uncompressed_value)
-        datastore_entity.update({"foo": compressed_value})
-        meanings = {"foo": (999, compressed_value)}
-        datastore_entity._meanings = meanings
-        protobuf = helpers.entity_to_protobuf(datastore_entity)
-        entity = model._entity_from_protobuf(protobuf)
-        assert entity.foo == compressed_value
 
 
 class Test_entity_to_protobuf:

@@ -55,7 +55,7 @@ class TestKind:
     @staticmethod
     def test_constructor():
         kind = metadata.Kind()
-        assert kind.__dict__ == {"_values": {}, "_meanings": {}}
+        assert kind.__dict__ == {"_values": {}}
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -86,7 +86,7 @@ class TestNamespace:
     @staticmethod
     def test_constructor():
         namespace = metadata.Namespace()
-        assert namespace.__dict__ == {"_values": {}, "_meanings": {}}
+        assert namespace.__dict__ == {"_values": {}}
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -125,7 +125,7 @@ class TestProperty:
     @staticmethod
     def test_constructor():
         property = metadata.Property()
-        assert property.__dict__ == {"_values": {}, "_meanings": {}}
+        assert property.__dict__ == {"_values": {}}
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")

@@ -604,12 +604,6 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
 
                 continue
 
-        if value is not None and isinstance(prop, BlobProperty):
-            if name in ds_entity._meanings:
-                meaning, value = ds_entity._meanings[name]
-                if meaning == _MEANING_COMPRESSED:
-                    prop._compressed = True
-
         if not (prop is not None and isinstance(prop, Property)):
             if value is not None and isinstance(  # pragma: no branch
                 entity, Expando
@@ -633,9 +627,9 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
             else:
                 value = _BaseValue(value)
 
-        prop._store_value(entity, value)
+        value = prop._from_datastore(ds_entity, value)
 
-    entity._meanings = ds_entity._meanings
+        prop._store_value(entity, value)
 
     return entity
 
@@ -729,9 +723,14 @@ def _entity_to_ds_entity(entity, set_key=True):
         ds_entity = ds_entity_module.Entity(
             exclude_from_indexes=exclude_from_indexes
         )
-    ds_entity.update(data)
 
-    ds_entity._meanings = entity._meanings
+    # Some properties may need to set meanings for backwards compatibility,
+    # so we look for them. They are set using the _to_datastore calls above.
+    meanings = data.pop("_meanings", None)
+    if meanings is not None:
+        ds_entity._meanings = meanings
+
+    ds_entity.update(data)
 
     return ds_entity
 
@@ -2044,6 +2043,25 @@ class Property(ModelAttribute):
 
         return (key,)
 
+    def _from_datastore(self, ds_entity, value):
+        """Helper to convert property value from Datastore serializable data.
+
+        Called to modify the value of a property during deserialization from
+        storage. Subclasses (like BlobProperty) may need to override the
+        default behavior, which is simply to return the received value without
+        modification.
+
+        Args:
+            ds_entity (~google.cloud.datastore.Entity): The Datastore entity to
+                convert.
+            value (_BaseValue): The stored value of this property for the
+                entity being deserialized.
+
+        Return:
+            value [Any]: The transformed value.
+        """
+        return value
+
 
 def _validate_key(value, entity=None):
     """Validate a key.
@@ -2424,10 +2442,47 @@ class BlobProperty(Property):
             decompressed.
         """
         if self._compressed and not isinstance(value, _CompressedValue):
+            if not value.startswith(b"x\x9c"):
+                value = zlib.compress(value)
             value = _CompressedValue(value)
 
         if isinstance(value, _CompressedValue):
             return zlib.decompress(value.z_val)
+
+    def _to_datastore(self, entity, data, prefix="", repeated=False):
+        """Override of :method:`Property._to_datastore`.
+
+        If this is a compressed property, we need to set the backwards-
+        compatible `_meanings` field, so that it can be properly read later.
+        """
+        keys = super(BlobProperty, self)._to_datastore(
+            entity, data, prefix=prefix, repeated=repeated
+        )
+        if self._compressed:
+            value = data[self._name]
+            if isinstance(value, _CompressedValue):
+                value = value.z_val
+                data[self._name] = value
+            if not value.startswith(b"x\x9c"):
+                value = zlib.compress(value)
+                data[self._name] = value
+            data.setdefault("_meanings", {})[self._name] = (
+                _MEANING_COMPRESSED,
+                value,
+            )
+        return keys
+
+    def _from_datastore(self, ds_entity, value):
+        """Override of :method:`Property._from_datastore`.
+
+        Need to check the ds_entity for a compressed meaning that would
+        indicate we are getting a compressed value.
+        """
+        if self._name in ds_entity._meanings:
+            meaning, dummy = ds_entity._meanings[self._name]
+            if meaning == _MEANING_COMPRESSED and not self._compressed:
+                value.b_val = zlib.decompress(value.b_val)
+        return value
 
     def _db_set_compressed_meaning(self, p):
         """Helper for :meth:`_db_set_value`.
@@ -2444,14 +2499,6 @@ class BlobProperty(Property):
             NotImplementedError: Always. No longer implemented.
         """
         raise exceptions.NoLongerImplementedError()
-
-    def _prepare_for_put(self, entity):
-        """Set up meanings for backwards compatibility."""
-        if self._compressed:
-            entity._meanings[self._name] = (
-                _MEANING_COMPRESSED,
-                self._to_base_type(self._get_user_value(entity)),
-            )
 
 
 class TextProperty(Property):
@@ -4395,9 +4442,6 @@ class Model(metaclass=MetaModel):
     _values = None
     _projection = ()  # Tuple of names of projected properties.
 
-    # Backwards compatibility. Only useful for compressed values right now.
-    _meanings = {}
-
     # Hardcoded pseudo-property for the key.
     _key = ModelKey()
     key = _key
@@ -4456,7 +4500,6 @@ class Model(metaclass=MetaModel):
             )
 
         self._values = {}
-        self._meanings = {}
         self._set_attributes(kwargs)
         # Set the projection last, otherwise it will prevent _set_attributes().
         if projection:
