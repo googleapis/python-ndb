@@ -177,6 +177,8 @@ def system(session):
     session.install("-e", get_path("test_utils", "test_utils"))
     session.install("-e", ".")
 
+    session.run("export", "REDIS_CACHE_URL=redis://localhost")
+    
     # Run py.test against the system tests.
     if system_test_exists:
         session.run("py.test", "--quiet", system_test_path, *session.posargs)
