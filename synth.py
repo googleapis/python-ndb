@@ -17,4 +17,11 @@ sudo apt-get update
 sudo apt-get -y install dictionaries-common aspell aspell-en \\
                         hunspell-en-us libenchant1c2a enchant""")
 
+s.replace(".kokoro/build.sh", """(export PROJECT_ID=.*)""", """\g<1>
+
+# Some system tests require indexes. Use gcloud to create them.
+gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS --project=$PROJECT_ID
+gcloud --quiet --verbosity=debug datastore indexes create tests/system/index.yaml
+""")
+
 s.shell.run(["nox", "-s", "blacken"], hide_output=False)
