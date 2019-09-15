@@ -18,8 +18,6 @@ import collections
 import contextlib
 import threading
 
-from google.cloud.ndb import _cache
-from google.cloud.ndb import _datastore_api
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import model
@@ -183,6 +181,10 @@ class _Context(_ContextTuple):
         on_commit_callbacks=None,
         legacy_data=True,
     ):
+        # Prevent circular import in Python 2.7
+        from google.cloud.ndb import _cache
+        from google.cloud.ndb import _datastore_api
+
         if eventloop is None:
             eventloop = _eventloop.EventLoop()
 
@@ -258,6 +260,9 @@ class _Context(_ContextTuple):
         cache. In this way, only keys that were touched in the current context
         are affected.
         """
+        # Prevent circular import in Python 2.7
+        from google.cloud.ndb import _cache
+
         keys = [
             _cache.global_cache_key(key._key)
             for key in self.cache

@@ -17,11 +17,14 @@
 This should handle both asynchronous ``ndb`` objects and arbitrary callbacks.
 """
 import collections
-import queue
 import uuid
 import time
 
-from google.cloud.ndb import context as context_module
+# Python 2.7 module name change
+try:
+    import queue
+except ImportError:
+    import Queue as queue
 
 __all__ = [
     "add_idle",
@@ -365,6 +368,9 @@ def get_event_loop():
     Returns:
         EventLoop: The event loop for the current context.
     """
+    # Prevent circular import in Python 2.7
+    from google.cloud.ndb import context as context_module
+
     context = context_module.get_context()
     return context.eventloop
 
