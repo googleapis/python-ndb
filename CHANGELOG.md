@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-ndb/#history
 
+### [0.1.1](https://www.github.com/googleapis/python-ndb/compare/v0.1.0...v0.1.1) (2019-09-16)
+
+
+### Bug Fixes
+
+* **test:** introduce local redis for tests ([#191](https://www.github.com/googleapis/python-ndb/issues/191)) ([65eaef2](https://www.github.com/googleapis/python-ndb/commit/65eaef2))
+
 ## 0.1.0
 
 09-10-2019 13:43 PDT
