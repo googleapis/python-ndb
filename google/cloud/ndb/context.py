@@ -20,7 +20,6 @@ import threading
 
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import exceptions
-from google.cloud.ndb import model
 from google.cloud.ndb import tasklets
 
 
@@ -74,6 +73,8 @@ def _default_policy(attr_name, value_type):
         Callable[[key], value_type]: A policy function suitable for use as a
             default policy.
     """
+    # avoid circular imports on Python 2.7
+    from google.cloud.ndb import model
 
     def policy(key):
         value = None
@@ -534,21 +535,21 @@ class Context(_Context):
         raise exceptions.NoLongerImplementedError()
 
 
-class ContextOptions:
+class ContextOptions(object):
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
         raise exceptions.NoLongerImplementedError()
 
 
-class TransactionOptions:
+class TransactionOptions(object):
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
         raise exceptions.NoLongerImplementedError()
 
 
-class AutoBatcher:
+class AutoBatcher(object):
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):

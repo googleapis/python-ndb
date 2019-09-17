@@ -136,14 +136,10 @@ import functools
 import inspect
 import logging
 
-from google.cloud.ndb import context as context_module
-from google.cloud.ndb import _datastore_api
-from google.cloud.ndb import _datastore_query
-from google.cloud.ndb import _gql
 from google.cloud.ndb import exceptions
-from google.cloud.ndb import model
 from google.cloud.ndb import _options
 from google.cloud.ndb import tasklets
+from google.cloud.ndb import utils
 
 
 __all__ = [
@@ -203,7 +199,7 @@ class PropertyOrder(object):
         return self.__class__(name=self.name, reverse=reverse)
 
 
-class RepeatedStructuredPropertyPredicate:
+class RepeatedStructuredPropertyPredicate(object):
     """A predicate for querying repeated structured properties.
 
     Called by ``model.StructuredProperty._compare``. This is used to handle
@@ -278,7 +274,7 @@ class RepeatedStructuredPropertyPredicate:
         return False
 
 
-class ParameterizedThing:
+class ParameterizedThing(object):
     """Base class for :class:`Parameter` and :class:`ParameterizedFunction`.
 
     This exists purely for :func:`isinstance` checks.
@@ -387,7 +383,7 @@ class ParameterizedFunction(ParameterizedThing):
         return self.__values
 
 
-class Node:
+class Node(object):
     """Base class for filter expression tree nodes.
 
     Tree nodes are considered immutable, even though they can contain
@@ -510,6 +506,9 @@ class ParameterNode(Node):
     __slots__ = ("_prop", "_op", "_param")
 
     def __new__(cls, prop, op, param):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         if not isinstance(prop, model.Property):
             raise TypeError("Expected a Property, got {!r}".format(prop))
         if op not in _OPS:
@@ -626,6 +625,9 @@ class FilterNode(Node):
     __slots__ = ("_name", "_opsymbol", "_value")
 
     def __new__(cls, name, opsymbol, value):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         if isinstance(value, model.Key):
             value = value._key
 
@@ -701,6 +703,9 @@ class FilterNode(Node):
                 never occur since the constructor will create ``OR`` nodes for
                 ``!=`` and ``in``
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         if post:
             return None
         if self._opsymbol in (_NE_OP, _IN_OP):
@@ -774,7 +779,7 @@ class PostFilterNode(Node):
             return None
 
 
-class _BooleanClauses:
+class _BooleanClauses(object):
     """This type will be used for symbolically performing boolean operations.
 
     Internally, the state will track a symbolic expression like::
@@ -956,6 +961,9 @@ class ConjunctionNode(Node):
             Optional[Node]: The single or composite filter corresponding to
                 the pre- or post-filter nodes stored. May return :data:`None`.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         filters = []
         for node in self._nodes:
             if isinstance(node, PostFilterNode) == post:
@@ -1130,20 +1138,29 @@ def _query_options(wrapped):
     other arguments.
     """
     # If there are any positional arguments, get their names
-    signature = inspect.signature(wrapped)
-    positional = [
-        name
-        for name, parameter in signature.parameters.items()
-        if parameter.kind
-        in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
-        and name != "self"
-    ]
+    # inspect.signature is not available in Python 2.7, so might need another
+    # way of doing this.
+    try:
+        signature = inspect.signature(wrapped)
+        positional = [
+            name
+            for name, parameter in signature.parameters.items()
+            if parameter.kind
+            in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
+            and name != "self"
+        ]
+    except AttributeError:
+        positional = []
 
     # Provide dummy values for positional args to avoid TypeError
     dummy_args = [None for _ in positional]
 
     @functools.wraps(wrapped)
     def wrapper(self, *args, **kwargs):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import context as context_module
+        from google.cloud.ndb import _datastore_api
+
         # Maybe we already did this (in the case of X calling X_async)
         if "_options" in kwargs:
             return wrapped(self, *dummy_args, _options=kwargs["_options"])
@@ -1254,7 +1271,7 @@ class QueryOptions(_options.ReadOptions):
                 self.namespace = client.namespace
 
 
-class Query:
+class Query(object):
     """Query object.
 
     Args:
@@ -1297,6 +1314,9 @@ class Query:
         group_by=None,
         default_options=None,
     ):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         self.default_options = None
 
         if app:
@@ -1616,6 +1636,9 @@ class Query:
         )
 
     def _to_property_names(self, properties):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         fixed = []
         for prop in properties:
             if isinstance(prop, str):
@@ -1630,6 +1653,9 @@ class Query:
         return fixed
 
     def _to_property_orders(self, order_by):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         orders = []
         for order in order_by:
             if isinstance(order, PropertyOrder):
@@ -1651,15 +1677,18 @@ class Query:
         return orders
 
     def _check_properties(self, fixed, **kwargs):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         modelclass = model.Model._kind_map.get(self.kind)
         if modelclass is not None:
             modelclass._check_properties(fixed, **kwargs)
 
+    @utils.positional(2)
     @_query_options
     def fetch(
         self,
         limit=None,
-        *,
         keys_only=None,
         projection=None,
         offset=None,
@@ -1714,11 +1743,11 @@ class Query:
         """
         return self.fetch_async(_options=_options).result()
 
+    @utils.positional(2)
     @_query_options
     def fetch_async(
         self,
         limit=None,
-        *,
         keys_only=None,
         projection=None,
         offset=None,
@@ -1770,6 +1799,9 @@ class Query:
             tasklets.Future: Eventual result will be a List[model.Model] of the
                 results.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         return _datastore_query.fetch(_options)
 
     def _option(self, name, given, options=None):
@@ -1816,10 +1848,10 @@ class Query:
         """Run this query, putting entities into the given queue."""
         raise exceptions.NoLongerImplementedError()
 
+    @utils.positional(1)
     @_query_options
     def iter(
         self,
-        *,
         keys_only=None,
         limit=None,
         projection=None,
@@ -1871,14 +1903,17 @@ class Query:
         Returns:
             :class:`QueryIterator`: An iterator.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         return _datastore_query.iterate(_options)
 
     __iter__ = iter
 
+    @utils.positional(2)
     def map(
         self,
         callback,
-        *,
         pass_batch_into_callback=None,
         merge_future=None,
         keys_only=None,
@@ -1959,10 +1994,10 @@ class Query:
         """
         raise exceptions.NoLongerImplementedError()
 
+    @utils.positional(2)
     def map_async(
         self,
         callback,
-        *,
         pass_batch_into_callback=None,
         merge_future=None,
         keys_only=None,
@@ -1992,10 +2027,10 @@ class Query:
         """
         raise exceptions.NoLongerImplementedError()
 
+    @utils.positional(1)
     @_query_options
     def get(
         self,
-        *,
         keys_only=None,
         projection=None,
         batch_size=None,
@@ -2048,11 +2083,11 @@ class Query:
         """
         return self.get_async(_options=_options).result()
 
+    @utils.positional(1)
     @tasklets.tasklet
     @_query_options
     def get_async(
         self,
-        *,
         keys_only=None,
         projection=None,
         offset=None,
@@ -2076,16 +2111,19 @@ class Query:
         Returns:
             tasklets.Future: See :meth:`Query.get` for eventual result.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         options = _options.copy(limit=1)
         results = yield _datastore_query.fetch(options)
         if results:
             raise tasklets.Return(results[0])
 
+    @utils.positional(2)
     @_query_options
     def count(
         self,
         limit=None,
-        *,
         offset=None,
         batch_size=None,
         prefetch_size=None,
@@ -2154,12 +2192,12 @@ class Query:
         """
         return self.count_async(_options=_options).result()
 
+    @utils.positional(2)
     @tasklets.tasklet
     @_query_options
     def count_async(
         self,
         limit=None,
-        *,
         offset=None,
         batch_size=None,
         prefetch_size=None,
@@ -2181,6 +2219,9 @@ class Query:
         Returns:
             tasklets.Future: See :meth:`Query.count` for eventual result.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         options = _options.copy(keys_only=True)
         results = _datastore_query.iterate(options, raw=True)
         count = 0
@@ -2194,11 +2235,11 @@ class Query:
 
         raise tasklets.Return(count)
 
+    @utils.positional(2)
     @_query_options
     def fetch_page(
         self,
         page_size,
-        *,
         keys_only=None,
         projection=None,
         batch_size=None,
@@ -2267,12 +2308,12 @@ class Query:
         """
         return self.fetch_page_async(None, _options=_options).result()
 
+    @utils.positional(2)
     @tasklets.tasklet
     @_query_options
     def fetch_page_async(
         self,
         page_size,
-        *,
         keys_only=None,
         projection=None,
         batch_size=None,
@@ -2295,6 +2336,9 @@ class Query:
         Returns:
             tasklets.Future: See :meth:`Query.fetch_page` for eventual result.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         if _options.filters and _options.filters._multiquery:
             raise TypeError(
                 "Can't use 'fetch_page' or 'fetch_page_async' with query that "
@@ -2330,6 +2374,9 @@ def gql(query_string, *args, **kwds):
     Raises:
         google.cloud.ndb.exceptions.BadQueryError: When bad gql is passed in.
     """
+    # Avoid circular import in Python 2.7
+    from google.cloud.ndb import _gql
+
     query = _gql.GQL(query_string).get_query()
     if args or kwds:
         query = query.bind(*args, **kwds)

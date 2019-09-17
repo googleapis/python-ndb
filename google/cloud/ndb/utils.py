@@ -52,9 +52,27 @@ def logging_debug(*args, **kwargs):
     raise NotImplementedError
 
 
-def positional(*args, **kwargs):
-    raise NotImplementedError
+def positional(max_pos_args):
+    """A decorator to declare that only the first N arguments may be positional.
+    Note that for methods, n includes 'self'. This is a compromise, to be able
+    to get at least some of the keyword-only arguments functionality from
+    Python 3.
+    """
+    def positional_decorator(wrapped):
+        return wrapped
 
+        @wrapping(wrapped)
+        def positional_wrapper(*args, **kwds):
+            if len(args) > max_pos_args:
+                plural_s = ''
+                if max_pos_args != 1:
+                    plural_s = 's'
+                raise TypeError(
+                    '%s() takes at most %d positional argument%s (%d given)' %
+                    (wrapped.__name__, max_pos_args, plural_s, len(args)))
+            return wrapped(*args, **kwds)
+        return positional_wrapper
+    return positional_decorator
 
 threading_local = threading.local
 

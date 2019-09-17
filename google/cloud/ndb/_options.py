@@ -24,7 +24,7 @@ from google.cloud.ndb import exceptions
 log = logging.getLogger(__name__)
 
 
-class Options:
+class Options(object):
     __slots__ = (
         # Supported
         "retries",
@@ -43,13 +43,18 @@ class Options:
     def options(cls, wrapped):
         # If there are any positional arguments, get their names
         slots = set(cls.slots())
-        signature = inspect.signature(wrapped)
-        positional = [
-            name
-            for name, parameter in signature.parameters.items()
-            if parameter.kind
-            in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
-        ]
+        # inspect.signature only supported in Python 3. Maybe look for an
+        # alternative way of doing this for 2.7.
+        try:
+            signature = inspect.signature(wrapped)
+            positional = [
+                name
+                for name, parameter in signature.parameters.items()
+                if parameter.kind
+                in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
+            ]
+        except AttributeError:
+            positional = []
 
         # We need for any non-option arguments to come before any option
         # arguments
@@ -97,7 +102,7 @@ class Options:
         return itertools.chain(
             *(
                 ancestor.__slots__
-                for ancestor in cls.mro()
+                for ancestor in cls.__mro__
                 if hasattr(ancestor, "__slots__")
             )
         )

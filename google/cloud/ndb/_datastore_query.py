@@ -129,7 +129,7 @@ def iterate(query, raw=False):
     return _QueryIteratorImpl(query, raw=raw)
 
 
-class QueryIterator:
+class QueryIterator(object):
     """An iterator for query results.
 
     Executes the given query and provides an interface for iterating over
@@ -616,7 +616,7 @@ class _MultiQueryIteratorImpl(QueryIterator):
 
 
 @functools.total_ordering
-class _Result:
+class _Result(object):
     """A single, sortable query result.
 
     Args:
@@ -847,7 +847,7 @@ def _datastore_run_query(query):
     raise tasklets.Return(response)
 
 
-class Cursor:
+class Cursor(object):
     """Cursor.
 
     A pointer to a place in a sequence of query results. Cursor itself is just

@@ -18,7 +18,7 @@
 # tasklets modules.
 
 
-class RemoteCall:
+class RemoteCall(object):
     """Represents a remote call.
 
     This is primarily a wrapper for futures returned by gRPC. This holds some

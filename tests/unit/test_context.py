@@ -13,7 +13,11 @@
 # limitations under the License.
 
 import pytest
-from unittest import mock
+
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from google.cloud.ndb import _cache
 from google.cloud.ndb import context as context_module

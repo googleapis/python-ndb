@@ -146,7 +146,7 @@ class TestOptions:
     @staticmethod
     def test_options():
         @MyOptions.options
-        def hi(mom, foo=None, retries=None, *, timeout=None, _options=None):
+        def hi(mom, foo=None, retries=None, timeout=None, _options=None):
             return mom, _options
 
         assert hi("mom", "bar", 23, timeout=42) == (
@@ -167,7 +167,7 @@ class TestOptions:
     @staticmethod
     def test_options_delegated():
         @MyOptions.options
-        def hi(mom, foo=None, retries=None, *, timeout=None, _options=None):
+        def hi(mom, foo=None, retries=None, timeout=None, _options=None):
             return mom, _options
 
         options = MyOptions(foo="bar", retries=23, timeout=42)

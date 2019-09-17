@@ -50,7 +50,7 @@ _Event = collections.namedtuple(
 )
 
 
-class EventLoop:
+class EventLoop(object):
     """An event loop.
 
     Instances of ``EventLoop`` are used to coordinate single threaded execution

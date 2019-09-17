@@ -258,8 +258,6 @@ from google.cloud.datastore import entity as ds_entity_module
 from google.cloud.datastore import helpers
 from google.cloud.datastore_v1.proto import entity_pb2
 
-from google.cloud.ndb import context as context_module
-from google.cloud.ndb import _datastore_api
 from google.cloud.ndb import _datastore_types
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
@@ -267,6 +265,7 @@ from google.cloud.ndb import _options
 from google.cloud.ndb import query as query_module
 from google.cloud.ndb import _transaction
 from google.cloud.ndb import tasklets
+from google.cloud.ndb import utils
 
 
 __all__ = [
@@ -373,12 +372,13 @@ class UserNotFoundError(exceptions.Error):
     """No email argument was specified, and no user is logged in."""
 
 
-class IndexProperty:
+class IndexProperty(object):
     """Immutable object representing a single property in an index."""
 
     __slots__ = ("_name", "_direction")
 
-    def __new__(cls, *, name, direction):
+    @utils.positional(1)
+    def __new__(cls, name, direction):
         instance = super(IndexProperty, cls).__new__(cls)
         instance._name = name
         instance._direction = direction
@@ -410,12 +410,13 @@ class IndexProperty:
         return hash((self.name, self.direction))
 
 
-class Index:
+class Index(object):
     """Immutable object representing an index."""
 
     __slots__ = ("_kind", "_properties", "_ancestor")
 
-    def __new__(cls, *, kind, properties, ancestor):
+    @utils.positional(1)
+    def __new__(cls, kind, properties, ancestor):
         instance = super(Index, cls).__new__(cls)
         instance._kind = kind
         instance._properties = properties
@@ -458,12 +459,13 @@ class Index:
         return hash((self.kind, self.properties, self.ancestor))
 
 
-class IndexState:
+class IndexState(object):
     """Immutable object representing an index and its state."""
 
     __slots__ = ("_definition", "_state", "_id")
 
-    def __new__(cls, *, definition, state, id):
+    @utils.positional(1)
+    def __new__(cls, definition, state, id):
         instance = super(IndexState, cls).__new__(cls)
         instance._definition = definition
         instance._state = state
@@ -510,7 +512,7 @@ class IndexState:
         return hash((self.definition, self.state, self.id))
 
 
-class ModelAdapter:
+class ModelAdapter(object):
     __slots__ = ()
 
     def __new__(self, *args, **kwargs):
@@ -769,7 +771,7 @@ def make_connection(*args, **kwargs):
     raise exceptions.NoLongerImplementedError()
 
 
-class ModelAttribute:
+class ModelAttribute(object):
     """Base for classes that implement a ``_fix_up()`` method."""
 
     __slots__ = ()
@@ -783,7 +785,7 @@ class ModelAttribute:
         """
 
 
-class _BaseValue:
+class _BaseValue(object):
     """A marker object wrapping a "base type" value.
 
     This is used to be able to tell whether ``entity._values[name]`` is a
@@ -988,10 +990,10 @@ class Property(ModelAttribute):
     # Non-public class attributes.
     _FIND_METHODS_CACHE = {}
 
+    @utils.positional(2)
     def __init__(
         self,
         name=None,
-        *,
         indexed=None,
         repeated=None,
         required=None,
@@ -1146,7 +1148,8 @@ class Property(ModelAttribute):
 
             if instance_val is not default_val:
                 if isinstance(instance_val, type):
-                    as_str = instance_val.__qualname__
+                    as_str = gettatr(instance_val, '__qualname__',
+                            instance_val.__name__)
                 else:
                     as_str = repr(instance_val)
 
@@ -1719,7 +1722,7 @@ class Property(ModelAttribute):
         return call(value)
 
     @classmethod
-    def _find_methods(cls, *names, reverse=False):
+    def _find_methods(cls, *names, **kwargs):
         """Compute a list of composable methods.
 
         Because this is a common operation and the class hierarchy is
@@ -1735,8 +1738,10 @@ class Property(ModelAttribute):
         Returns:
             List[Callable]: Class method objects.
         """
+        reverse = kwargs.get('reverse', False)
         # Get cache on current class / set cache if it doesn't exist.
-        key = "{}.{}".format(cls.__module__, cls.__qualname__)
+        key = "{}.{}".format(cls.__module__,
+                getattr(cls, '__qualname__', cls.__name__))
         cache = cls._FIND_METHODS_CACHE.setdefault(key, {})
         hit = cache.get(names)
         if hit is not None:
@@ -2353,10 +2358,10 @@ class BlobProperty(Property):
     _indexed = False
     _compressed = False
 
+    @utils.positional(2)
     def __init__(
         self,
         name=None,
-        *,
         compressed=None,
         indexed=None,
         repeated=None,
@@ -2786,10 +2791,10 @@ class JsonProperty(BlobProperty):
 
     _json_type = None
 
+    @utils.positional(2)
     def __init__(
         self,
         name=None,
-        *,
         compressed=None,
         json_type=None,
         indexed=None,
@@ -2858,7 +2863,7 @@ class JsonProperty(BlobProperty):
 
 
 @functools.total_ordering
-class User:
+class User(object):
     """Provides the email address, nickname, and ID for a Google Accounts user.
 
     .. note::
@@ -3132,10 +3137,10 @@ class UserProperty(Property):
     _auto_current_user = False
     _auto_current_user_add = False
 
+    @utils.positional(2)
     def __init__(
         self,
         name=None,
-        *,
         auto_current_user=None,
         auto_current_user_add=None,
         indexed=None,
@@ -3246,9 +3251,9 @@ class KeyProperty(Property):
 
     _kind = None
 
+    @utils.positional(3)
     def __init__(
         self,
-        *args,
         name=None,
         kind=None,
         indexed=None,
@@ -3260,7 +3265,9 @@ class KeyProperty(Property):
         verbose_name=None,
         write_empty_list=None,
     ):
-        name, kind = self._handle_positional(args, name, kind)
+        # Removed handle_positional call here, as what it does is not possible
+        # in Python 2.7. Need to decide if there's a better way to handle this
+        # than just taking what utils.positional can give us here.
         super(KeyProperty, self).__init__(
             name=name,
             indexed=indexed,
@@ -3274,92 +3281,6 @@ class KeyProperty(Property):
         )
         if kind is not None:
             self._kind = kind
-
-    @staticmethod
-    def _handle_positional(args, name, kind):
-        """Handle positional arguments.
-
-        In particular, assign them to the "correct" values and make sure
-        they don't collide with the relevant keyword arguments.
-
-        Args:
-            args (tuple): The positional arguments provided to the
-                constructor.
-            name (Optional[str]): The name that was provided as a keyword
-                argument to the constructor.
-            kind (Optional[Union[type, str]]): The kind that was provided as a
-                keyword argument to the constructor.
-
-        Returns:
-            Tuple[Optional[str], Optional[str]]: The ``name`` and ``kind``
-            inferred from the arguments. Either may be :data:`None`.
-
-        Raises:
-            TypeError: If ``args`` has more than 2 elements.
-            TypeError: If a valid ``name`` type (i.e. a string) is specified
-                twice in ``args``.
-            TypeError: If a valid ``kind`` type (i.e. a subclass of
-                :class:`Model`) is specified twice in ``args``.
-            TypeError: If an element in ``args`` is not a :class:`str` or a
-                subclass of :class:`Model`.
-            TypeError: If a ``name`` is specified both in ``args`` and via
-                the ``name`` keyword.
-            TypeError: If a ``kind`` is specified both in ``args`` and via
-                the ``kind`` keyword.
-            TypeError: If a ``kind`` was provided via ``keyword`` and is
-                not a :class:`str` or a subclass of :class:`Model`.
-        """
-        # Limit positional arguments.
-        if len(args) > 2:
-            raise TypeError(
-                "The KeyProperty constructor accepts at most two "
-                "positional arguments."
-            )
-
-        # Filter out None
-        args = [value for value in args if value is not None]
-
-        # Determine the name / kind inferred from the positional arguments.
-        name_via_positional = None
-        kind_via_positional = None
-        for value in args:
-            if isinstance(value, str):
-                if name_via_positional is None:
-                    name_via_positional = value
-                else:
-                    raise TypeError("You can only specify one name")
-            elif isinstance(value, type) and issubclass(value, Model):
-                if kind_via_positional is None:
-                    kind_via_positional = value
-                else:
-                    raise TypeError("You can only specify one kind")
-            else:
-                raise TypeError(
-                    "Unexpected positional argument: {!r}".format(value)
-                )
-
-        # Reconcile the two possible ``name``` values.
-        if name_via_positional is not None:
-            if name is None:
-                name = name_via_positional
-            else:
-                raise TypeError("You can only specify name once")
-
-        # Reconcile the two possible ``kind``` values.
-        if kind_via_positional is None:
-            if isinstance(kind, type) and issubclass(kind, Model):
-                kind = kind._get_kind()
-        else:
-            if kind is None:
-                kind = kind_via_positional._get_kind()
-            else:
-                raise TypeError("You can only specify kind once")
-
-        # Make sure the ``kind`` is a ``str``.
-        if kind is not None and not isinstance(kind, str):
-            raise TypeError("kind must be a Model class or a string")
-
-        return name, kind
 
     def _constructor_info(self):
         """Helper for :meth:`__repr__`.
@@ -3514,10 +3435,10 @@ class DateTimeProperty(Property):
     _auto_now = False
     _auto_now_add = False
 
+    @utils.positional(2)
     def __init__(
         self,
         name=None,
-        *,
         auto_now=None,
         auto_now_add=None,
         indexed=None,
@@ -3999,6 +3920,9 @@ class StructuredProperty(Property):
         behavior to store everything in a single Datastore entity that uses
         dotted attribute names, rather than nesting entities.
         """
+        # Avoid Python 2.7 circularf import
+        from google.cloud.ndb import context as context_module
+
         context = context_module.get_context()
 
         # The easy way
@@ -4274,7 +4198,7 @@ class MetaModel(type):
         return "{}<{}>".format(cls.__name__, ", ".join(props))
 
 
-class Model(metaclass=MetaModel):
+class Model(object):
     """A class describing Cloud Datastore entities.
 
     Model instances are usually called entities. All model classes
@@ -4447,6 +4371,9 @@ class Model(metaclass=MetaModel):
         .BadArgumentError: If the constructor is called with ``key`` and one
             of ``id``, ``app``, ``namespace`` or ``parent`` specified.
     """
+
+    # For Python 2.7
+    __metaclass__ = MetaModel
 
     # Class variables updated by _fix_up_properties()
     _properties = None
@@ -4861,16 +4788,16 @@ class Model(metaclass=MetaModel):
 
         return query.gql(
             "SELECT * FROM {} {}".format(
-                cls._class_name(), query_string, *args, *kwargs
+                cls._class_name(), query_string, *args, **kwargs
             )
         )
 
     gql = _gql
 
+    @utils.positional(1)
     @_options.Options.options
     def _put(
         self,
-        *,
         retries=None,
         timeout=None,
         deadline=None,
@@ -4918,10 +4845,10 @@ class Model(metaclass=MetaModel):
 
     put = _put
 
+    @utils.positional(1)
     @_options.Options.options
     def _put_async(
         self,
-        *,
         retries=None,
         timeout=None,
         deadline=None,
@@ -4966,6 +4893,9 @@ class Model(metaclass=MetaModel):
             tasklets.Future: The eventual result will be the key for the
                 entity. This is always a complete key.
         """
+        # Avoid Python 2.7 circularf import
+        from google.cloud.ndb import context as context_module
+        from google.cloud.ndb import _datastore_api
 
         self._pre_put_hook()
 
@@ -4998,16 +4928,7 @@ class Model(metaclass=MetaModel):
     def _query(
         cls,
         *filters,
-        distinct=False,
-        ancestor=None,
-        order_by=None,
-        orders=None,
-        project=None,
-        app=None,
-        namespace=None,
-        projection=None,
-        distinct_on=None,
-        group_by=None,
+        **kwargs
     ):
         """Generate a query for this class.
 
@@ -5071,6 +4992,7 @@ class Model(metaclass=MetaModel):
 
     query = _query
 
+    @utils.positional(4)
     @classmethod
     @_options.Options.options
     def _allocate_ids(
@@ -5078,7 +5000,6 @@ class Model(metaclass=MetaModel):
         size=None,
         max=None,
         parent=None,
-        *,
         retries=None,
         timeout=None,
         deadline=None,
@@ -5128,6 +5049,7 @@ class Model(metaclass=MetaModel):
 
     allocate_ids = _allocate_ids
 
+    @utils.positional(4)
     @classmethod
     @_options.Options.options
     def _allocate_ids_async(
@@ -5135,7 +5057,6 @@ class Model(metaclass=MetaModel):
         size=None,
         max=None,
         parent=None,
-        *,
         retries=None,
         timeout=None,
         deadline=None,
@@ -5181,6 +5102,9 @@ class Model(metaclass=MetaModel):
             tasklets.Future: Eventual result is ``tuple(key.Key)``: Keys for
                 the newly allocated IDs.
         """
+        # Avoid Python 2.7 circularf import
+        from google.cloud.ndb import _datastore_api
+
         if max:
             raise NotImplementedError(
                 "The 'max' argument to 'allocate_ids' is no longer supported. "
@@ -5218,6 +5142,7 @@ class Model(metaclass=MetaModel):
 
     allocate_ids_async = _allocate_ids_async
 
+    @utils.positional(6)
     @classmethod
     @_options.ReadOptions.options
     def _get_by_id(
@@ -5227,7 +5152,6 @@ class Model(metaclass=MetaModel):
         namespace=None,
         project=None,
         app=None,
-        *,
         read_consistency=None,
         read_policy=None,
         transaction=None,
@@ -5301,6 +5225,7 @@ class Model(metaclass=MetaModel):
 
     get_by_id = _get_by_id
 
+    @utils.positional(6)
     @classmethod
     @_options.ReadOptions.options
     def _get_by_id_async(
@@ -5310,7 +5235,6 @@ class Model(metaclass=MetaModel):
         namespace=None,
         project=None,
         app=None,
-        *,
         read_consistency=None,
         read_policy=None,
         transaction=None,
@@ -5397,6 +5321,7 @@ class Model(metaclass=MetaModel):
 
     get_by_id_async = _get_by_id_async
 
+    @utils.positional(6)
     @classmethod
     @_options.ReadOptions.options
     def _get_or_insert(
@@ -5406,7 +5331,6 @@ class Model(metaclass=MetaModel):
         namespace=None,
         project=None,
         app=None,
-        *,
         read_consistency=None,
         read_policy=None,
         transaction=None,
@@ -5422,7 +5346,7 @@ class Model(metaclass=MetaModel):
         max_memcache_items=None,
         force_writes=None,
         _options=None,
-        **kw_model_args,
+        **kw_model_args
     ):
         """Transactionally retrieves an existing entity or creates a new one.
 
@@ -5488,11 +5412,12 @@ class Model(metaclass=MetaModel):
             project=project,
             app=app,
             _options=_options,
-            **kw_model_args,
+            **kw_model_args
         ).result()
 
     get_or_insert = _get_or_insert
 
+    @utils.positional(6)
     @classmethod
     @_options.ReadOptions.options
     def _get_or_insert_async(
@@ -5502,7 +5427,6 @@ class Model(metaclass=MetaModel):
         namespace=None,
         project=None,
         app=None,
-        *,
         read_consistency=None,
         read_policy=None,
         transaction=None,
@@ -5518,7 +5442,7 @@ class Model(metaclass=MetaModel):
         max_memcache_items=None,
         force_writes=None,
         _options=None,
-        **kw_model_args,
+        **kw_model_args
     ):
         """Transactionally retrieves an existing entity or creates a new one.
 
@@ -5655,7 +5579,8 @@ class Model(metaclass=MetaModel):
 
     has_complete_key = _has_complete_key
 
-    def _to_dict(self, include=None, *, exclude=None):
+    @utils.positional(2)
+    def _to_dict(self, include=None, exclude=None):
         """Return a ``dict`` containing the entity's property values.
 
         Arguments:
@@ -5812,10 +5737,10 @@ class Expando(Model):
         del self._properties[name]
 
 
+@utils.positional(1)
 @_options.ReadOptions.options
 def get_multi_async(
     keys,
-    *,
     read_consistency=None,
     read_policy=None,
     transaction=None,
@@ -5873,10 +5798,10 @@ def get_multi_async(
     return [key.get_async(_options=_options) for key in keys]
 
 
+@utils.positional(1)
 @_options.ReadOptions.options
 def get_multi(
     keys,
-    *,
     read_consistency=None,
     read_policy=None,
     transaction=None,
@@ -5936,10 +5861,10 @@ def get_multi(
     return [future.result() for future in futures]
 
 
+@utils.positional(1)
 @_options.Options.options
 def put_multi_async(
     entities,
-    *,
     retries=None,
     timeout=None,
     deadline=None,
@@ -5985,10 +5910,10 @@ def put_multi_async(
     return [entity.put_async(_options=_options) for entity in entities]
 
 
+@utils.positional(1)
 @_options.Options.options
 def put_multi(
     entities,
-    *,
     retries=None,
     timeout=None,
     deadline=None,
@@ -6035,10 +5960,10 @@ def put_multi(
     return [future.result() for future in futures]
 
 
+@utils.positional(1)
 @_options.Options.options
 def delete_multi_async(
     keys,
-    *,
     retries=None,
     timeout=None,
     deadline=None,
@@ -6084,10 +6009,10 @@ def delete_multi_async(
     return [key.delete_async(_options=_options) for key in keys]
 
 
+@utils.positional(1)
 @_options.Options.options
 def delete_multi(
     keys,
-    *,
     retries=None,
     timeout=None,
     deadline=None,

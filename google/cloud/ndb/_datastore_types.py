@@ -29,7 +29,7 @@ _MAX_STRING_LENGTH = 1500
 
 
 @functools.total_ordering
-class BlobKey:
+class BlobKey(object):
     """Key used to identify a blob in the blobstore.
 
     .. note::

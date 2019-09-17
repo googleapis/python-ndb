@@ -93,12 +93,10 @@ from google.cloud.datastore import _app_engine_key_pb2
 from google.cloud.datastore import key as _key_module
 import google.cloud.datastore
 
-from google.cloud.ndb import context as context_module
-from google.cloud.ndb import _datastore_api
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import _options
 from google.cloud.ndb import tasklets
-from google.cloud.ndb import _transaction
+from google.cloud.ndb import utils
 
 
 __all__ = ["Key"]
@@ -128,7 +126,7 @@ _BAD_STRING_ID = (
 )
 
 
-class Key:
+class Key(object):
     """An immutable datastore key.
 
     For flexibility and convenience, multiple constructor signatures are
@@ -272,10 +270,12 @@ class Key:
             ``pairs`` or ``flat`` is provided as an argument and no positional
             arguments were given with the path.
     """
-
     __slots__ = ("_key", "_reference")
 
     def __new__(cls, *path_args, **kwargs):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import context as context_module
+
         _constructor_handle_positional(path_args, kwargs)
         instance = super(Key, cls).__new__(cls)
         # Make sure to pass in the namespace if it's not explicitly set.
@@ -717,10 +717,10 @@ class Key:
         raw_bytes = self.serialized()
         return base64.urlsafe_b64encode(raw_bytes).strip(b"=")
 
+    @utils.positional(1)
     @_options.ReadOptions.options
     def get(
         self,
-        *,
         read_consistency=None,
         read_policy=None,
         transaction=None,
@@ -778,10 +778,10 @@ class Key:
         """
         return self.get_async(_options=_options).result()
 
+    @utils.positional(1)
     @_options.ReadOptions.options
     def get_async(
         self,
-        *,
         read_consistency=None,
         read_policy=None,
         transaction=None,
@@ -837,7 +837,10 @@ class Key:
         Returns:
             :class:`~google.cloud.ndb.tasklets.Future`
         """
-        from google.cloud.ndb import model  # avoid circular import
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+        from google.cloud.ndb import context as context_module
+        from google.cloud.ndb import _datastore_api
 
         cls = model.Model._kind_map.get(self.kind())
 
@@ -876,10 +879,10 @@ class Key:
             )
         return future
 
+    @utils.positional(1)
     @_options.Options.options
     def delete(
         self,
-        *,
         retries=None,
         timeout=None,
         deadline=None,
@@ -924,14 +927,17 @@ class Key:
             max_memcache_items (int): No longer supported.
             force_writes (bool): No longer supported.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _transaction
+
         future = self.delete_async(_options=_options)
         if not _transaction.in_transaction():
             return future.result()
 
+    @utils.positional(1)
     @_options.Options.options
     def delete_async(
         self,
-        *,
         retries=None,
         timeout=None,
         deadline=None,
@@ -969,7 +975,10 @@ class Key:
             max_memcache_items (int): No longer supported.
             force_writes (bool): No longer supported.
         """
-        from google.cloud.ndb import model  # avoid circular import
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+        from google.cloud.ndb import context as context_module
+        from google.cloud.ndb import _datastore_api
 
         cls = model.Model._kind_map.get(self.kind())
         if cls:
@@ -1035,6 +1044,9 @@ def _project_from_app(app, allow_empty=False):
     Returns:
         str: The cleaned project.
     """
+    # Avoid circular import in Python 2.7
+    from google.cloud.ndb import context as context_module
+
     if app is None:
         if allow_empty:
             return None
@@ -1218,7 +1230,7 @@ def _parse_from_ref(
     urlsafe=None,
     app=None,
     namespace=None,
-    **kwargs,
+    **kwargs
 ):
     """Construct a key from a Reference.
 

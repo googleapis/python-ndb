@@ -56,7 +56,6 @@ Calling a tasklet automatically schedules it with the event loop::
 import functools
 import types
 
-from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import _remote
 
@@ -79,7 +78,7 @@ __all__ = [
 ]
 
 
-class Future:
+class Future(object):
     """Represents a task to be completed at an unspecified time in the future.
 
     This is the abstract base class from which all NDB ``Future`` classes are
@@ -281,6 +280,9 @@ class _TaskletFuture(Future):
 
     def _advance_tasklet(self, send_value=None, error=None):
         """Advance a tasklet one step by sending in a value or error."""
+        # Avoid Python 2.7 import error
+        from google.cloud.ndb import context as context_module
+
         try:
             with self.context.use():
                 # Send the next value or exception into the generator
@@ -413,9 +415,11 @@ def tasklet(wrapped):
     Args:
         wrapped (Callable): The wrapped function.
     """
-
     @functools.wraps(wrapped)
     def tasklet_wrapper(*args, **kwargs):
+        # Avoid Python 2.7 circular import
+        from google.cloud.ndb import context as context_module
+
         # The normal case is that the wrapped function is a generator function
         # that returns a generator when called. We also support the case that
         # the user has wrapped a regular function with the tasklet decorator.
@@ -537,21 +541,21 @@ def make_default_context(*args, **kwargs):
     raise NotImplementedError
 
 
-class QueueFuture:
+class QueueFuture(object):
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
         raise NotImplementedError
 
 
-class ReducingFuture:
+class ReducingFuture(object):
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
         raise NotImplementedError
 
 
-class SerialQueueFuture:
+class SerialQueueFuture(object):
     __slots__ = ()
 
     def __init__(self, *args, **kwargs):
@@ -591,6 +595,9 @@ def toplevel(wrapped):
     Args:
         wrapped (Callable): The wrapped function."
     """
+    # Avoid Python 2.7 circular import
+    from google.cloud.ndb import context as context_module
+
     synctasklet_wrapped = synctasklet(wrapped)
 
     @functools.wraps(wrapped)

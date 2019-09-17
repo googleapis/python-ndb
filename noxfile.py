@@ -27,16 +27,44 @@ NOX_DIR = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_INTERPRETER = "3.7"
 PYPY = "pypy3"
 ALL_INTERPRETERS = ("2.7", "3.6", "3.7", PYPY)
+PY3_INTERPRETERS = ("3.6", "3.7", PYPY)
 
 
 def get_path(*names):
     return os.path.join(NOX_DIR, *names)
 
 
-@nox.session(py=ALL_INTERPRETERS)
+@nox.session(py=PY3_INTERPRETERS)
 def unit(session):
     # Install all dependencies.
     session.install("pytest", "pytest-cov")
+    session.install(".")
+    # Run py.test against the unit tests.
+    run_args = ["pytest"]
+    if session.posargs:
+        run_args.extend(session.posargs)
+    else:
+        run_args.extend(
+            [
+                "--cov=google.cloud.ndb",
+                "--cov=tests.unit",
+                "--cov-config",
+                get_path(".coveragerc"),
+                "--cov-report=",
+            ]
+        )
+    run_args.append(get_path("tests", "unit"))
+    session.run(*run_args)
+
+    if not session.posargs:
+        session.notify("cover")
+
+
+@nox.session(py="2.7")
+def unit27(session):
+    # Install all dependencies.
+    session.install("pytest", "pytest-cov")
+    session.install("mock")
     session.install(".")
     # Run py.test against the unit tests.
     run_args = ["pytest"]

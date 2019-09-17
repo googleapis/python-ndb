@@ -14,8 +14,6 @@
 
 import functools
 
-from google.cloud.ndb import context as context_module
-from google.cloud.ndb import _datastore_api
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import _retry
 from google.cloud.ndb import tasklets
@@ -28,6 +26,9 @@ def in_transaction():
         bool: :data:`True` if there is a transaction for the current context,
             otherwise :data:`False`.
     """
+    # Avoid circular import in Python 2.7
+    from google.cloud.ndb import context as context_module
+
     return context_module.get_context().transaction is not None
 
 
@@ -73,6 +74,9 @@ def transaction_async(
 
     This is the asynchronous version of :func:`transaction`.
     """
+    # Avoid circular import in Python 2.7
+    from google.cloud.ndb import context as context_module
+
     if propagation is not None:
         raise exceptions.NoLongerImplementedError()
 
@@ -94,6 +98,9 @@ def transaction_async(
 
 @tasklets.tasklet
 def _transaction_async(context, callback, read_only=False):
+    # Avoid circular import in Python 2.7
+    from google.cloud.ndb import _datastore_api
+
     # Start the transaction
     transaction_id = yield _datastore_api.begin_transaction(
         read_only, retries=0

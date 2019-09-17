@@ -14,7 +14,10 @@
 
 import itertools
 
-from unittest import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 import grpc
 import pytest
