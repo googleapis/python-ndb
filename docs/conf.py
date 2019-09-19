@@ -218,7 +218,7 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/", None),
     "google-auth": ("https://google-auth.readthedocs.io/en/latest/", None),
     "google-cloud-datastore": (
-        "https://googleapis.github.io/google-cloud-python/latest/",
+        "https://googleapis.dev/python/datastore/latest/",
         None,
     ),
     "grpc": ("https://grpc.io/grpc/python/", None),
