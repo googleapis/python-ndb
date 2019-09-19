@@ -221,8 +221,14 @@ intersphinx_mapping = {
         "https://googleapis.dev/python/datastore/latest/",
         None,
     ),
-    "google-api-core": ("https://googleapis.dev/python/google-api-core/latest", None"),
-    "google-cloud-core": ("https://googleapis.dev/python/google-cloud-core/latest", None"),
+    "google-api-core": (
+        "https://googleapis.dev/python/google-api-core/latest",
+        None,
+    ),
+    "google-cloud-core": (
+        "https://googleapis.dev/python/google-cloud-core/latest",
+        None,
+    ),
     "grpc": ("https://grpc.io/grpc/python/", None),
 }
 
