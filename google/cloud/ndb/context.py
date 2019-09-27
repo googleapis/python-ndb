@@ -45,7 +45,7 @@ class _LocalState(threading.local):
 _state = _LocalState()
 
 
-def get_context():
+def get_context(raise_context_error=True):
     """Get the current context.
 
     This function should be called within a context established by
@@ -62,7 +62,8 @@ def get_context():
     if context:
         return context
 
-    raise exceptions.ContextError()
+    if raise_context_error:
+        raise exceptions.ContextError()
 
 
 def _default_policy(attr_name, value_type):
