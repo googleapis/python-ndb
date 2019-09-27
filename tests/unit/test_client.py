@@ -95,10 +95,19 @@ class TestClient:
             client._http
 
     @staticmethod
-    def test__context():
+    def test_context():
         with patch_credentials("testing"):
             client = client_module.Client()
 
         with client.context():
             context = context_module.get_context()
             assert context.client is client
+
+    @staticmethod
+    def test_context_double_jeopardy():
+        with patch_credentials("testing"):
+            client = client_module.Client()
+
+        with client.context():
+            with pytest.raises(RuntimeError):
+                client.context().__enter__()
