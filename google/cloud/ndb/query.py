@@ -1406,6 +1406,7 @@ class Query:
                     "projection must be a tuple, list or None; "
                     "received {}".format(projection)
                 )
+            projection = self._to_property_names(projection)
             self._check_properties(self._to_property_names(projection))
             self.projection = tuple(projection)
 
@@ -1426,7 +1427,8 @@ class Query:
                     "distinct_on must be a tuple, list or None; "
                     "received {}".format(distinct_on)
                 )
-            self._check_properties(self._to_property_names(distinct_on))
+            distinct_on = self._to_property_names(distinct_on)
+            self._check_properties(distinct_on)
             self.distinct_on = tuple(distinct_on)
 
     def __repr__(self):

@@ -1167,6 +1167,26 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    def test_constructor_with_class_attribute_projection():
+        class Foo(model.Model):
+            string_attr = model.StringProperty()
+
+        class Bar(model.Model):
+            bar_attr = model.StructuredProperty(Foo)
+
+        query = Bar.query(projection=[Bar.bar_attr.string_attr])
+
+        assert query.projection[0] == ('bar_attr.string_attr',)[0]
+
+        future = tasklets.Future("fetch")
+        future.set_result("foo")
+        _datastore_query.fetch.return_value = future
+
+        query.fetch()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_constructor_with_projection():
         query = query_module.Query(kind="Foo", projection=["X"])
         assert query.projection == ("X",)
