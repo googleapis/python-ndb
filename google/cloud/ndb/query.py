@@ -1407,7 +1407,7 @@ class Query:
                     "received {}".format(projection)
                 )
             projection = self._to_property_names(projection)
-            self._check_properties(self._to_property_names(projection))
+            self._check_properties(projection)
             self.projection = tuple(projection)
 
         if distinct_on is not None and group_by is not None:
