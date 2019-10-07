@@ -4036,10 +4036,20 @@ class StructuredProperty(Property):
         return set(keys)
 
     def _prepare_for_put(self, entity):
-        _properties = getattr(entity._properties, self._name)
-        if _properties:
-            for prop in self._properties.values():
-                prop._prepare_for_put(self)
+        """
+        Since structured properties don't have the `_properties` attribute.
+        Get the values from the entity passed in
+        :param entity: the main entity to be saved to datastore then call _prepare_for_put
+        :return:
+        """
+        if isinstance(entity._values, dict):
+            _values = entity._values.get(self._name)
+        else:
+            _values = getattr(entity._values, self._name)
+
+        if _values:
+            for prop in _values:
+                prop._prepare_for_put()
 
 
 class LocalStructuredProperty(BlobProperty):
@@ -4137,10 +4147,20 @@ class LocalStructuredProperty(BlobProperty):
         return _entity_from_ds_entity(value, model_class=self._model_class)
 
     def _prepare_for_put(self, entity):
-        _properties = getattr(entity._properties, self._name)
-        if _properties:
-            for prop in self._properties.values():
-                prop._prepare_for_put(self)
+        """
+        Since structured properties don't have the `_properties` attribute.
+        Get the values from the entity passed in then call _prepare_for_put
+        :param entity: the main entity to be saved to datastore
+        :return:
+        """
+        if isinstance(entity._values, dict):
+            _values = entity._values.get(self._name)
+        else:
+            _values = getattr(entity._values, self._name)
+
+        if _values:
+            for prop in _values:
+                prop._prepare_for_put()
 
 
 class GenericProperty(Property):
