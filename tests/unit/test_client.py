@@ -113,6 +113,7 @@ class TestClient:
             with pytest.raises(RuntimeError):
                 client.context().__enter__()
 
+    @staticmethod
     def test_context_unfinished_business():
         """Regression test for #213.
 
