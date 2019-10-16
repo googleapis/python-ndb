@@ -1228,6 +1228,8 @@ class QueryOptions(_options.ReadOptions):
         "end_cursor",
         # Both (!?!)
         "projection",
+        # Map only
+        "callback",
     )
 
     def __init__(self, config=None, client=None, **kwargs):
@@ -1235,6 +1237,12 @@ class QueryOptions(_options.ReadOptions):
             raise exceptions.NoLongerImplementedError()
 
         if kwargs.get("prefetch_size"):
+            raise exceptions.NoLongerImplementedError()
+
+        if kwargs.get("pass_batch_into_callback"):
+            raise exceptions.NoLongerImplementedError()
+
+        if kwargs.get("merge_future"):
             raise exceptions.NoLongerImplementedError()
 
         if kwargs.pop("produce_cursors", None):
@@ -1406,7 +1414,8 @@ class Query:
                     "projection must be a tuple, list or None; "
                     "received {}".format(projection)
                 )
-            self._check_properties(self._to_property_names(projection))
+            projection = self._to_property_names(projection)
+            self._check_properties(projection)
             self.projection = tuple(projection)
 
         if distinct_on is not None and group_by is not None:
@@ -1426,7 +1435,8 @@ class Query:
                     "distinct_on must be a tuple, list or None; "
                     "received {}".format(distinct_on)
                 )
-            self._check_properties(self._to_property_names(distinct_on))
+            distinct_on = self._to_property_names(distinct_on)
+            self._check_properties(distinct_on)
             self.distinct_on = tuple(distinct_on)
 
     def __repr__(self):
@@ -1875,12 +1885,11 @@ class Query:
 
     __iter__ = iter
 
+    @_query_options
     def map(
         self,
         callback,
         *,
-        pass_batch_into_callback=None,
-        merge_future=None,
         keys_only=None,
         limit=None,
         projection=None,
@@ -1896,15 +1905,15 @@ class Query:
         read_policy=None,
         transaction=None,
         options=None,
+        pass_batch_into_callback=None,
+        merge_future=None,
+        _options=None,
     ):
         """Map a callback function or tasklet over the query results.
-
-        DEPRECATED: This method is no longer supported.
 
         Args:
             callback (Callable): A function or tasklet to be applied to each
                 result; see below.
-            merge_future: Optional ``Future`` subclass; see below.
             keys_only (bool): Return keys instead of entities.
             projection (list[str]): The fields to return as part of the query
                 results.
@@ -1932,33 +1941,21 @@ class Query:
                 Implies ``read_policy=ndb.STRONG``.
             options (QueryOptions): DEPRECATED: An object containing options
                 values for some of these arguments.
+            pass_batch_info_callback: DEPRECATED: No longer implemented.
+            merge_future: DEPRECATED: No longer implemented.
 
-        Callback signature: The callback is normally called with an entity
-        as argument.  However if keys_only=True is given, it is called
-        with a Key.  Also, when pass_batch_into_callback is True, it is
-        called with three arguments: the current batch, the index within
-        the batch, and the entity or Key at that index.  The callback can
-        return whatever it wants.  If the callback is None, a trivial
-        callback is assumed that just returns the entity or key passed in
-        (ignoring produce_cursors).
-
-        Optional merge future: The merge_future is an advanced argument
-        that can be used to override how the callback results are combined
-        into the overall map() return value.  By default a list of
-        callback return values is produced.  By substituting one of a
-        small number of specialized alternatives you can arrange
-        otherwise.  See tasklets.MultiFuture for the default
-        implementation and a description of the protocol the merge_future
-        object must implement the default.  Alternatives from the same
-        module include QueueFuture, SerialQueueFuture and ReducingFuture.
+        Callback signature: The callback is normally called with an entity as
+        argument. However if keys_only=True is given, it is called with a Key.
+        The callback can return whatever it wants.
 
         Returns:
             Any: When the query has run to completion and all callbacks have
                 returned, map() returns a list of the results of all callbacks.
-                (But see 'optional merge future' above.)
         """
-        raise exceptions.NoLongerImplementedError()
+        return self.map_async(None, _options=_options).result()
 
+    @tasklets.tasklet
+    @_query_options
     def map_async(
         self,
         callback,
@@ -1980,17 +1977,29 @@ class Query:
         read_policy=None,
         transaction=None,
         options=None,
+        _options=None,
     ):
         """Map a callback function or tasklet over the query results.
-
-        DEPRECATED: This method is no longer supported.
 
         This is the asynchronous version of :meth:`Query.map`.
 
         Returns:
             tasklets.Future: See :meth:`Query.map` for eventual result.
         """
-        raise exceptions.NoLongerImplementedError()
+        callback = _options.callback
+        futures = []
+        results = _datastore_query.iterate(_options)
+        while (yield results.has_next_async()):
+            result = results.next()
+            mapped = callback(result)
+            if not isinstance(mapped, tasklets.Future):
+                future = tasklets.Future()
+                future.set_result(mapped)
+                mapped = future
+            futures.append(mapped)
+
+        mapped_results = yield futures
+        raise tasklets.Return(mapped_results)
 
     @_query_options
     def get(

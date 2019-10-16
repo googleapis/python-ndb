@@ -1289,3 +1289,55 @@ def test_query_legacy_repeated_structured_property(ds_entity):
     results = query.fetch()
     assert len(results) == 1
     assert results[0].foo == 1
+
+
+@pytest.mark.usefixtures("client_context")
+def test_map(dispose_of):
+    class SomeKind(ndb.Model):
+        foo = ndb.StringProperty()
+        ref = ndb.KeyProperty()
+
+    class OtherKind(ndb.Model):
+        foo = ndb.StringProperty()
+
+    foos = ("aa", "bb", "cc", "dd", "ee")
+    others = [OtherKind(foo=foo) for foo in foos]
+    other_keys = ndb.put_multi(others)
+    for key in other_keys:
+        dispose_of(key._key)
+
+    things = [SomeKind(foo=foo, ref=key) for foo, key in zip(foos, other_keys)]
+    keys = ndb.put_multi(things)
+    for key in keys:
+        dispose_of(key._key)
+
+    eventually(SomeKind.query().fetch, _length_equals(5))
+    eventually(OtherKind.query().fetch, _length_equals(5))
+
+    @ndb.tasklet
+    def get_other_foo(thing):
+        other = yield thing.ref.get_async()
+        return other.foo
+
+    query = SomeKind.query().order(SomeKind.foo)
+    assert query.map(get_other_foo) == foos
+
+
+@pytest.mark.usefixtures("client_context")
+def test_gql(ds_entity):
+    for i in range(5):
+        entity_id = test_utils.system.unique_resource_id()
+        ds_entity(KIND, entity_id, foo=i)
+
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+
+    eventually(SomeKind.query().fetch, _length_equals(5))
+
+    query = ndb.gql("SELECT * FROM SomeKind WHERE foo = :1", 2)
+    results = query.fetch()
+    assert results[0].foo == 2
+
+    query = SomeKind.gql("WHERE foo = :1", 2)
+    results = query.fetch()
+    assert results[0].foo == 2
