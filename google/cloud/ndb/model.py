@@ -4861,9 +4861,9 @@ class Model(metaclass=MetaModel):
         from google.cloud.ndb import query
 
         return query.gql(
-            "SELECT * FROM {} {}".format(
-                cls._class_name(), query_string, *args, *kwargs
-            )
+            "SELECT * FROM {} {}".format(cls._class_name(), query_string),
+            *args,
+            **kwargs,
         )
 
     gql = _gql
