@@ -291,7 +291,7 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', u'xxx'"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False), PropertyOrder(name='prop1', "
             "reverse=True)], projection=['prop1', 'prop2'], "

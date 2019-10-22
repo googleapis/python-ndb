@@ -88,6 +88,7 @@ namespace. To explicitly select the empty namespace pass ``namespace=""``.
 
 import base64
 import functools
+import six
 
 from google.cloud.datastore import _app_engine_key_pb2
 from google.cloud.datastore import key as _key_module
@@ -381,21 +382,25 @@ class Key(object):
     def __lt__(self, other):
         """Less than ordering."""
         if not isinstance(other, Key):
-            return NotImplemented
+            raise TypeError
         return self._tuple() < other._tuple()
 
     def __le__(self, other):
         """Less than or equal ordering."""
         if not isinstance(other, Key):
-            return NotImplemented
+            raise TypeError
         return self._tuple() <= other._tuple()
 
     def __gt__(self, other):
         """Greater than ordering."""
+        if not isinstance(other, Key):
+            raise TypeError
         return not self <= other
 
     def __ge__(self, other):
         """Greater than or equal ordering."""
+        if not isinstance(other, Key):
+            raise TypeError
         return not self < other
 
     def __getstate__(self):
@@ -717,8 +722,8 @@ class Key(object):
         raw_bytes = self.serialized()
         return base64.urlsafe_b64encode(raw_bytes).strip(b"=")
 
-    @utils.positional(1)
     @_options.ReadOptions.options
+    @utils.positional(1)
     def get(
         self,
         read_consistency=None,
@@ -778,8 +783,8 @@ class Key(object):
         """
         return self.get_async(_options=_options).result()
 
-    @utils.positional(1)
     @_options.ReadOptions.options
+    @utils.positional(1)
     def get_async(
         self,
         read_consistency=None,
@@ -879,8 +884,8 @@ class Key(object):
             )
         return future
 
-    @utils.positional(1)
     @_options.Options.options
+    @utils.positional(1)
     def delete(
         self,
         retries=None,
@@ -934,8 +939,8 @@ class Key(object):
         if not _transaction.in_transaction():
             return future.result()
 
-    @utils.positional(1)
     @_options.Options.options
+    @utils.positional(1)
     def delete_async(
         self,
         retries=None,
@@ -1422,7 +1427,7 @@ def _clean_flat_path(flat):
                 raise exceptions.BadArgumentError(
                     "Incomplete Key entry must be last"
                 )
-        elif not isinstance(id_, (str, int)):
+        elif not isinstance(id_, (str,) + six.integer_types):
             raise TypeError(_INVALID_ID_TYPE.format(id_))
 
     # Remove trailing ``None`` for a partial key.

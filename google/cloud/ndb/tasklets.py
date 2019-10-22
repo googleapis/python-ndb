@@ -216,7 +216,14 @@ class Future(object):
             Union[types.TracebackType, None]: The traceback, or None.
         """
         if self._exception:
-            return self._exception.__traceback__
+            try:
+                traceback = self._exception.__traceback__
+            except AttributeError:
+                # Python 2 does not have the helpful traceback attribute, and
+                # sice the exception is not being handled, it appears that
+                # sys.exec_info can't give us the traceback either.
+                traceback = None
+            return traceback
 
     def add_done_callback(self, callback):
         """Add a callback function to be run upon task completion. Will run
@@ -287,8 +294,12 @@ class _TaskletFuture(Future):
             with self.context.use():
                 # Send the next value or exception into the generator
                 if error:
+                    try:
+                        traceback = error.__traceback__
+                    except AttributeError:
+                        traceback = None
                     self.generator.throw(
-                        type(error), error, error.__traceback__
+                        type(error), error, traceback
                     )
 
                 # send_value will be None if this is the first time

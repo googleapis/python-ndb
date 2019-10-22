@@ -37,14 +37,18 @@ class Options(object):
         "force_writes",
         "max_memcache_items",
         "propagation",
+        "deadline",
+        "use_memcache",
+        "memcache_timeout",
     )
 
     @classmethod
     def options(cls, wrapped):
-        # If there are any positional arguments, get their names
         slots = set(cls.slots())
-        # inspect.signature only supported in Python 3. Maybe look for an
-        # alternative way of doing this for 2.7.
+        # If there are any positional arguments, get their names.
+        # inspect.signature is not available in Python 2.7, so we use the
+        # arguments obtained with inspect.getarspec, which come from the
+        # positional decorator used with all query_options decorated methods.
         try:
             signature = inspect.signature(wrapped)
             positional = [
@@ -54,7 +58,7 @@ class Options(object):
                 in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
             ]
         except AttributeError:
-            positional = []
+            positional = getattr(wrapped, "_positional_names", [])
 
         # We need for any non-option arguments to come before any option
         # arguments
@@ -64,6 +68,8 @@ class Options(object):
                 in_options = True
 
             elif in_options and name != "_options":
+                print(slots)
+                print(name)
                 raise TypeError(
                     "All positional non-option arguments must precede option "
                     "arguments in function signature."
@@ -89,11 +95,10 @@ class Options(object):
 
             # If another function that uses options is delegating to this one,
             # we'll already have options.
-            _options = kwargs.pop("_options", None)
-            if not _options:
-                _options = cls(**kw_options)
+            if '_options' not in kwargs:
+                kwargs['_options'] = cls(**kw_options)
 
-            return wrapped(*pass_args, _options=_options, **kwargs)
+            return wrapped(*pass_args, **kwargs)
 
         return wrapper
 
@@ -196,7 +201,7 @@ class Options(object):
 
 
 class ReadOptions(Options):
-    __slots__ = ("read_consistency", "transaction")
+    __slots__ = ("read_consistency", "read_policy", "transaction")
 
     def __init__(self, config=None, **kwargs):
         read_policy = kwargs.pop("read_policy", None)

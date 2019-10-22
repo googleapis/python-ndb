@@ -104,7 +104,7 @@ class TestFuture:
         future.set_exception(error)
         assert future.exception() is error
         assert future.get_exception() is error
-        assert future.get_traceback() is error.__traceback__
+        assert future.get_traceback() is getattr(error, '__traceback__', None)
         with pytest.raises(Exception):
             future.result()
 
@@ -117,7 +117,7 @@ class TestFuture:
         future.set_exception(error)
         assert future.exception() is error
         assert future.get_exception() is error
-        assert future.get_traceback() is error.__traceback__
+        assert future.get_traceback() is getattr(error, '__traceback__', None)
         callback.assert_called_once_with(future)
 
     @staticmethod

@@ -1128,10 +1128,24 @@ class Property(ModelAttribute):
             Tuple[str, bool]: Pairs of argument name and a boolean indicating
             if that argument is a keyword.
         """
-        signature = inspect.signature(self.__init__)
-        for name, parameter in signature.parameters.items():
-            is_keyword = parameter.kind == inspect.Parameter.KEYWORD_ONLY
-            yield name, is_keyword
+        # inspect.signature not available in Python 2.7, so need a fallback.
+        try:
+            signature = inspect.signature(self.__init__)
+            parameters = signature.parameters.items()
+            for name, parameter in parameters:
+                if parameter is not None:
+                    is_keyword = parameter.kind == inspect.Parameter.KEYWORD_ONLY
+                else:
+                    is_keyword = False
+                yield name, is_keyword
+        except AttributeError:
+            argspec = getattr(self.__init__, "_argspec",
+                    inspect.getargspec(self.__init__))
+            positional = getattr(self.__init__, "_positional_args", 2)
+            for index, name in enumerate(argspec.args):
+                if name == "self":
+                    continue
+                yield name, index >= positional
 
     def __repr__(self):
         """Return a compact unambiguous string representation of a property.
@@ -1148,7 +1162,7 @@ class Property(ModelAttribute):
 
             if instance_val is not default_val:
                 if isinstance(instance_val, type):
-                    as_str = gettatr(instance_val, '__qualname__',
+                    as_str = getattr(instance_val, '__qualname__',
                             instance_val.__name__)
                 else:
                     as_str = repr(instance_val)
@@ -1740,8 +1754,9 @@ class Property(ModelAttribute):
         """
         reverse = kwargs.get('reverse', False)
         # Get cache on current class / set cache if it doesn't exist.
-        key = "{}.{}".format(cls.__module__,
-                getattr(cls, '__qualname__', cls.__name__))
+        # Using __qualname__ was better for getting a qualified name, but it's
+        # not available in Python 2.7.
+        key = "{}.{}".format(cls.__module__, cls.__name__)
         cache = cls._FIND_METHODS_CACHE.setdefault(key, {})
         hit = cache.get(names)
         if hit is not None:
@@ -2563,15 +2578,28 @@ class TextProperty(Property):
 
         Yields:
             Tuple[str, bool]: Pairs of argument name and a boolean indicating
-            if that argument is a keyword.
+            if that argument is a keyword. The boolean is always False when
+            using Python 2.7.
         """
         parent_init = super(TextProperty, self).__init__
-        signature = inspect.signature(parent_init)
-        for name, parameter in signature.parameters.items():
-            if name == "indexed":
-                continue
-            is_keyword = parameter.kind == inspect.Parameter.KEYWORD_ONLY
-            yield name, is_keyword
+        # inspect.signature not available in Python 2.7, so need a fallback.
+        try:
+            signature = inspect.signature(parent_init)
+            parameters = signature.parameters.items()
+            for name, parameter in parameters:
+                if parameter is not None:
+                    is_keyword = parameter.kind == inspect.Parameter.KEYWORD_ONLY
+                else:
+                    is_keyword = False
+                yield name, is_keyword
+        except AttributeError:
+            argspec = getattr(parent_init, "_argspec",
+                    inspect.getargspec(parent_init))
+            positional = getattr(parent_init, "_positional_args", 2)
+            for index, name in enumerate(argspec.args):
+                if name == "self" or name=="indexed":
+                    continue
+                yield name, index >= positional
 
     @property
     def _indexed(self):
@@ -2592,7 +2620,7 @@ class TextProperty(Property):
             .BadValueError: If the current property is indexed but the UTF-8
                 encoded value exceeds the maximum length (1500 bytes).
         """
-        if isinstance(value, bytes):
+        if isinstance(value, six.binary_type):
             try:
                 encoded_length = len(value)
                 value = value.decode("utf-8")
@@ -2600,7 +2628,7 @@ class TextProperty(Property):
                 raise exceptions.BadValueError(
                     "Expected valid UTF-8, got {!r}".format(value)
                 )
-        elif isinstance(value, str):
+        elif isinstance(value, six.string_types):
             encoded_length = len(value.encode("utf-8"))
         else:
             raise exceptions.BadValueError(
@@ -2624,7 +2652,7 @@ class TextProperty(Property):
             :class:`bytes`, this will return the UTF-8 decoded ``str`` for it.
             Otherwise, it will return :data:`None`.
         """
-        if isinstance(value, bytes):
+        if isinstance(value, six.binary_type):
             return value.decode("utf-8")
 
     def _from_base_type(self, value):
@@ -2647,7 +2675,7 @@ class TextProperty(Property):
             :class:`str` corresponding to it. Otherwise, it will return
             :data:`None`.
         """
-        if isinstance(value, bytes):
+        if isinstance(value, six.binary_type):
             try:
                 return value.decode("utf-8")
             except UnicodeError:
@@ -2730,8 +2758,6 @@ class PickleProperty(BlobProperty):
     .. automethod:: _to_base_type
     .. automethod:: _from_base_type
     """
-
-    __slots__ = ()
 
     def _to_base_type(self, value):
         """Convert a value to the "base" value type for this property.
@@ -3265,9 +3291,28 @@ class KeyProperty(Property):
         verbose_name=None,
         write_empty_list=None,
     ):
-        # Removed handle_positional call here, as what it does is not possible
-        # in Python 2.7. Need to decide if there's a better way to handle this
-        # than just taking what utils.positional can give us here.
+        # Removed handle_positional method, as what it does is not possible in
+        # Python 2.7.
+        if isinstance(kind, type) and isinstance(name, type):
+            raise TypeError("You can only specify one kind")
+        if isinstance(kind, six.string_types) and isinstance(name, type):
+            if issubclass(name, Model):
+                temp = kind
+                kind = name
+                name = temp
+        if isinstance(kind, six.string_types) and name is None:
+            temp = kind
+            kind = name
+            name = temp
+        if isinstance(name, type) and kind is None:
+            temp = kind
+            kind = name
+            name = temp
+        if isinstance(kind, type) and issubclass(kind, Model):
+            kind = kind._get_kind()
+        else:
+            if kind is not None and not isinstance(kind, six.string_types):
+                raise TypeError("Kind must be a Model class or a string")
         super(KeyProperty, self).__init__(
             name=name,
             indexed=indexed,
@@ -4794,10 +4839,8 @@ class Model(object):
 
     gql = _gql
 
-    @utils.positional(1)
     @_options.Options.options
-    def _put(
-        self,
+    @utils.keyword_only(
         retries=None,
         timeout=None,
         deadline=None,
@@ -4810,7 +4853,9 @@ class Model(object):
         max_memcache_items=None,
         force_writes=None,
         _options=None,
-    ):
+    )
+    @utils.positional(1)
+    def _put(self, **kwargs):
         """Synchronously write this entity to Cloud Datastore.
 
         If the operation creates or completes a key, the entity's key
@@ -4841,14 +4886,12 @@ class Model(object):
         Returns:
             key.Key: The key for the entity. This is always a complete key.
         """
-        return self._put_async(_options=_options).result()
+        return self._put_async(_options=kwargs['_options']).result()
 
     put = _put
 
-    @utils.positional(1)
     @_options.Options.options
-    def _put_async(
-        self,
+    @utils.keyword_only(
         retries=None,
         timeout=None,
         deadline=None,
@@ -4861,7 +4904,9 @@ class Model(object):
         max_memcache_items=None,
         force_writes=None,
         _options=None,
-    ):
+    )
+    @utils.positional(1)
+    def _put_async(self, **kwargs):
         """Asynchronously write this entity to Cloud Datastore.
 
         If the operation creates or completes a key, the entity's key
@@ -4902,12 +4947,12 @@ class Model(object):
         @tasklets.tasklet
         def put(self):
             ds_entity = _entity_to_ds_entity(self)
-            ds_key = yield _datastore_api.put(ds_entity, _options)
+            ds_key = yield _datastore_api.put(ds_entity, kwargs['_options'])
             if ds_key:
                 self._key = key_module.Key._from_ds_key(ds_key)
 
             context = context_module.get_context()
-            if context._use_cache(self._key, _options):
+            if context._use_cache(self._key, kwargs['_options']):
                 context.cache[self._key] = self
 
             raise tasklets.Return(self._key)
@@ -4925,6 +4970,18 @@ class Model(object):
                 prop._prepare_for_put(self)
 
     @classmethod
+    @utils.keyword_only(
+        distinct=False,
+        ancestor=None,
+        order_by=None,
+        orders=None,
+        project=None,
+        app=None,
+        namespace=None,
+        projection=None,
+        distinct_on=None,
+        group_by=None,
+    )
     def _query(
         cls,
         *filters,
@@ -4955,36 +5012,36 @@ class Model(object):
             group_by (list[str]): Deprecated. Synonym for distinct_on.
         """
         # Validating distinct
-        if distinct:
-            if distinct_on:
+        if kwargs['distinct']:
+            if kwargs['distinct_on']:
                 raise TypeError(
                     "Cannot use `distinct` and `distinct_on` together."
                 )
 
-            if group_by:
+            if kwargs['group_by']:
                 raise TypeError(
                     "Cannot use `distinct` and `group_by` together."
                 )
 
-            if not projection:
+            if not kwargs['projection']:
                 raise TypeError("Cannot use `distinct` without `projection`.")
 
-            distinct_on = projection
+            kwargs['distinct_on'] = kwargs['projection']
 
         # Avoid circular import
         from google.cloud.ndb import query as query_module
 
         query = query_module.Query(
             kind=cls._get_kind(),
-            ancestor=ancestor,
-            order_by=order_by,
-            orders=orders,
-            project=project,
-            app=app,
-            namespace=namespace,
-            projection=projection,
-            distinct_on=distinct_on,
-            group_by=group_by,
+            ancestor=kwargs['ancestor'],
+            order_by=kwargs['order_by'],
+            orders=kwargs['orders'],
+            project=kwargs['project'],
+            app=kwargs['app'],
+            namespace=kwargs['namespace'],
+            projection=kwargs['projection'],
+            distinct_on=kwargs['distinct_on'],
+            group_by=kwargs['group_by'],
         )
         query = query.filter(*cls._default_filters())
         query = query.filter(*filters)
@@ -4992,9 +5049,9 @@ class Model(object):
 
     query = _query
 
-    @utils.positional(4)
     @classmethod
     @_options.Options.options
+    @utils.positional(4)
     def _allocate_ids(
         cls,
         size=None,
@@ -5049,9 +5106,9 @@ class Model(object):
 
     allocate_ids = _allocate_ids
 
-    @utils.positional(4)
     @classmethod
     @_options.Options.options
+    @utils.positional(4)
     def _allocate_ids_async(
         cls,
         size=None,
@@ -5142,9 +5199,9 @@ class Model(object):
 
     allocate_ids_async = _allocate_ids_async
 
-    @utils.positional(6)
     @classmethod
     @_options.ReadOptions.options
+    @utils.positional(6)
     def _get_by_id(
         cls,
         id,
@@ -5225,9 +5282,9 @@ class Model(object):
 
     get_by_id = _get_by_id
 
-    @utils.positional(6)
     @classmethod
     @_options.ReadOptions.options
+    @utils.positional(6)
     def _get_by_id_async(
         cls,
         id,
@@ -5321,9 +5378,9 @@ class Model(object):
 
     get_by_id_async = _get_by_id_async
 
-    @utils.positional(6)
     @classmethod
     @_options.ReadOptions.options
+    @utils.positional(6)
     def _get_or_insert(
         cls,
         name,
@@ -5417,9 +5474,9 @@ class Model(object):
 
     get_or_insert = _get_or_insert
 
-    @utils.positional(6)
     @classmethod
     @_options.ReadOptions.options
+    @utils.positional(6)
     def _get_or_insert_async(
         cls,
         name,
@@ -5737,8 +5794,8 @@ class Expando(Model):
         del self._properties[name]
 
 
-@utils.positional(1)
 @_options.ReadOptions.options
+@utils.positional(1)
 def get_multi_async(
     keys,
     read_consistency=None,
@@ -5798,8 +5855,8 @@ def get_multi_async(
     return [key.get_async(_options=_options) for key in keys]
 
 
-@utils.positional(1)
 @_options.ReadOptions.options
+@utils.positional(1)
 def get_multi(
     keys,
     read_consistency=None,
@@ -5861,8 +5918,8 @@ def get_multi(
     return [future.result() for future in futures]
 
 
-@utils.positional(1)
 @_options.Options.options
+@utils.positional(1)
 def put_multi_async(
     entities,
     retries=None,
@@ -5910,8 +5967,8 @@ def put_multi_async(
     return [entity.put_async(_options=_options) for entity in entities]
 
 
-@utils.positional(1)
 @_options.Options.options
+@utils.positional(1)
 def put_multi(
     entities,
     retries=None,
@@ -5960,8 +6017,8 @@ def put_multi(
     return [future.result() for future in futures]
 
 
-@utils.positional(1)
 @_options.Options.options
+@utils.positional(1)
 def delete_multi_async(
     keys,
     retries=None,
@@ -6009,8 +6066,8 @@ def delete_multi_async(
     return [key.delete_async(_options=_options) for key in keys]
 
 
-@utils.positional(1)
 @_options.Options.options
+@utils.positional(1)
 def delete_multi(
     keys,
     retries=None,

@@ -407,6 +407,10 @@ class Node(object):
     def __eq__(self, other):
         raise NotImplementedError
 
+    def __ne__(self, other):
+        # Python 2.7 requires this method to be implemented.
+        raise NotImplementedError
+
     def __le__(self, unused_other):
         raise TypeError("Nodes cannot be ordered")
 
@@ -685,6 +689,9 @@ class FilterNode(Node):
             and self._opsymbol == other._opsymbol
             and self._value == other._value
         )
+
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
     def _to_filter(self, post=False):
         """Helper to convert to low-level filter.
@@ -1137,9 +1144,10 @@ def _query_options(wrapped):
     the ``_options`` argument to those functions, bypassing all of the
     other arguments.
     """
-    # If there are any positional arguments, get their names
-    # inspect.signature is not available in Python 2.7, so might need another
-    # way of doing this.
+    # If there are any positional arguments, get their names.
+    # inspect.signature is not available in Python 2.7, so we use the
+    # arguments obtained with inspect.getarspec, which come from the
+    # positional decorator used with all query_options decorated methods.
     try:
         signature = inspect.signature(wrapped)
         positional = [
@@ -1150,7 +1158,8 @@ def _query_options(wrapped):
             and name != "self"
         ]
     except AttributeError:
-        positional = []
+        arg_names = getattr(wrapped, "_positional_names", [])
+        positional = [arg for arg in arg_names if arg != "self"]
 
     # Provide dummy values for positional args to avoid TypeError
     dummy_args = [None for _ in positional]
@@ -1684,8 +1693,8 @@ class Query(object):
         if modelclass is not None:
             modelclass._check_properties(fixed, **kwargs)
 
-    @utils.positional(2)
     @_query_options
+    @utils.positional(2)
     def fetch(
         self,
         limit=None,
@@ -1743,8 +1752,8 @@ class Query(object):
         """
         return self.fetch_async(_options=_options).result()
 
-    @utils.positional(2)
     @_query_options
+    @utils.positional(2)
     def fetch_async(
         self,
         limit=None,
@@ -1848,8 +1857,8 @@ class Query(object):
         """Run this query, putting entities into the given queue."""
         raise exceptions.NoLongerImplementedError()
 
-    @utils.positional(1)
     @_query_options
+    @utils.positional(1)
     def iter(
         self,
         keys_only=None,
@@ -2027,10 +2036,8 @@ class Query(object):
         """
         raise exceptions.NoLongerImplementedError()
 
-    @utils.positional(1)
     @_query_options
-    def get(
-        self,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         batch_size=None,
@@ -2045,7 +2052,9 @@ class Query(object):
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(1)
+    def get(self, **kwargs):
         """Get the first query result, if any.
 
         This is equivalent to calling ``q.fetch(1)`` and returning the first
@@ -2081,13 +2090,11 @@ class Query(object):
             Optional[Union[google.cloud.datastore.entity.Entity, key.Key]]:
                 A single result, or :data:`None` if there are no results.
         """
-        return self.get_async(_options=_options).result()
+        return self.get_async(_options=kwargs['_options']).result()
 
-    @utils.positional(1)
     @tasklets.tasklet
     @_query_options
-    def get_async(
-        self,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         offset=None,
@@ -2103,7 +2110,9 @@ class Query(object):
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(1)
+    def get_async(self, **kwargs):
         """Get the first query result, if any.
 
         This is the asynchronous version of :meth:`Query.get`.
@@ -2114,13 +2123,13 @@ class Query(object):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import _datastore_query
 
-        options = _options.copy(limit=1)
+        options = kwargs['_options'].copy(limit=1)
         results = yield _datastore_query.fetch(options)
         if results:
             raise tasklets.Return(results[0])
 
-    @utils.positional(2)
     @_query_options
+    @utils.positional(2)
     def count(
         self,
         limit=None,
@@ -2192,9 +2201,9 @@ class Query(object):
         """
         return self.count_async(_options=_options).result()
 
-    @utils.positional(2)
     @tasklets.tasklet
     @_query_options
+    @utils.positional(2)
     def count_async(
         self,
         limit=None,
@@ -2235,8 +2244,8 @@ class Query(object):
 
         raise tasklets.Return(count)
 
-    @utils.positional(2)
     @_query_options
+    @utils.positional(2)
     def fetch_page(
         self,
         page_size,
@@ -2308,9 +2317,9 @@ class Query(object):
         """
         return self.fetch_page_async(None, _options=_options).result()
 
-    @utils.positional(2)
     @tasklets.tasklet
     @_query_options
+    @utils.positional(2)
     def fetch_page_async(
         self,
         page_size,

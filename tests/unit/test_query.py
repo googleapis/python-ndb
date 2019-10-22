@@ -183,7 +183,7 @@ class TestRepeatedStructuredPropertyPredicate:
         class SomeKind(model.Model):
             foo = model.StructuredProperty(SubKind, repeated=True)
 
-        match_entity = SubKind(bar=1, baz="scoggs")
+        match_entity = SubKind(bar=1, baz=u"scoggs")
         predicate = query_module.RepeatedStructuredPropertyPredicate(
             "foo", ["bar", "baz"], model._entity_to_protobuf(match_entity)
         )
@@ -194,7 +194,7 @@ class TestRepeatedStructuredPropertyPredicate:
             {
                 "something.else": "whocares",
                 "foo.bar": [2, 1],
-                "foo.baz": ["matic", "scoggs"],
+                "foo.baz": [u"matic", u"scoggs"],
             }
         )
 
@@ -357,7 +357,7 @@ class TestNode:
     def test___ne__(self):
         node = self._make_one()
         with pytest.raises(NotImplementedError):
-            node != mock.sentinel.other
+            node != None
 
     def test___le__(self):
         node = self._make_one()
@@ -460,7 +460,7 @@ class TestParameterNode:
         param = query_module.Parameter("abc")
         parameter_node = query_module.ParameterNode(prop, "=", param)
 
-        pickled = pickle.dumps(parameter_node)
+        pickled = pickle.dumps(parameter_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert parameter_node == unpickled
 
@@ -605,7 +605,7 @@ class TestFilterNode:
     def test_pickling():
         filter_node = query_module.FilterNode("speed", ">=", 88)
 
-        pickled = pickle.dumps(filter_node)
+        pickled = pickle.dumps(filter_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert filter_node == unpickled
 
@@ -660,7 +660,7 @@ class TestPostFilterNode:
         predicate = "must-be-pickle-able"
         post_filter_node = query_module.PostFilterNode(predicate)
 
-        pickled = pickle.dumps(post_filter_node)
+        pickled = pickle.dumps(post_filter_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert post_filter_node == unpickled
 
@@ -848,7 +848,7 @@ class TestConjunctionNode:
         node2 = query_module.FilterNode("b", ">", 7.5)
         and_node = query_module.ConjunctionNode(node1, node2)
 
-        pickled = pickle.dumps(and_node)
+        pickled = pickle.dumps(and_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert and_node == unpickled
 
@@ -1037,7 +1037,7 @@ class TestDisjunctionNode:
         node2 = query_module.FilterNode("b", ">", 7.5)
         or_node = query_module.DisjunctionNode(node1, node2)
 
-        pickled = pickle.dumps(or_node)
+        pickled = pickle.dumps(or_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert or_node == unpickled
 
@@ -2084,7 +2084,7 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', u'xxx'"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
             "default_options=QueryOptions(limit=10, offset=5))"
@@ -2106,7 +2106,7 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', u'xxx'"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
             "default_options=QueryOptions(limit=10, offset=5))"
@@ -2129,7 +2129,7 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', u'xxx'"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
             "default_options=QueryOptions(limit=10, offset=5))"
@@ -2152,7 +2152,7 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', u'xxx'"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
             "default_options=QueryOptions(limit=10, offset=5))"

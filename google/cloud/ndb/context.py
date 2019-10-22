@@ -266,7 +266,7 @@ class _Context(_ContextTuple):
 
         keys = [
             _cache.global_cache_key(key._key)
-            for key in self.cache
+            for key in self.cache.keys()
             if self._use_global_cache(key)
         ]
         if keys:

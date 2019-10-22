@@ -121,9 +121,9 @@ def _transaction_async(context, callback, read_only=False):
             yield _datastore_api.commit(transaction_id, retries=0)
 
         # Rollback if there is an error
-        except:  # noqa: E722
+        except Exception as e:  # noqa: E722
             yield _datastore_api.rollback(transaction_id)
-            raise
+            raise e
 
         tx_context._clear_global_cache()
         for callback in on_commit_callbacks:

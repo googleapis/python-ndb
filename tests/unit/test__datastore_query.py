@@ -41,7 +41,7 @@ def test_make_filter():
         op=query_pb2.PropertyFilter.EQUAL,
         value=entity_pb2.Value(string_value="Harold"),
     )
-    assert _datastore_query.make_filter("harry", "=", "Harold") == expected
+    assert _datastore_query.make_filter("harry", "=", u"Harold") == expected
 
 
 def test_make_composite_and_filter():
@@ -443,14 +443,14 @@ class Test_PostFilterQueryIteratorImpl:
     def test_constructor():
         foo = model.StringProperty("foo")
         query = query_module.QueryOptions(
-            offset=20, limit=10, filters=foo == "this"
+            offset=20, limit=10, filters=foo == u"this"
         )
         predicate = object()
         iterator = _datastore_query._PostFilterQueryIteratorImpl(
             query, predicate
         )
         assert iterator._result_set._query == query_module.QueryOptions(
-            filters=foo == "this"
+            filters=foo == u"this"
         )
         assert iterator._offset == 20
         assert iterator._limit == 10
@@ -1288,7 +1288,7 @@ class TestCursor:
         cursor = _datastore_query.Cursor(urlsafe=urlsafe)
         assert cursor.cursor == b"123"
 
-        cursor = _datastore_query.Cursor(urlsafe=urlsafe.decode("ascii"))
+        cursor = _datastore_query.Cursor(urlsafe=str(urlsafe))
         assert cursor.cursor == b"123"
 
     @staticmethod

@@ -553,7 +553,7 @@ class TestKey:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     @mock.patch("google.cloud.ndb.model._entity_from_protobuf")
     def test_get_with_cache_miss(_entity_from_protobuf, _datastore_api):
         class Simple(model.Model):
@@ -573,7 +573,7 @@ class TestKey:
         _entity_from_protobuf.assert_called_once_with("ds_entity")
 
     @staticmethod
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     @mock.patch("google.cloud.ndb.model._entity_from_protobuf")
     def test_get_with_cache_hit(
         _entity_from_protobuf, _datastore_api, in_context
@@ -595,7 +595,7 @@ class TestKey:
         _entity_from_protobuf.assert_not_called()
 
     @staticmethod
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     @mock.patch("google.cloud.ndb.model._entity_from_protobuf")
     def test_get_no_cache(_entity_from_protobuf, _datastore_api, in_context):
         class Simple(model.Model):
@@ -618,7 +618,7 @@ class TestKey:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     @mock.patch("google.cloud.ndb.model._entity_from_protobuf")
     def test_get_w_hooks(_entity_from_protobuf, _datastore_api):
         class Simple(model.Model):
@@ -652,7 +652,7 @@ class TestKey:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     @mock.patch("google.cloud.ndb.model._entity_from_protobuf")
     def test_get_async(_entity_from_protobuf, _datastore_api):
         ds_future = tasklets.Future()
@@ -671,7 +671,7 @@ class TestKey:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_get_async_not_found(_datastore_api):
         ds_future = tasklets.Future()
         _datastore_api.lookup.return_value = ds_future
@@ -683,7 +683,7 @@ class TestKey:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_delete(_datastore_api):
         class Simple(model.Model):
             pass
@@ -699,7 +699,7 @@ class TestKey:
         )
 
     @staticmethod
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_delete_with_cache(_datastore_api, in_context):
         class Simple(model.Model):
             pass
@@ -719,7 +719,7 @@ class TestKey:
         )
 
     @staticmethod
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_delete_no_cache(_datastore_api, in_context):
         class Simple(model.Model):
             pass
@@ -740,7 +740,7 @@ class TestKey:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_delete_w_hooks(_datastore_api):
         class Simple(model.Model):
             pre_delete_calls = []
@@ -769,7 +769,7 @@ class TestKey:
         assert Simple.post_delete_calls == [((key,), {})]
 
     @staticmethod
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_delete_in_transaction(_datastore_api, in_context):
         future = tasklets.Future()
         _datastore_api.delete.return_value = future
@@ -783,7 +783,7 @@ class TestKey:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb.key._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_delete_async(_datastore_api):
         key = key_module.Key("a", "b", app="c")
 
