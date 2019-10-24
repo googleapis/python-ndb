@@ -298,9 +298,7 @@ class _TaskletFuture(Future):
                         traceback = error.__traceback__
                     except AttributeError:
                         traceback = None
-                    self.generator.throw(
-                        type(error), error, traceback
-                    )
+                    self.generator.throw(type(error), error, traceback)
 
                 # send_value will be None if this is the first time
                 yielded = self.generator.send(send_value)
@@ -426,6 +424,7 @@ def tasklet(wrapped):
     Args:
         wrapped (Callable): The wrapped function.
     """
+
     @functools.wraps(wrapped)
     def tasklet_wrapper(*args, **kwargs):
         # Avoid Python 2.7 circular import

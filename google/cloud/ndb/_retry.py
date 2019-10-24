@@ -32,8 +32,9 @@ def wraps_safely(obj, attr_names=functools.WRAPPER_ASSIGNMENTS):
     """Python 2.7 functools.wraps has a bug where attributes like ``module``
     are not copied to the wrappers and thus cause attribute errors. This
     wrapper prevents that problem."""
-    return functools.wraps(obj,
-        assigned=(name for name in attr_names if hasattr(obj, name)))
+    return functools.wraps(
+        obj, assigned=(name for name in attr_names if hasattr(obj, name))
+    )
 
 
 def retry_async(callback, retries=_DEFAULT_RETRIES):

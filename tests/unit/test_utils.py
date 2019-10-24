@@ -63,7 +63,6 @@ def test_logging_debug():
 
 
 def test_positional():
-
     @utils.positional(2)
     def test_func(a=1, b=2, **kwargs):
         return a, b

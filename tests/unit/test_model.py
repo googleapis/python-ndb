@@ -411,9 +411,7 @@ class TestProperty:
     @staticmethod
     def test_constructor_invalid_validator():
         with pytest.raises(TypeError):
-            model.Property(
-                name="a", validator=mock.sentinel.validator
-            )
+            model.Property(name="a", validator=mock.sentinel.validator)
 
     def test_repr(self):
         prop = model.Property(
@@ -714,9 +712,7 @@ class TestProperty:
 
     @staticmethod
     def test__set_value_projection():
-        entity = mock.Mock(
-            _projection=("a", "b"), spec=("_projection",)
-        )
+        entity = mock.Mock(_projection=("a", "b"), spec=("_projection",))
         prop = model.Property(name="foo", repeated=True)
         with pytest.raises(model.ReadonlyPropertyError):
             prop._set_value(entity, None)
@@ -983,15 +979,16 @@ class TestProperty:
         assert model.Property._FIND_METHODS_CACHE == {}
 
         methods = SomeProperty._find_methods("IN", "find_me")
-        assert methods == [
-            SomeProperty.IN.__func__,
-            SomeProperty.find_me.__func__,
-            model.Property.IN.__func__,
-        ]
+        expected = [SomeProperty.IN, SomeProperty.find_me, model.Property.IN]
+        if six.PY2:
+            expected = [
+                SomeProperty.IN.__func__,
+                SomeProperty.find_me.__func__,
+                model.Property.IN.__func__,
+            ]
+        assert methods == expected
         # Check cache
-        key = "{}.{}".format(
-            SomeProperty.__module__, SomeProperty.__name__
-        )
+        key = "{}.{}".format(SomeProperty.__module__, SomeProperty.__name__)
         assert model.Property._FIND_METHODS_CACHE == {
             key: {("IN", "find_me"): methods}
         }
@@ -1002,15 +999,16 @@ class TestProperty:
         assert model.Property._FIND_METHODS_CACHE == {}
 
         methods = SomeProperty._find_methods("IN", "find_me", reverse=True)
-        assert methods == [
-            model.Property.IN.__func__,
-            SomeProperty.find_me.__func__,
-            SomeProperty.IN.__func__,
-        ]
+        expected = [model.Property.IN, SomeProperty.find_me, SomeProperty.IN]
+        if six.PY2:
+            expected = [
+                model.Property.IN.__func__,
+                SomeProperty.find_me.__func__,
+                SomeProperty.IN.__func__,
+            ]
+        assert methods == expected
         # Check cache
-        key = "{}.{}".format(
-            SomeProperty.__module__, SomeProperty.__name__
-        )
+        key = "{}.{}".format(SomeProperty.__module__, SomeProperty.__name__)
         assert model.Property._FIND_METHODS_CACHE == {
             key: {("IN", "find_me"): list(reversed(methods))}
         }
@@ -1019,9 +1017,7 @@ class TestProperty:
         SomeProperty = self._property_subtype()
         # Set cache
         methods = mock.sentinel.methods
-        key = "{}.{}".format(
-            SomeProperty.__module__, SomeProperty.__name__
-        )
+        key = "{}.{}".format(SomeProperty.__module__, SomeProperty.__name__)
         model.Property._FIND_METHODS_CACHE = {
             key: {("IN", "find_me"): methods}
         }
@@ -1031,9 +1027,7 @@ class TestProperty:
         SomeProperty = self._property_subtype()
         # Set cache
         methods = ["a", "b"]
-        key = "{}.{}".format(
-            SomeProperty.__module__, SomeProperty.__name__
-        )
+        key = "{}.{}".format(SomeProperty.__module__, SomeProperty.__name__)
         model.Property._FIND_METHODS_CACHE = {
             key: {("IN", "find_me"): methods}
         }
@@ -1065,9 +1059,7 @@ class TestProperty:
     def test__apply_to_values():
         value = "foo"
         prop = model.Property(name="bar", repeated=False)
-        entity = mock.Mock(
-            _values={prop._name: value}, spec=("_values",)
-        )
+        entity = mock.Mock(_values={prop._name: value}, spec=("_values",))
         function = mock.Mock(spec=(), return_value="foo2")
 
         result = prop._apply_to_values(entity, function)
@@ -1092,9 +1084,7 @@ class TestProperty:
     def test__apply_to_values_transformed_none():
         value = 7.5
         prop = model.Property(name="bar", repeated=False)
-        entity = mock.Mock(
-            _values={prop._name: value}, spec=("_values",)
-        )
+        entity = mock.Mock(_values={prop._name: value}, spec=("_values",))
         function = mock.Mock(spec=(), return_value=None)
 
         result = prop._apply_to_values(entity, function)
@@ -1107,9 +1097,7 @@ class TestProperty:
     def test__apply_to_values_transformed_unchanged():
         value = mock.sentinel.value
         prop = model.Property(name="bar", repeated=False)
-        entity = mock.Mock(
-            _values={prop._name: value}, spec=("_values",)
-        )
+        entity = mock.Mock(_values={prop._name: value}, spec=("_values",))
         function = mock.Mock(spec=(), return_value=value)
 
         result = prop._apply_to_values(entity, function)
@@ -1122,9 +1110,7 @@ class TestProperty:
     def test__apply_to_values_repeated():
         value = [1, 2, 3]
         prop = model.Property(name="bar", repeated=True)
-        entity = mock.Mock(
-            _values={prop._name: value}, spec=("_values",)
-        )
+        entity = mock.Mock(_values={prop._name: value}, spec=("_values",))
         function = mock.Mock(spec=(), return_value=42)
 
         result = prop._apply_to_values(entity, function)
@@ -1137,11 +1123,7 @@ class TestProperty:
         assert entity._values == {prop._name: result}
         # Check mocks.
         assert function.call_count == 3
-        calls = [
-            mock.call(1),
-            mock.call(2),
-            mock.call(3),
-        ]
+        calls = [mock.call(1), mock.call(2), mock.call(3)]
         function.assert_has_calls(calls)
 
     @staticmethod
@@ -1185,9 +1167,7 @@ class TestProperty:
     @staticmethod
     def test__get_value_projected_absent():
         prop = model.Property(name="prop")
-        entity = mock.Mock(
-            _projection=("nope",), spec=("_projection",)
-        )
+        entity = mock.Mock(_projection=("nope",), spec=("_projection",))
         with pytest.raises(model.UnprojectedPropertyError):
             prop._get_value(entity)
         # Cache is untouched.
@@ -2354,8 +2334,8 @@ class TestKeyProperty:
 
     # Might need a completely different way to test for this, given Python 2.7
     # limitations for positional and keyword-only arguments.
-    #@staticmethod
-    #def test_constructor_positional_name_twice():
+    # @staticmethod
+    # def test_constructor_positional_name_twice():
     #    with pytest.raises(TypeError):
     #        model.KeyProperty("a", "b")
 
@@ -2379,8 +2359,8 @@ class TestKeyProperty:
 
     # Might need a completely different way to test for this, given Python 2.7
     # limitations for positional and keyword-only arguments.
-    #@staticmethod
-    #def test_constructor_kind_both_ways():
+    # @staticmethod
+    # def test_constructor_kind_both_ways():
     #    class Simple(model.Model):
     #        pass
     #
@@ -2424,8 +2404,8 @@ class TestKeyProperty:
         class Simple(model.Model):
             pass
 
-        #prop1 will get a TypeError due to Python 2.7 compatibility
-        #prop1 = model.KeyProperty(Simple, name="keyp")
+        # prop1 will get a TypeError due to Python 2.7 compatibility
+        # prop1 = model.KeyProperty(Simple, name="keyp")
         prop2 = model.KeyProperty("keyp", kind=Simple)
         prop3 = model.KeyProperty("keyp", kind="Simple")
         for prop in (prop2, prop3):
@@ -2637,9 +2617,7 @@ class TestDateTimeProperty:
         values1 = {}
         values2 = {prop._name: mock.sentinel.dt}
         for values in (values1, values2):
-            entity = mock.Mock(
-                _values=values.copy(), spec=("_values",)
-            )
+            entity = mock.Mock(_values=values.copy(), spec=("_values",))
 
             with mock.patch.object(prop, "_now") as _now:
                 prop._prepare_for_put(entity)
@@ -2983,8 +2961,8 @@ class TestStructuredProperty:
         prop._name = "baz"
         mine = Mine(foo="x", bar="y")
         assert prop._comparison("=", mine) == query_module.AND(
-            query_module.FilterNode("baz.foo", "=", u"x"),
             query_module.FilterNode("baz.bar", "=", u"y"),
+            query_module.FilterNode("baz.foo", "=", u"x"),
         )
 
     @staticmethod
@@ -2999,16 +2977,16 @@ class TestStructuredProperty:
         mine = Mine(foo="x", bar="y")
         conjunction = prop._comparison("=", mine)
         assert conjunction._nodes[0] == query_module.FilterNode(
-            "bar.foo", "=", u"x"
-        )
-        assert conjunction._nodes[1] == query_module.FilterNode(
             "bar.bar", "=", u"y"
         )
+        assert conjunction._nodes[1] == query_module.FilterNode(
+            "bar.foo", "=", u"x"
+        )
         assert conjunction._nodes[2].predicate.name == "bar"
-        assert conjunction._nodes[2].predicate.match_keys == ["foo", "bar"]
+        assert conjunction._nodes[2].predicate.match_keys == ["bar", "foo"]
         match_values = conjunction._nodes[2].predicate.match_values
-        assert match_values[0].string_value == "x"
-        assert match_values[1].string_value == "y"
+        assert match_values[0].string_value == "y"
+        assert match_values[1].string_value == "x"
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3517,9 +3495,7 @@ class TestComputedProperty:
     @staticmethod
     def test__get_value():
         prop = model.ComputedProperty(lambda self: 42)
-        entity = mock.Mock(
-            _projection=None, _values={}, spec=("_projection")
-        )
+        entity = mock.Mock(_projection=None, _values={}, spec=("_projection"))
         assert prop._get_value(entity) == 42
 
     @staticmethod
@@ -3537,9 +3513,7 @@ class TestComputedProperty:
     @staticmethod
     def test__get_value_empty_projection():
         prop = model.ComputedProperty(lambda self: 42)
-        entity = mock.Mock(
-            _projection=None, _values={}, spec=("_projection")
-        )
+        entity = mock.Mock(_projection=None, _values={}, spec=("_projection"))
         prop._prepare_for_put(entity)
         assert entity._values == {prop._name: 42}
 
@@ -4579,18 +4553,14 @@ class TestModel:
         patched_key_module, _transaction
     ):
         class MockKey(key_module.Key):
-            get_async = mock.Mock(
-                return_value=utils.future_result(None)
-            )
+            get_async = mock.Mock(return_value=utils.future_result(None))
 
         patched_key_module.Key = MockKey
 
         class Simple(model.Model):
             foo = model.IntegerProperty()
 
-            put_async = mock.Mock(
-                return_value=utils.future_result(None)
-            )
+            put_async = mock.Mock(return_value=utils.future_result(None))
 
         _transaction.in_transaction.return_value = True
 
@@ -4613,18 +4583,14 @@ class TestModel:
         patched_key_module, _transaction
     ):
         class MockKey(key_module.Key):
-            get_async = mock.Mock(
-                return_value=utils.future_result(None)
-            )
+            get_async = mock.Mock(return_value=utils.future_result(None))
 
         patched_key_module.Key = MockKey
 
         class Simple(model.Model):
             foo = model.IntegerProperty()
 
-            put_async = mock.Mock(
-                return_value=utils.future_result(None)
-            )
+            put_async = mock.Mock(return_value=utils.future_result(None))
 
         _transaction.in_transaction.return_value = False
         _transaction.transaction_async = lambda f: f()

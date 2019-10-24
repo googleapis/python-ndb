@@ -60,6 +60,7 @@ class keyword_only(object):
     parameters. Raises TypeError if a keyword argument not included in those
     parameters is passed in.
     """
+
     def __init__(self, **kwargs):
         self.defaults = kwargs
 
@@ -70,10 +71,12 @@ class keyword_only(object):
             for kwarg in kwargs:
                 if kwarg not in new_kwargs:
                     raise TypeError(
-                        "%s() got an unexpected keyword argument '%s'" %
-                        (wrapped.__name__, kwarg))
+                        "%s() got an unexpected keyword argument '%s'"
+                        % (wrapped.__name__, kwarg)
+                    )
             new_kwargs.update(kwargs)
             return wrapped(*args, **new_kwargs)
+
         return wrapper
 
 
@@ -86,23 +89,29 @@ def positional(max_pos_args):
     decorator has to be closer to the function definition than other decorators
     that need to access `_positional_names` or `_positional_args`.
     """
+
     def positional_decorator(wrapped):
         wrapped._positional_args = max_pos_args
         argspec = inspect.getargspec(wrapped)
         wrapped._argspec = argspec
         wrapped._positional_names = argspec.args[:max_pos_args]
+
         @functools.wraps(wrapped)
         def positional_wrapper(*args, **kwds):
             if len(args) > max_pos_args:
                 plural_s = ""
                 if max_pos_args != 1:
-                    plural_s = 's'
+                    plural_s = "s"
                 raise TypeError(
-                    "%s() takes at most %d positional argument%s (%d given)" %
-                    (wrapped.__name__, max_pos_args, plural_s, len(args)))
+                    "%s() takes at most %d positional argument%s (%d given)"
+                    % (wrapped.__name__, max_pos_args, plural_s, len(args))
+                )
             return wrapped(*args, **kwds)
+
         return positional_wrapper
+
     return positional_decorator
+
 
 threading_local = threading.local
 

@@ -41,6 +41,7 @@ class GlobalCache(object):
     services, it's not recommended that casual users write asynchronous
     implementations, as some specialized knowledge is required.
     """
+
     __metaclass__ = abc.ABCMeta
 
     @abc.abstractmethod

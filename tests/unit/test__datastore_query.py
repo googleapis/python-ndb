@@ -1288,9 +1288,6 @@ class TestCursor:
         cursor = _datastore_query.Cursor(urlsafe=urlsafe)
         assert cursor.cursor == b"123"
 
-        cursor = _datastore_query.Cursor(urlsafe=str(urlsafe))
-        assert cursor.cursor == b"123"
-
     @staticmethod
     def test_from_websafe_string():
         urlsafe = base64.urlsafe_b64encode(b"123")

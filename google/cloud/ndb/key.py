@@ -271,6 +271,7 @@ class Key(object):
             ``pairs`` or ``flat`` is provided as an argument and no positional
             arguments were given with the path.
     """
+
     __slots__ = ("_key", "_reference")
 
     def __new__(cls, *path_args, **kwargs):

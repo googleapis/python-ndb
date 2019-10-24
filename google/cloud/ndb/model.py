@@ -1128,24 +1128,16 @@ class Property(ModelAttribute):
             Tuple[str, bool]: Pairs of argument name and a boolean indicating
             if that argument is a keyword.
         """
-        # inspect.signature not available in Python 2.7, so need a fallback.
-        try:
-            signature = inspect.signature(self.__init__)
-            parameters = signature.parameters.items()
-            for name, parameter in parameters:
-                if parameter is not None:
-                    is_keyword = parameter.kind == inspect.Parameter.KEYWORD_ONLY
-                else:
-                    is_keyword = False
-                yield name, is_keyword
-        except AttributeError:
-            argspec = getattr(self.__init__, "_argspec",
-                    inspect.getargspec(self.__init__))
-            positional = getattr(self.__init__, "_positional_args", 2)
-            for index, name in enumerate(argspec.args):
-                if name == "self":
-                    continue
-                yield name, index >= positional
+        # inspect.signature not available in Python 2.7, so we use positional
+        # decorator combined with argspec instead.
+        argspec = getattr(
+            self.__init__, "_argspec", inspect.getargspec(self.__init__)
+        )
+        positional = getattr(self.__init__, "_positional_args", 1)
+        for index, name in enumerate(argspec.args):
+            if name == "self":
+                continue
+            yield name, index >= positional
 
     def __repr__(self):
         """Return a compact unambiguous string representation of a property.
@@ -1162,8 +1154,7 @@ class Property(ModelAttribute):
 
             if instance_val is not default_val:
                 if isinstance(instance_val, type):
-                    as_str = getattr(instance_val, '__qualname__',
-                            instance_val.__name__)
+                    as_str = instance_val.__name__
                 else:
                     as_str = repr(instance_val)
 
@@ -1752,7 +1743,7 @@ class Property(ModelAttribute):
         Returns:
             List[Callable]: Class method objects.
         """
-        reverse = kwargs.get('reverse', False)
+        reverse = kwargs.get("reverse", False)
         # Get cache on current class / set cache if it doesn't exist.
         # Using __qualname__ was better for getting a qualified name, but it's
         # not available in Python 2.7.
@@ -2578,28 +2569,19 @@ class TextProperty(Property):
 
         Yields:
             Tuple[str, bool]: Pairs of argument name and a boolean indicating
-            if that argument is a keyword. The boolean is always False when
-            using Python 2.7.
+            if that argument is a keyword.
         """
         parent_init = super(TextProperty, self).__init__
-        # inspect.signature not available in Python 2.7, so need a fallback.
-        try:
-            signature = inspect.signature(parent_init)
-            parameters = signature.parameters.items()
-            for name, parameter in parameters:
-                if parameter is not None:
-                    is_keyword = parameter.kind == inspect.Parameter.KEYWORD_ONLY
-                else:
-                    is_keyword = False
-                yield name, is_keyword
-        except AttributeError:
-            argspec = getattr(parent_init, "_argspec",
-                    inspect.getargspec(parent_init))
-            positional = getattr(parent_init, "_positional_args", 2)
-            for index, name in enumerate(argspec.args):
-                if name == "self" or name=="indexed":
-                    continue
-                yield name, index >= positional
+        # inspect.signature not available in Python 2.7, so we use positional
+        # decorator combined with argspec instead.
+        argspec = getattr(
+            parent_init, "_argspec", inspect.getargspec(parent_init)
+        )
+        positional = getattr(parent_init, "_positional_args", 1)
+        for index, name in enumerate(argspec.args):
+            if name == "self" or name == "indexed":
+                continue
+            yield name, index >= positional
 
     @property
     def _indexed(self):
@@ -3801,7 +3783,9 @@ class StructuredProperty(Property):
         value = self._do_validate(value)
         filters = []
         match_keys = []
-        for prop in self._model_class._properties.values():
+        # Somehow, Python 2 and 3 return values in diiferent order, sort them.
+        for prop_name in sorted(self._model_class._properties.keys()):
+            prop = self._model_class._properties[prop_name]
             subvalue = prop._get_value(value)
             if prop._repeated:
                 if subvalue:  # pragma: no branch
@@ -4243,6 +4227,7 @@ class MetaModel(type):
         return "{}<{}>".format(cls.__name__, ", ".join(props))
 
 
+@six.add_metaclass(MetaModel)
 class Model(object):
     """A class describing Cloud Datastore entities.
 
@@ -4416,9 +4401,6 @@ class Model(object):
         .BadArgumentError: If the constructor is called with ``key`` and one
             of ``id``, ``app``, ``namespace`` or ``parent`` specified.
     """
-
-    # For Python 2.7
-    __metaclass__ = MetaModel
 
     # Class variables updated by _fix_up_properties()
     _properties = None
@@ -4886,7 +4868,7 @@ class Model(object):
         Returns:
             key.Key: The key for the entity. This is always a complete key.
         """
-        return self._put_async(_options=kwargs['_options']).result()
+        return self._put_async(_options=kwargs["_options"]).result()
 
     put = _put
 
@@ -4947,12 +4929,12 @@ class Model(object):
         @tasklets.tasklet
         def put(self):
             ds_entity = _entity_to_ds_entity(self)
-            ds_key = yield _datastore_api.put(ds_entity, kwargs['_options'])
+            ds_key = yield _datastore_api.put(ds_entity, kwargs["_options"])
             if ds_key:
                 self._key = key_module.Key._from_ds_key(ds_key)
 
             context = context_module.get_context()
-            if context._use_cache(self._key, kwargs['_options']):
+            if context._use_cache(self._key, kwargs["_options"]):
                 context.cache[self._key] = self
 
             raise tasklets.Return(self._key)
@@ -4982,11 +4964,7 @@ class Model(object):
         distinct_on=None,
         group_by=None,
     )
-    def _query(
-        cls,
-        *filters,
-        **kwargs
-    ):
+    def _query(cls, *filters, **kwargs):
         """Generate a query for this class.
 
         Args:
@@ -5012,36 +4990,36 @@ class Model(object):
             group_by (list[str]): Deprecated. Synonym for distinct_on.
         """
         # Validating distinct
-        if kwargs['distinct']:
-            if kwargs['distinct_on']:
+        if kwargs["distinct"]:
+            if kwargs["distinct_on"]:
                 raise TypeError(
                     "Cannot use `distinct` and `distinct_on` together."
                 )
 
-            if kwargs['group_by']:
+            if kwargs["group_by"]:
                 raise TypeError(
                     "Cannot use `distinct` and `group_by` together."
                 )
 
-            if not kwargs['projection']:
+            if not kwargs["projection"]:
                 raise TypeError("Cannot use `distinct` without `projection`.")
 
-            kwargs['distinct_on'] = kwargs['projection']
+            kwargs["distinct_on"] = kwargs["projection"]
 
         # Avoid circular import
         from google.cloud.ndb import query as query_module
 
         query = query_module.Query(
             kind=cls._get_kind(),
-            ancestor=kwargs['ancestor'],
-            order_by=kwargs['order_by'],
-            orders=kwargs['orders'],
-            project=kwargs['project'],
-            app=kwargs['app'],
-            namespace=kwargs['namespace'],
-            projection=kwargs['projection'],
-            distinct_on=kwargs['distinct_on'],
-            group_by=kwargs['group_by'],
+            ancestor=kwargs["ancestor"],
+            order_by=kwargs["order_by"],
+            orders=kwargs["orders"],
+            project=kwargs["project"],
+            app=kwargs["app"],
+            namespace=kwargs["namespace"],
+            projection=kwargs["projection"],
+            distinct_on=kwargs["distinct_on"],
+            group_by=kwargs["group_by"],
         )
         query = query.filter(*cls._default_filters())
         query = query.filter(*filters)

@@ -1694,10 +1694,7 @@ class Query(object):
             modelclass._check_properties(fixed, **kwargs)
 
     @_query_options
-    @utils.positional(2)
-    def fetch(
-        self,
-        limit=None,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         offset=None,
@@ -1713,7 +1710,9 @@ class Query(object):
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def fetch(self, limit=None, **kwargs):
         """Run a query, fetching results.
 
         Args:
@@ -1750,13 +1749,10 @@ class Query(object):
         Returns:
             List([model.Model]): The query results.
         """
-        return self.fetch_async(_options=_options).result()
+        return self.fetch_async(_options=kwargs["_options"]).result()
 
     @_query_options
-    @utils.positional(2)
-    def fetch_async(
-        self,
-        limit=None,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         offset=None,
@@ -1772,7 +1768,9 @@ class Query(object):
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def fetch_async(self, limit=None, **kwargs):
         """Run a query, asynchronously fetching the results.
 
         Args:
@@ -1811,7 +1809,7 @@ class Query(object):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import _datastore_query
 
-        return _datastore_query.fetch(_options)
+        return _datastore_query.fetch(kwargs["_options"])
 
     def _option(self, name, given, options=None):
         """Get given value or a provided default for an option.
@@ -1858,9 +1856,7 @@ class Query(object):
         raise exceptions.NoLongerImplementedError()
 
     @_query_options
-    @utils.positional(1)
-    def iter(
-        self,
+    @utils.keyword_only(
         keys_only=None,
         limit=None,
         projection=None,
@@ -1877,7 +1873,9 @@ class Query(object):
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(1)
+    def iter(self, **kwargs):
         """Get an iterator over query results.
 
         Args:
@@ -1915,7 +1913,7 @@ class Query(object):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import _datastore_query
 
-        return _datastore_query.iterate(_options)
+        return _datastore_query.iterate(kwargs["_options"])
 
     __iter__ = iter
 
@@ -2090,7 +2088,7 @@ class Query(object):
             Optional[Union[google.cloud.datastore.entity.Entity, key.Key]]:
                 A single result, or :data:`None` if there are no results.
         """
-        return self.get_async(_options=kwargs['_options']).result()
+        return self.get_async(_options=kwargs["_options"]).result()
 
     @tasklets.tasklet
     @_query_options
@@ -2123,16 +2121,13 @@ class Query(object):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import _datastore_query
 
-        options = kwargs['_options'].copy(limit=1)
+        options = kwargs["_options"].copy(limit=1)
         results = yield _datastore_query.fetch(options)
         if results:
             raise tasklets.Return(results[0])
 
     @_query_options
-    @utils.positional(2)
-    def count(
-        self,
-        limit=None,
+    @utils.keyword_only(
         offset=None,
         batch_size=None,
         prefetch_size=None,
@@ -2146,7 +2141,9 @@ class Query(object):
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def count(self, limit=None, **kwargs):
         """Count the number of query results, up to a limit.
 
         This returns the same result as ``len(q.fetch(limit))``.
@@ -2199,14 +2196,11 @@ class Query(object):
             Optional[Union[google.cloud.datastore.entity.Entity, key.Key]]:
                 A single result, or :data:`None` if there are no results.
         """
-        return self.count_async(_options=_options).result()
+        return self.count_async(_options=kwargs["_options"]).result()
 
     @tasklets.tasklet
     @_query_options
-    @utils.positional(2)
-    def count_async(
-        self,
-        limit=None,
+    @utils.keyword_only(
         offset=None,
         batch_size=None,
         prefetch_size=None,
@@ -2220,7 +2214,9 @@ class Query(object):
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def count_async(self, limit=None, **kwargs):
         """Count the number of query results, up to a limit.
 
         This is the asynchronous version of :meth:`Query.count`.
@@ -2231,6 +2227,7 @@ class Query(object):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import _datastore_query
 
+        _options = kwargs["_options"]
         options = _options.copy(keys_only=True)
         results = _datastore_query.iterate(options, raw=True)
         count = 0
@@ -2245,10 +2242,7 @@ class Query(object):
         raise tasklets.Return(count)
 
     @_query_options
-    @utils.positional(2)
-    def fetch_page(
-        self,
-        page_size,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         batch_size=None,
@@ -2263,7 +2257,9 @@ class Query(object):
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def fetch_page(self, page_size, **kwargs):
         """Fetch a page of results.
 
         This is a specialized method for use by paging user interfaces.
@@ -2315,14 +2311,13 @@ class Query(object):
                 result returned, and `more` indicates whether there are
                 (likely) more results after that.
         """
-        return self.fetch_page_async(None, _options=_options).result()
+        return self.fetch_page_async(
+            None, _options=kwargs["_options"]
+        ).result()
 
     @tasklets.tasklet
     @_query_options
-    @utils.positional(2)
-    def fetch_page_async(
-        self,
-        page_size,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         batch_size=None,
@@ -2337,7 +2332,9 @@ class Query(object):
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def fetch_page_async(self, page_size, **kwargs):
         """Fetch a page of results.
 
         This is the asynchronous version of :meth:`Query.fetch_page`.
@@ -2348,6 +2345,7 @@ class Query(object):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import _datastore_query
 
+        _options = kwargs["_options"]
         if _options.filters and _options.filters._multiquery:
             raise TypeError(
                 "Can't use 'fetch_page' or 'fetch_page_async' with query that "

@@ -95,8 +95,8 @@ class Options(object):
 
             # If another function that uses options is delegating to this one,
             # we'll already have options.
-            if '_options' not in kwargs:
-                kwargs['_options'] = cls(**kw_options)
+            if "_options" not in kwargs:
+                kwargs["_options"] = cls(**kw_options)
 
             return wrapped(*pass_args, **kwargs)
 

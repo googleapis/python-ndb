@@ -20,6 +20,7 @@ except ImportError:
     import mock
 
 import pytest
+import six
 
 from google.cloud.datastore import entity as datastore_entity
 from google.cloud.datastore import helpers
@@ -123,9 +124,7 @@ class TestRepeatedStructuredPropertyPredicate:
         predicate = query_module.RepeatedStructuredPropertyPredicate(
             "matilda",
             ["foo", "bar", "baz"],
-            mock.Mock(
-                properties={"foo": "a", "bar": "b", "baz": "c"}
-            ),
+            mock.Mock(properties={"foo": "a", "bar": "b", "baz": "c"}),
         )
         assert predicate.name == "matilda"
         assert predicate.match_keys == ["foo", "bar", "baz"]
@@ -823,9 +822,7 @@ class TestConjunctionNode:
     @staticmethod
     @mock.patch("google.cloud.ndb.query._BooleanClauses")
     def test_constructor_unreachable(boolean_clauses):
-        clauses = mock.Mock(
-            or_parts=[], spec=("add_node", "or_parts")
-        )
+        clauses = mock.Mock(or_parts=[], spec=("add_node", "or_parts"))
         boolean_clauses.return_value = clauses
 
         node1 = query_module.FilterNode("a", "=", 7)
@@ -838,9 +835,7 @@ class TestConjunctionNode:
             "ConjunctionNode", combine_or=False
         )
         assert clauses.add_node.call_count == 2
-        clauses.add_node.assert_has_calls(
-            [mock.call(node1), mock.call(node2)]
-        )
+        clauses.add_node.assert_has_calls([mock.call(node1), mock.call(node2)])
 
     @staticmethod
     def test_pickling():
@@ -2084,7 +2079,7 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', u'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
             "default_options=QueryOptions(limit=10, offset=5))"
@@ -2094,7 +2089,10 @@ class TestGQL:
             "ORDER BY prop4 LIMIT 10 OFFSET 5"
         )
         query = query_module.gql(gql_query)
-        assert query.__repr__() == rep
+        compat_rep = "'xxx'"
+        if six.PY2:
+            compat_rep = "u'xxx'"
+        assert query.__repr__() == rep.format(compat_rep)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -2106,7 +2104,7 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', u'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
             "default_options=QueryOptions(limit=10, offset=5))"
@@ -2117,7 +2115,10 @@ class TestGQL:
         )
         positional = [5, "xxx"]
         query = query_module.gql(gql_query, *positional)
-        assert query.__repr__() == rep
+        compat_rep = "'xxx'"
+        if six.PY2:
+            compat_rep = "u'xxx'"
+        assert query.__repr__() == rep.format(compat_rep)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -2129,7 +2130,7 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', u'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
             "default_options=QueryOptions(limit=10, offset=5))"
@@ -2140,7 +2141,10 @@ class TestGQL:
         )
         keywords = {"param1": 5, "param2": "xxx"}
         query = query_module.gql(gql_query, **keywords)
-        assert query.__repr__() == rep
+        compat_rep = "'xxx'"
+        if six.PY2:
+            compat_rep = "u'xxx'"
+        assert query.__repr__() == rep.format(compat_rep)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -2152,7 +2156,7 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', u'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
             "default_options=QueryOptions(limit=10, offset=5))"
@@ -2164,4 +2168,7 @@ class TestGQL:
         positional = [5]
         keywords = {"param1": "xxx"}
         query = query_module.gql(gql_query, *positional, **keywords)
-        assert query.__repr__() == rep
+        compat_rep = "'xxx'"
+        if six.PY2:
+            compat_rep = "u'xxx'"
+        assert query.__repr__() == rep.format(compat_rep)
