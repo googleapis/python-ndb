@@ -42,24 +42,32 @@ class _LocalState(threading.local):
 _state = _LocalState()
 
 
-def get_context():
+def get_context(raise_context_error=True):
     """Get the current context.
 
     This function should be called within a context established by
     :meth:`google.cloud.ndb.client.Client.context`.
+
+    Args:
+        raise_context_error (bool): If set to :data:`True`, will raise an
+            exception if called outside of a context. Set this to :data:`False`
+            in order to have it just return :data:`None` if called outside of a
+            context. Default: :data:`True`
 
     Returns:
         Context: The current context.
 
     Raises:
         .ContextError: If called outside of a context
-            established by :meth:`google.cloud.ndb.client.Client.context`.
+            established by :meth:`google.cloud.ndb.client.Client.context` and
+            ``raise_context_error`` is :data:`True`.
     """
     context = _state.context
     if context:
         return context
 
-    raise exceptions.ContextError()
+    if raise_context_error:
+        raise exceptions.ContextError()
 
 
 def _default_policy(attr_name, value_type):
@@ -359,7 +367,7 @@ class Context(_Context):
         """
         return self.global_cache_policy
 
-    get_memcache_policy = get_global_cache_policy  # backwards compatability
+    get_memcache_policy = get_global_cache_policy  # backwards compatibility
 
     def get_global_cache_timeout_policy(self):
         """Return the current policy function global cache timeout (expiration).

@@ -1771,6 +1771,16 @@ class TestBlobProperty:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test__to_datastore_compressed_uninitialized():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True)
+
+        entity = ThisKind()
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert "foo" not in ds_entity._meanings
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test__to_datastore_uncompressed():
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=False)
@@ -2195,7 +2205,7 @@ class TestUser:
         with pytest.raises(ValueError):
             model.User.read_from_entity(entity, name)
 
-        # Wrong assocated value.
+        # Wrong associated value.
         entity._meanings[name] = (model._MEANING_PREDEFINED_ENTITY_USER, None)
         with pytest.raises(ValueError):
             model.User.read_from_entity(entity, name)
@@ -3277,6 +3287,45 @@ class TestStructuredProperty:
             assert SomeKind.foo._to_datastore(entity, data) == {"foo.bar"}
             assert data == {"foo.bar": ["baz", "boz"]}
 
+    @staticmethod
+    def test__prepare_for_put():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind)
+
+        entity = SomeKind(foo=SubKind())
+        entity.foo._prepare_for_put = unittest.mock.Mock()
+        SomeKind.foo._prepare_for_put(entity)
+        entity.foo._prepare_for_put.assert_called_once_with()
+
+    @staticmethod
+    def test__prepare_for_put_repeated():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind, repeated=True)
+
+        entity = SomeKind(foo=[SubKind(), SubKind()])
+        entity.foo[0]._prepare_for_put = unittest.mock.Mock()
+        entity.foo[1]._prepare_for_put = unittest.mock.Mock()
+        SomeKind.foo._prepare_for_put(entity)
+        entity.foo[0]._prepare_for_put.assert_called_once_with()
+        entity.foo[1]._prepare_for_put.assert_called_once_with()
+
+    @staticmethod
+    def test__prepare_for_put_repeated_None():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind)
+
+        entity = SomeKind()
+        SomeKind.foo._prepare_for_put(entity)  # noop
+
 
 class TestLocalStructuredProperty:
     @staticmethod
@@ -3378,6 +3427,45 @@ class TestLocalStructuredProperty:
         entity.key = "key"
         expected = Simple()
         assert prop._from_base_type(entity) == expected
+
+    @staticmethod
+    def test__prepare_for_put():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.LocalStructuredProperty(SubKind)
+
+        entity = SomeKind(foo=SubKind())
+        entity.foo._prepare_for_put = unittest.mock.Mock()
+        SomeKind.foo._prepare_for_put(entity)
+        entity.foo._prepare_for_put.assert_called_once_with()
+
+    @staticmethod
+    def test__prepare_for_put_repeated():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.LocalStructuredProperty(SubKind, repeated=True)
+
+        entity = SomeKind(foo=[SubKind(), SubKind()])
+        entity.foo[0]._prepare_for_put = unittest.mock.Mock()
+        entity.foo[1]._prepare_for_put = unittest.mock.Mock()
+        SomeKind.foo._prepare_for_put(entity)
+        entity.foo[0]._prepare_for_put.assert_called_once_with()
+        entity.foo[1]._prepare_for_put.assert_called_once_with()
+
+    @staticmethod
+    def test__prepare_for_put_repeated_None():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.LocalStructuredProperty(SubKind)
+
+        entity = SomeKind()
+        SomeKind.foo._prepare_for_put(entity)  # noop
 
 
 class TestGenericProperty:
@@ -4239,8 +4327,7 @@ class TestModel:
         class Simple(model.Model):
             x = model.IntegerProperty()
 
-        entity = Simple()
-        query = entity.gql("WHERE x=1")
+        query = Simple.gql("WHERE x=1")
         assert isinstance(query, query_module.Query)
         assert query.kind == "Simple"
         assert query.filters == query_module.FilterNode("x", "=", 1)
@@ -4248,6 +4335,22 @@ class TestModel:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     @mock.patch("google.cloud.ndb._datastore_api")
+    def test_gql_binding():
+        class Simple(model.Model):
+            x = model.IntegerProperty()
+            y = model.StringProperty()
+
+        query = Simple.gql("WHERE x=:1 and y=:foo", 2, foo="bar")
+        assert isinstance(query, query_module.Query)
+        assert query.kind == "Simple"
+        assert query.filters == query_module.AND(
+            query_module.FilterNode("x", "=", 2),
+            query_module.FilterNode("y", "=", "bar"),
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb.model._datastore_api")
     def test_allocate_ids(_datastore_api):
         completed = [
             entity_pb2.Key(

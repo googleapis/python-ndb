@@ -62,7 +62,7 @@ client = ndb.Client()
 # Assume REDIS_CACHE_URL is set in environment (or not).
 # If left unset, this will return `None`, which effectively allows you to turn
 # global cache on or off using the environment.
-global_cache = ndb.RedisCache().from_environment()
+global_cache = ndb.RedisCache.from_environment()
 
 with client.context(global_cache=global_cache) as context:
     do_stuff_with_ndb()
@@ -213,8 +213,11 @@ that are affected are: `memcache_add`, `memcache_cas`, `memcache_decr`,
   from GAE to GCP.
 - The `max_memcache_items` option is no longer supported. 
 - The `force_writes` option is no longer supported.
-- `Query.map` and `Query.map_async` are no longer supported.
 - The `blobstore` module is no longer supported.
+- The `pass_batch_into_callback` argument to `Query.map` and `Query.map_async`
+  is no longer supported.
+- The `merge_future` argument to `Query.map` and `Query.map_async` is no longer
+  supported.
 
 ## Privatization
 

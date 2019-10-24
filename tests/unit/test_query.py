@@ -1166,6 +1166,44 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    def test_constructor_with_class_attribute_projection(_datastore_query):
+        class Foo(model.Model):
+            string_attr = model.StringProperty()
+
+        class Bar(model.Model):
+            bar_attr = model.StructuredProperty(Foo)
+
+        query = Bar.query(projection=[Bar.bar_attr.string_attr])
+
+        assert query.projection[0] == ("bar_attr.string_attr",)[0]
+
+        query.fetch()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    def test_constructor_with_class_attribute_projection_and_distinct(
+        _datastore_query
+    ):
+        class Foo(model.Model):
+            string_attr = model.StringProperty()
+
+        class Bar(model.Model):
+            bar_attr = model.StructuredProperty(Foo)
+
+        query = Bar.query(
+            projection=[Bar.bar_attr.string_attr],
+            distinct_on=[Bar.bar_attr.string_attr],
+        )
+
+        assert query.projection[0] == ("bar_attr.string_attr",)[0]
+        assert query.distinct_on[0] == ("bar_attr.string_attr",)[0]
+
+        query.fetch()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_constructor_with_projection():
         query = query_module.Query(kind="Foo", projection=["X"])
         assert query.projection == ("X",)
@@ -1819,17 +1857,62 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_map():
+    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    def test_map(_datastore_query):
+        class DummyQueryIterator:
+            def __init__(self, items):
+                self.items = list(items)
+
+            def has_next_async(self):
+                return utils.future_result(bool(self.items))
+
+            def next(self):
+                return self.items.pop(0)
+
+        _datastore_query.iterate.return_value = DummyQueryIterator(range(5))
+
+        def callback(result):
+            return result + 1
+
         query = query_module.Query()
-        with pytest.raises(NotImplementedError):
-            query.map(None)
+        assert query.map(callback) == (1, 2, 3, 4, 5)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_map_async():
+    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    def test_map_async(_datastore_query):
+        class DummyQueryIterator:
+            def __init__(self, items):
+                self.items = list(items)
+
+            def has_next_async(self):
+                return utils.future_result(bool(self.items))
+
+            def next(self):
+                return self.items.pop(0)
+
+        _datastore_query.iterate.return_value = DummyQueryIterator(range(5))
+
+        def callback(result):
+            return utils.future_result(result + 1)
+
+        query = query_module.Query()
+        future = query.map_async(callback)
+        assert future.result() == (1, 2, 3, 4, 5)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_map_pass_batch_into_callback():
         query = query_module.Query()
         with pytest.raises(NotImplementedError):
-            query.map_async(None)
+            query.map(None, pass_batch_into_callback=True)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_map_merge_future():
+        query = query_module.Query()
+        with pytest.raises(NotImplementedError):
+            query.map(None, merge_future="hi mom!")
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
