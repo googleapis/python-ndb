@@ -21,7 +21,7 @@ import zlib
 
 try:
     from unittest import mock
-except ImportError:
+except ImportError:  # pragma: NO PY3 COVER
     import mock
 
 from google.cloud import datastore
@@ -980,7 +980,7 @@ class TestProperty:
 
         methods = SomeProperty._find_methods("IN", "find_me")
         expected = [SomeProperty.IN, SomeProperty.find_me, model.Property.IN]
-        if six.PY2:
+        if six.PY2:  # pragma: NO PY3 COVER
             expected = [
                 SomeProperty.IN.__func__,
                 SomeProperty.find_me.__func__,
@@ -1000,7 +1000,7 @@ class TestProperty:
 
         methods = SomeProperty._find_methods("IN", "find_me", reverse=True)
         expected = [model.Property.IN, SomeProperty.find_me, SomeProperty.IN]
-        if six.PY2:
+        if six.PY2:  # pragma: NO PY3 COVER
             expected = [
                 model.Property.IN.__func__,
                 SomeProperty.find_me.__func__,
@@ -2073,7 +2073,7 @@ class TestJsonProperty:
     @staticmethod
     def test__from_base_type_invalid():
         prop = model.JsonProperty(name="json-val")
-        if six.PY3:
+        if six.PY3:  # pragma: NO PY2 COVER  # pragma: NO BRANCH
             with pytest.raises(AttributeError):
                 prop._from_base_type("{}")
 
@@ -2276,7 +2276,7 @@ class TestUser:
         assert not user_value1 < user_value1
         assert user_value1 < user_value2
         assert user_value1 < user_value3
-        if six.PY3:
+        if six.PY3:   # pragma: NO PY2 COVER  # pragma: NO BRANCH
             with pytest.raises(TypeError):
                 user_value1 < user_value4
 
@@ -3296,7 +3296,7 @@ class TestStructuredProperty:
             foo = model.StructuredProperty(SubKind)
 
         entity = SomeKind(foo=SubKind())
-        entity.foo._prepare_for_put = unittest.mock.Mock()
+        entity.foo._prepare_for_put = mock.Mock()
         SomeKind.foo._prepare_for_put(entity)
         entity.foo._prepare_for_put.assert_called_once_with()
 
@@ -3309,8 +3309,8 @@ class TestStructuredProperty:
             foo = model.StructuredProperty(SubKind, repeated=True)
 
         entity = SomeKind(foo=[SubKind(), SubKind()])
-        entity.foo[0]._prepare_for_put = unittest.mock.Mock()
-        entity.foo[1]._prepare_for_put = unittest.mock.Mock()
+        entity.foo[0]._prepare_for_put = mock.Mock()
+        entity.foo[1]._prepare_for_put = mock.Mock()
         SomeKind.foo._prepare_for_put(entity)
         entity.foo[0]._prepare_for_put.assert_called_once_with()
         entity.foo[1]._prepare_for_put.assert_called_once_with()
@@ -3437,7 +3437,7 @@ class TestLocalStructuredProperty:
             foo = model.LocalStructuredProperty(SubKind)
 
         entity = SomeKind(foo=SubKind())
-        entity.foo._prepare_for_put = unittest.mock.Mock()
+        entity.foo._prepare_for_put = mock.Mock()
         SomeKind.foo._prepare_for_put(entity)
         entity.foo._prepare_for_put.assert_called_once_with()
 
@@ -3450,8 +3450,8 @@ class TestLocalStructuredProperty:
             foo = model.LocalStructuredProperty(SubKind, repeated=True)
 
         entity = SomeKind(foo=[SubKind(), SubKind()])
-        entity.foo[0]._prepare_for_put = unittest.mock.Mock()
-        entity.foo[1]._prepare_for_put = unittest.mock.Mock()
+        entity.foo[0]._prepare_for_put = mock.Mock()
+        entity.foo[1]._prepare_for_put = mock.Mock()
         SomeKind.foo._prepare_for_put(entity)
         entity.foo[0]._prepare_for_put.assert_called_once_with()
         entity.foo[1]._prepare_for_put.assert_called_once_with()
@@ -3963,8 +3963,8 @@ class TestModel:
             foo = model.StructuredProperty(OtherKind)
             hi = model.StringProperty()
 
-        entity1 = SomeKind(hi="mom", foo=OtherKind(bar=42))
-        entity2 = SomeKind(hi="mom", foo=OtherKind(bar=42))
+        # entity1 = SomeKind(hi="mom", foo=OtherKind(bar=42))
+        # entity2 = SomeKind(hi="mom", foo=OtherKind(bar=42))
 
         # TODO: can't figure out why this one fails
         # assert entity1 == entity2
@@ -4334,7 +4334,6 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb._datastore_api")
     def test_gql_binding():
         class Simple(model.Model):
             x = model.IntegerProperty()
@@ -4350,7 +4349,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb.model._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_allocate_ids(_datastore_api):
         completed = [
             entity_pb2.Key(

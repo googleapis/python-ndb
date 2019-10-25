@@ -17,7 +17,7 @@ import pickle
 
 try:
     from unittest import mock
-except ImportError:
+except ImportError:  # pragma: NO PY3 COVER
     import mock
 
 from google.cloud.datastore import _app_engine_key_pb2

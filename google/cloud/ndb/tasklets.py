@@ -219,7 +219,7 @@ class Future(object):
         if self._exception:
             try:
                 traceback = self._exception.__traceback__
-            except AttributeError:
+            except AttributeError:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
                 # Python 2 does not have the helpful traceback attribute, and
                 # sice the exception is not being handled, it appears that
                 # sys.exec_info can't give us the traceback either.
@@ -304,7 +304,7 @@ class _TaskletFuture(Future):
                 if error:
                     try:
                         traceback = error.__traceback__
-                    except AttributeError:
+                    except AttributeError:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
                         traceback = None
                     self.generator.throw(type(error), error, traceback)
 

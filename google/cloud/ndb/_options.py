@@ -57,7 +57,7 @@ class Options(object):
                 if parameter.kind
                 in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
             ]
-        except AttributeError:
+        except AttributeError:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
             positional = getattr(wrapped, "_positional_names", [])
 
         # We need for any non-option arguments to come before any option

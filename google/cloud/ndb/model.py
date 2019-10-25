@@ -3279,10 +3279,9 @@ class KeyProperty(Property):
         if isinstance(kind, type) and isinstance(name, type):
             raise TypeError("You can only specify one kind")
         if isinstance(kind, six.string_types) and isinstance(name, type):
-            if issubclass(name, Model):
-                temp = kind
-                kind = name
-                name = temp
+            temp = kind
+            kind = name
+            name = temp
         if isinstance(kind, six.string_types) and name is None:
             temp = kind
             kind = name

@@ -1157,7 +1157,7 @@ def _query_options(wrapped):
             in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
             and name != "self"
         ]
-    except AttributeError:
+    except AttributeError:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
         arg_names = getattr(wrapped, "_positional_names", [])
         positional = [arg for arg in arg_names if arg != "self"]
 
@@ -2026,6 +2026,9 @@ class Query(object):
         Returns:
             tasklets.Future: See :meth:`Query.map` for eventual result.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         _options = kwargs["_options"]
         callback = _options.callback
         futures = []

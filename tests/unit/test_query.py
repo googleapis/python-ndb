@@ -16,7 +16,7 @@ import pickle
 
 try:
     from unittest import mock
-except ImportError:
+except ImportError:  # pragma: NO PY3 COVER
     import mock
 
 import pytest
@@ -356,7 +356,7 @@ class TestNode:
     def test___ne__(self):
         node = self._make_one()
         with pytest.raises(NotImplementedError):
-            node != None
+            node != mock.sentinel.no_node
 
     def test___le__(self):
         node = self._make_one()
@@ -1166,7 +1166,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_constructor_with_class_attribute_projection(_datastore_query):
         class Foo(model.Model):
             string_attr = model.StringProperty()
@@ -1182,7 +1182,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_constructor_with_class_attribute_projection_and_distinct(
         _datastore_query
     ):
@@ -1857,7 +1857,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_map(_datastore_query):
         class DummyQueryIterator:
             def __init__(self, items):
@@ -1879,7 +1879,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_map_async(_datastore_query):
         class DummyQueryIterator:
             def __init__(self, items):
@@ -2173,7 +2173,7 @@ class TestGQL:
         )
         query = query_module.gql(gql_query)
         compat_rep = "'xxx'"
-        if six.PY2:
+        if six.PY2:  # pragma: NO PY3 COVER
             compat_rep = "u'xxx'"
         assert query.__repr__() == rep.format(compat_rep)
 
@@ -2199,7 +2199,7 @@ class TestGQL:
         positional = [5, "xxx"]
         query = query_module.gql(gql_query, *positional)
         compat_rep = "'xxx'"
-        if six.PY2:
+        if six.PY2:  # pragma: NO PY3 COVER
             compat_rep = "u'xxx'"
         assert query.__repr__() == rep.format(compat_rep)
 
@@ -2225,7 +2225,7 @@ class TestGQL:
         keywords = {"param1": 5, "param2": "xxx"}
         query = query_module.gql(gql_query, **keywords)
         compat_rep = "'xxx'"
-        if six.PY2:
+        if six.PY2:  # pragma: NO PY3 COVER
             compat_rep = "u'xxx'"
         assert query.__repr__() == rep.format(compat_rep)
 
@@ -2252,6 +2252,6 @@ class TestGQL:
         keywords = {"param1": "xxx"}
         query = query_module.gql(gql_query, *positional, **keywords)
         compat_rep = "'xxx'"
-        if six.PY2:
+        if six.PY2:  # pragma: NO PY3 COVER
             compat_rep = "u'xxx'"
         assert query.__repr__() == rep.format(compat_rep)

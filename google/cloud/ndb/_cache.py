@@ -12,7 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import collections
 import itertools
 
 from google.cloud.ndb import _batch
@@ -22,7 +21,7 @@ from google.cloud.ndb import tasklets
 # For Python 2.7 Compatibility
 try:
     from collections import UserDict
-except ImportError:
+except ImportError:  # pragma: NO PY3 COVER
     from UserDict import UserDict
 
 

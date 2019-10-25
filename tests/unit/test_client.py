@@ -17,7 +17,7 @@ import pytest
 
 try:
     from unittest import mock
-except ImportError:
+except ImportError:  # pragma: NO PY3 COVER
     import mock
 
 from google.auth import credentials

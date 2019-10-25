@@ -21,6 +21,7 @@ import os
 import shutil
 
 import nox
+import sys
 
 LOCAL_DEPS = ("google-cloud-core", "google-api-core")
 NOX_DIR = os.path.abspath(os.path.dirname(__file__))
@@ -28,44 +29,21 @@ DEFAULT_INTERPRETER = "3.7"
 PYPY = "pypy3"
 ALL_INTERPRETERS = ("2.7", "3.6", "3.7", PYPY)
 PY3_INTERPRETERS = ("3.6", "3.7", PYPY)
+MAJOR_INTERPRETERS = ("2.7", "3.7")
 
 
 def get_path(*names):
     return os.path.join(NOX_DIR, *names)
 
 
-@nox.session(py=PY3_INTERPRETERS)
+@nox.session(py=ALL_INTERPRETERS)
 def unit(session):
-    # Install all dependencies.
-    session.install("pytest", "pytest-cov")
-    session.install(".")
-    # Run py.test against the unit tests.
-    run_args = ["pytest"]
-    if session.posargs:
-        run_args.extend(session.posargs)
-    else:
-        run_args.extend(
-            [
-                "--cov=google.cloud.ndb",
-                "--cov=tests.unit",
-                "--cov-config",
-                get_path(".coveragerc"),
-                "--cov-report=",
-            ]
-        )
-    run_args.append(get_path("tests", "unit"))
-    session.run(*run_args)
-
-    if not session.posargs:
-        session.notify("cover")
-
-
-@nox.session(py="2.7")
-def unit27(session):
     # Install all dependencies.
     session.install("pytest", "pytest-cov")
     session.install("mock")
     session.install(".")
+    # THis variable is used to skip coverage by Python version
+    session.env["PY_VERSION"] = session.python[0]
     # Run py.test against the unit tests.
     run_args = ["pytest"]
     if session.posargs:
@@ -87,10 +65,12 @@ def unit27(session):
         session.notify("cover")
 
 
-@nox.session(py=DEFAULT_INTERPRETER)
+@nox.session(py=MAJOR_INTERPRETERS)
 def cover(session):
     # Install all dependencies.
     session.install("coverage")
+    # THis variable is used to skip coverage by Python version
+    session.env["PY_VERSION"] = session.python[0]
     # Run coverage report.
     session.run("coverage", "report", "--fail-under=100", "--show-missing")
     # Erase cached coverage data.
@@ -178,7 +158,7 @@ def doctest(session):
     session.run(*run_args)
 
 
-@nox.session(py=DEFAULT_INTERPRETER)
+@nox.session(py=MAJOR_INTERPRETERS)
 def system(session):
     """Run the system test suite."""
     system_test_path = get_path("tests", "system.py")
@@ -200,6 +180,7 @@ def system(session):
     # Install all test dependencies, then install this package into the
     # virtualenv's dist-packages.
     session.install("pytest")
+    session.install("mock")
     for local_dep in LOCAL_DEPS:
         session.install(local_dep)
     session.install("-e", get_path("test_utils", "test_utils"))
