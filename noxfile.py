@@ -61,7 +61,8 @@ def unit(session):
     run_args.append(get_path("tests", "unit"))
     session.run(*run_args)
 
-    if not session.posargs:
+    # Do not run cover session for Python 2, or it will fail
+    if not session.posargs and session.python != "2.7":
         session.notify("cover")
 
 
