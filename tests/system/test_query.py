@@ -1245,9 +1245,9 @@ def test_query_legacy_repeated_structured_property(ds_entity):
         entity_id,
         **{
             "foo": 1,
-            "bar.one": ["pish", "bish"],
-            "bar.two": ["posh", "bosh"],
-            "bar.three": ["pash", "bash"],
+            "bar.one": [u"pish", u"bish"],
+            "bar.two": [u"posh", u"bosh"],
+            "bar.three": [u"pash", u"bash"],
         }
     )
 
@@ -1257,9 +1257,9 @@ def test_query_legacy_repeated_structured_property(ds_entity):
         entity_id,
         **{
             "foo": 2,
-            "bar.one": ["bish", "pish"],
-            "bar.two": ["bosh", "posh"],
-            "bar.three": ["bass", "pass"],
+            "bar.one": [u"bish", u"pish"],
+            "bar.two": [u"bosh", u"posh"],
+            "bar.three": [u"bass", u"pass"],
         }
     )
 
@@ -1269,9 +1269,9 @@ def test_query_legacy_repeated_structured_property(ds_entity):
         entity_id,
         **{
             "foo": 3,
-            "bar.one": ["pish", "bish"],
-            "bar.two": ["fosh", "posh"],
-            "bar.three": ["fash", "bash"],
+            "bar.one": [u"pish", u"bish"],
+            "bar.two": [u"fosh", u"posh"],
+            "bar.three": [u"fash", u"bash"],
         }
     )
 
@@ -1280,8 +1280,8 @@ def test_query_legacy_repeated_structured_property(ds_entity):
     query = (
         SomeKind.query()
         .filter(
-            SomeKind.bar == OtherKind(one="pish", two="posh"),
-            SomeKind.bar == OtherKind(two="posh", three="pash"),
+            SomeKind.bar == OtherKind(one=u"pish", two=u"posh"),
+            SomeKind.bar == OtherKind(two=u"posh", three=u"pash"),
         )
         .order(SomeKind.foo)
     )
@@ -1298,29 +1298,29 @@ def test_query_legacy_repeated_structured_property(ds_entity):
 #     class SomeKind(ndb.Model):
 #         foo = ndb.StringProperty()
 #         ref = ndb.KeyProperty()
-# 
+#
 #     class OtherKind(ndb.Model):
 #         foo = ndb.StringProperty()
-# 
+#
 #     foos = ("aa", "bb", "cc", "dd", "ee")
 #     others = [OtherKind(foo=foo) for foo in foos]
 #     other_keys = ndb.put_multi(others)
 #     for key in other_keys:
 #         dispose_of(key._key)
-# 
-#     things = [SomeKind(foo=foo, ref=key) for foo, key in zip(foos, other_keys)]
+#
+#     things = [SomeKind(foo=foo,ref=key) for foo,key in zip(foos,other_keys)]
 #     keys = ndb.put_multi(things)
 #     for key in keys:
 #         dispose_of(key._key)
-# 
+#
 #     eventually(SomeKind.query().fetch, _length_equals(5))
 #     eventually(OtherKind.query().fetch, _length_equals(5))
-# 
+#
 #     @ndb.tasklet
 #     def get_other_foo(thing):
 #         other = yield thing.ref.get_async()
 #         return other.foo
-# 
+#
 #     query = SomeKind.query().order(SomeKind.foo)
 #     assert query.map(get_other_foo) == foos
 

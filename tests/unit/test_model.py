@@ -980,7 +980,7 @@ class TestProperty:
 
         methods = SomeProperty._find_methods("IN", "find_me")
         expected = [SomeProperty.IN, SomeProperty.find_me, model.Property.IN]
-        if six.PY2:  # pragma: NO PY3 COVER
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
             expected = [
                 SomeProperty.IN.__func__,
                 SomeProperty.find_me.__func__,
@@ -1000,7 +1000,7 @@ class TestProperty:
 
         methods = SomeProperty._find_methods("IN", "find_me", reverse=True)
         expected = [model.Property.IN, SomeProperty.find_me, SomeProperty.IN]
-        if six.PY2:  # pragma: NO PY3 COVER
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
             expected = [
                 model.Property.IN.__func__,
                 SomeProperty.find_me.__func__,
@@ -2276,7 +2276,7 @@ class TestUser:
         assert not user_value1 < user_value1
         assert user_value1 < user_value2
         assert user_value1 < user_value3
-        if six.PY3:   # pragma: NO PY2 COVER  # pragma: NO BRANCH
+        if six.PY3:  # pragma: NO PY2 COVER  # pragma: NO BRANCH
             with pytest.raises(TypeError):
                 user_value1 < user_value4
 

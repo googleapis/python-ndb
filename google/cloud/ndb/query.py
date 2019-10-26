@@ -133,7 +133,6 @@ tasklet, properly yielding when appropriate::
 """
 
 import functools
-import inspect
 import logging
 
 from google.cloud.ndb import exceptions
@@ -1148,18 +1147,8 @@ def _query_options(wrapped):
     # inspect.signature is not available in Python 2.7, so we use the
     # arguments obtained with inspect.getarspec, which come from the
     # positional decorator used with all query_options decorated methods.
-    try:
-        signature = inspect.signature(wrapped)
-        positional = [
-            name
-            for name, parameter in signature.parameters.items()
-            if parameter.kind
-            in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
-            and name != "self"
-        ]
-    except AttributeError:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
-        arg_names = getattr(wrapped, "_positional_names", [])
-        positional = [arg for arg in arg_names if arg != "self"]
+    arg_names = getattr(wrapped, "_positional_names", [])
+    positional = [arg for arg in arg_names if arg != "self"]
 
     # Provide dummy values for positional args to avoid TypeError
     dummy_args = [None for _ in positional]

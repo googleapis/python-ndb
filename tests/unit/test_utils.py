@@ -84,11 +84,7 @@ def test_positional():
 
 
 def test_keyword_only():
-    @utils.keyword_only(
-        foo=1,
-        bar=2,
-        baz=3
-    )
+    @utils.keyword_only(foo=1, bar=2, baz=3)
     def test_kwonly(**kwargs):
         return kwargs["foo"], kwargs["bar"], kwargs["baz"]
 

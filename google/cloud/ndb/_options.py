@@ -15,7 +15,6 @@
 """Support for options."""
 
 import functools
-import inspect
 import itertools
 import logging
 
@@ -49,16 +48,7 @@ class Options(object):
         # inspect.signature is not available in Python 2.7, so we use the
         # arguments obtained with inspect.getarspec, which come from the
         # positional decorator used with all query_options decorated methods.
-        try:
-            signature = inspect.signature(wrapped)
-            positional = [
-                name
-                for name, parameter in signature.parameters.items()
-                if parameter.kind
-                in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
-            ]
-        except AttributeError:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
-            positional = getattr(wrapped, "_positional_names", [])
+        positional = getattr(wrapped, "_positional_names", [])
 
         # We need for any non-option arguments to come before any option
         # arguments
@@ -181,6 +171,13 @@ class Options(object):
                 return False
 
         return True
+
+    def __ne__(self, other):
+        # required for Python 2.7 compatibility
+        result = self.__eq__(other)
+        if result is NotImplemented:
+            result = False
+        return not result
 
     def __repr__(self):
         options = ", ".join(

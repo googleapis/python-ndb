@@ -304,7 +304,7 @@ class _TaskletFuture(Future):
                 if error:
                     try:
                         traceback = error.__traceback__
-                    except AttributeError:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
+                    except AttributeError:  # pragma: NO PY3 COVER  # pragma: NO BRANCH  # noqa: E501
                         traceback = None
                     self.generator.throw(type(error), error, traceback)
 

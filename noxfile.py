@@ -65,7 +65,7 @@ def unit(session):
         session.notify("cover")
 
 
-@nox.session(py=MAJOR_INTERPRETERS)
+@nox.session(py=DEFAULT_INTERPRETER)
 def cover(session):
     # Install all dependencies.
     session.install("coverage")

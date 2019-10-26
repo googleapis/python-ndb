@@ -466,7 +466,7 @@ class Key(object):
             state to pickle. The dictionary has three keys ``pairs``, ``app``
             and ``namespace``.
         """
-        return (
+        return (  # pragma: NO COVER
             {
                 "pairs": self.pairs(),
                 "app": self.app(),
@@ -1165,7 +1165,7 @@ def _from_urlsafe(urlsafe, app, namespace):
         Tuple[google.cloud.datastore.key.Key, .Reference]: The key
         corresponding to ``urlsafe`` and the Reference protobuf.
     """
-    if isinstance(urlsafe, str):
+    if isinstance(urlsafe, six.string_types):  # pragma: NO BRANCH
         urlsafe = urlsafe.encode("ascii")
     padding = b"=" * (-len(urlsafe) % 4)
     urlsafe += padding

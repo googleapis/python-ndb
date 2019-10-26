@@ -623,7 +623,7 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
                 continue
 
         if not (prop is not None and isinstance(prop, Property)):
-            if value is not None and isinstance(  # pragma: no branch
+            if value is not None and isinstance(  # pragma: NO BRANCH
                 entity, Expando
             ):
                 if isinstance(value, list):
@@ -634,7 +634,7 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
                 else:
                     value = _BaseValue(value)
                 setattr(entity, name, value)
-            continue
+            continue  # pragma: NO COVER
 
         if value is not None:
             if prop._repeated:
@@ -3056,7 +3056,7 @@ class User(object):
         )
 
     def __lt__(self, other):
-        if not isinstance(other, User):
+        if not isinstance(other, User):  # pragma: NO PY2 COVER
             return NotImplemented
 
         return (self._email, self._auth_domain) < (

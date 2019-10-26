@@ -301,7 +301,7 @@ class TestGQL:
         gql = gql_module.GQL(GQL_QUERY)
         query = gql.get_query()
         compat_rep = "'xxx'"
-        if six.PY2:  # pragma: NO PY3 COVER
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
             compat_rep = "u'xxx'"
         assert repr(query) == rep.format(compat_rep)
 
