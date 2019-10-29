@@ -340,7 +340,7 @@ def test_compressed_blob_property(dispose_of, ds_client):
 
 @pytest.mark.usefixtures("client_context")
 def test_retrieve_entity_with_legacy_compressed_property(
-    ds_entity_with_meanings
+    ds_entity_with_meanings,
 ):
     class SomeKind(ndb.Model):
         blob = ndb.BlobProperty()
