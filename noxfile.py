@@ -55,7 +55,7 @@ def unit(session):
                 "--cov=tests.unit",
                 "--cov-config",
                 get_path(".coveragerc"),
-                "--cov-report=term",
+                "--cov-report=",
             ]
         )
     run_args.append(get_path("tests", "unit"))
