@@ -44,6 +44,20 @@ from google.cloud.ndb import utils as ndb_utils
 from tests.unit import utils
 
 
+class timezone(datetime.tzinfo):
+    def __init__(self, offset):
+        self.offset = datetime.timedelta(hours=offset)
+
+    def utcoffset(self, dt):
+        return self.offset
+
+    def dst(self, dt):
+        return datetime.timedelta(0)
+
+    def __eq__(self, other):
+        return self.offset == other.offset
+
+
 def test___all__():
     utils.verify___all__(model)
 
@@ -2542,6 +2556,7 @@ class TestDateTimeProperty:
             name="dt_val",
             auto_now=True,
             auto_now_add=False,
+            tzinfo=timezone(-4),
             indexed=False,
             repeated=False,
             required=True,
@@ -2553,6 +2568,7 @@ class TestDateTimeProperty:
         assert prop._name == "dt_val"
         assert prop._auto_now
         assert not prop._auto_now_add
+        assert prop._tzinfo == timezone(-4)
         assert not prop._indexed
         assert not prop._repeated
         assert prop._required
@@ -2662,6 +2678,28 @@ class TestDateTimeProperty:
         prop = model.DateTimeProperty(name="dt_val")
         value = datetime.datetime(2010, 5, 12, tzinfo=pytz.utc)
         assert prop._from_base_type(value) == datetime.datetime(2010, 5, 12)
+
+    @staticmethod
+    def test__from_base_type_convert_timezone():
+        prop = model.DateTimeProperty(name="dt_val", tzinfo=timezone(-4))
+        value = datetime.datetime(2010, 5, 12, tzinfo=pytz.utc)
+        assert prop._from_base_type(value) == datetime.datetime(
+            2010, 5, 11, 20, tzinfo=timezone(-4)
+        )
+
+    @staticmethod
+    def test__to_base_type_noop():
+        prop = model.DateTimeProperty(name="dt_val", tzinfo=timezone(-4))
+        value = datetime.datetime(2010, 5, 12)
+        assert prop._to_base_type(value) is None
+
+    @staticmethod
+    def test__to_base_type_convert_to_utc():
+        prop = model.DateTimeProperty(name="dt_val", tzinfo=timezone(-4))
+        value = datetime.datetime(2010, 5, 12, tzinfo=timezone(-4))
+        assert prop._to_base_type(value) == datetime.datetime(
+            2010, 5, 12, 4, tzinfo=pytz.utc
+        )
 
 
 class TestDateProperty:
