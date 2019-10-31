@@ -2970,9 +2970,21 @@ class TestStructuredProperty:
         prop = model.StructuredProperty(Mine)
         prop._name = "baz"
         mine = Mine(foo="x", bar="y")
-        assert prop._comparison("=", mine) == query_module.AND(
+        comparison = prop._comparison("=", mine)
+        compared = query_module.AND(
             query_module.FilterNode("baz.bar", "=", u"y"),
             query_module.FilterNode("baz.foo", "=", u"x"),
+        )
+        # Python 2 and 3 order nodes differently, sort them and test each one
+        # is in both lists.
+        assert all(  # pragma: NO BRANCH
+            [
+                a == b
+                for a, b in zip(
+                    sorted(comparison._nodes, key=lambda a: a._name),
+                    sorted(compared._nodes, key=lambda a: a._name),
+                )
+            ]
         )
 
     @staticmethod
@@ -2986,17 +2998,28 @@ class TestStructuredProperty:
         prop._name = "bar"
         mine = Mine(foo="x", bar="y")
         conjunction = prop._comparison("=", mine)
-        assert conjunction._nodes[0] == query_module.FilterNode(
+        # Python 2 and 3 order nodes differently, so we sort them before
+        # making any comparisons.
+        conjunction_nodes = sorted(
+            conjunction._nodes, key=lambda a: getattr(a, "_name", "z")
+        )
+        assert conjunction_nodes[0] == query_module.FilterNode(
             "bar.bar", "=", u"y"
         )
-        assert conjunction._nodes[1] == query_module.FilterNode(
+        assert conjunction_nodes[1] == query_module.FilterNode(
             "bar.foo", "=", u"x"
         )
-        assert conjunction._nodes[2].predicate.name == "bar"
-        assert conjunction._nodes[2].predicate.match_keys == ["bar", "foo"]
-        match_values = conjunction._nodes[2].predicate.match_values
-        assert match_values[0].string_value == "y"
-        assert match_values[1].string_value == "x"
+        assert conjunction_nodes[2].predicate.name == "bar"
+        assert sorted(conjunction_nodes[2].predicate.match_keys) == [
+            "bar",
+            "foo",
+        ]
+        match_values = sorted(
+            conjunction_nodes[2].predicate.match_values,
+            key=lambda a: a.string_value,
+        )
+        assert match_values[0].string_value == "x"
+        assert match_values[1].string_value == "y"
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")

@@ -46,7 +46,7 @@ class Options(object):
         slots = set(cls.slots())
         # If there are any positional arguments, get their names.
         # inspect.signature is not available in Python 2.7, so we use the
-        # arguments obtained with inspect.getarspec, which come from the
+        # arguments obtained with inspect.getargspec, which come from the
         # positional decorator used with all query_options decorated methods.
         positional = getattr(wrapped, "_positional_names", [])
 
@@ -58,8 +58,6 @@ class Options(object):
                 in_options = True
 
             elif in_options and name != "_options":
-                print(slots)
-                print(name)
                 raise TypeError(
                     "All positional non-option arguments must precede option "
                     "arguments in function signature."

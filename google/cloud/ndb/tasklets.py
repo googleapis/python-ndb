@@ -221,7 +221,7 @@ class Future(object):
                 traceback = self._exception.__traceback__
             except AttributeError:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
                 # Python 2 does not have the helpful traceback attribute, and
-                # sice the exception is not being handled, it appears that
+                # since the exception is not being handled, it appears that
                 # sys.exec_info can't give us the traceback either.
                 traceback = None
             return traceback

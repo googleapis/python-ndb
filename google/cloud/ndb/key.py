@@ -466,7 +466,7 @@ class Key(object):
             state to pickle. The dictionary has three keys ``pairs``, ``app``
             and ``namespace``.
         """
-        return (  # pragma: NO COVER
+        return (  # pragma: NO PY2 COVER
             {
                 "pairs": self.pairs(),
                 "app": self.app(),
@@ -1428,7 +1428,7 @@ def _clean_flat_path(flat):
                 raise exceptions.BadArgumentError(
                     "Incomplete Key entry must be last"
                 )
-        elif not isinstance(id_, (str,) + six.integer_types):
+        elif not isinstance(id_, six.string_types + six.integer_types):
             raise TypeError(_INVALID_ID_TYPE.format(id_))
 
     # Remove trailing ``None`` for a partial key.

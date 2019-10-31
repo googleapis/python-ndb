@@ -3783,9 +3783,7 @@ class StructuredProperty(Property):
         value = self._do_validate(value)
         filters = []
         match_keys = []
-        # Somehow, Python 2 and 3 return values in diiferent order, sort them.
-        for prop_name in sorted(self._model_class._properties.keys()):
-            prop = self._model_class._properties[prop_name]
+        for prop_name, prop in self._model_class._properties.items():
             subvalue = prop._get_value(value)
             if prop._repeated:
                 if subvalue:  # pragma: no branch
