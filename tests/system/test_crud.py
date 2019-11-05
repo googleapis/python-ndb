@@ -22,7 +22,10 @@ import os
 import threading
 import zlib
 
-from unittest import mock
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 import pytest
 
@@ -261,6 +264,37 @@ def test_insert_roundtrip_naive_datetime(dispose_of, ds_client):
     dispose_of(key._key)
 
 
+@pytest.mark.usefixtures("client_context")
+def test_datetime_w_tzinfo(dispose_of, ds_client):
+    class timezone(datetime.tzinfo):
+        def __init__(self, offset):
+            self.offset = datetime.timedelta(hours=offset)
+
+        def utcoffset(self, dt):
+            return self.offset
+
+        def dst(self, dt):
+            return datetime.timedelta(0)
+
+    mytz = timezone(-4)
+
+    class SomeKind(ndb.Model):
+        foo = ndb.DateTimeProperty(tzinfo=mytz)
+        bar = ndb.DateTimeProperty(tzinfo=mytz)
+
+    entity = SomeKind(
+        foo=datetime.datetime(2010, 5, 12, 2, 42, tzinfo=timezone(-5)),
+        bar=datetime.datetime(2010, 5, 12, 2, 42),
+    )
+    key = entity.put()
+
+    retrieved = key.get()
+    assert retrieved.foo == datetime.datetime(2010, 5, 12, 3, 42, tzinfo=mytz)
+    assert retrieved.bar == datetime.datetime(2010, 5, 11, 22, 42, tzinfo=mytz)
+
+    dispose_of(key._key)
+
+
 def test_parallel_threads(dispose_of, namespace):
     client = ndb.Client(namespace=namespace)
 
@@ -337,7 +371,7 @@ def test_compressed_blob_property(dispose_of, ds_client):
 
 @pytest.mark.usefixtures("client_context")
 def test_retrieve_entity_with_legacy_compressed_property(
-    ds_entity_with_meanings
+    ds_entity_with_meanings,
 ):
     class SomeKind(ndb.Model):
         blob = ndb.BlobProperty()
@@ -908,6 +942,26 @@ def test_insert_autonow_property(dispose_of):
 
     assert isinstance(retrieved.created_at, datetime.datetime)
     assert isinstance(retrieved.updated_at, datetime.datetime)
+
+    dispose_of(key._key)
+
+
+@pytest.mark.usefixtures("client_context")
+def test_insert_nested_autonow_property(dispose_of):
+    class OtherKind(ndb.Model):
+        created_at = ndb.DateTimeProperty(indexed=True, auto_now_add=True)
+        updated_at = ndb.DateTimeProperty(indexed=True, auto_now=True)
+
+    class SomeKind(ndb.Model):
+        other = ndb.StructuredProperty(OtherKind)
+
+    entity = SomeKind(other=OtherKind())
+    key = entity.put()
+
+    retrieved = key.get()
+
+    assert isinstance(retrieved.other.created_at, datetime.datetime)
+    assert isinstance(retrieved.other.updated_at, datetime.datetime)
 
     dispose_of(key._key)
 

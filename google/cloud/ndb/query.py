@@ -133,17 +133,12 @@ tasklet, properly yielding when appropriate::
 """
 
 import functools
-import inspect
 import logging
 
-from google.cloud.ndb import context as context_module
-from google.cloud.ndb import _datastore_api
-from google.cloud.ndb import _datastore_query
-from google.cloud.ndb import _gql
 from google.cloud.ndb import exceptions
-from google.cloud.ndb import model
 from google.cloud.ndb import _options
 from google.cloud.ndb import tasklets
+from google.cloud.ndb import utils
 
 
 __all__ = [
@@ -203,7 +198,7 @@ class PropertyOrder(object):
         return self.__class__(name=self.name, reverse=reverse)
 
 
-class RepeatedStructuredPropertyPredicate:
+class RepeatedStructuredPropertyPredicate(object):
     """A predicate for querying repeated structured properties.
 
     Called by ``model.StructuredProperty._compare``. This is used to handle
@@ -278,7 +273,7 @@ class RepeatedStructuredPropertyPredicate:
         return False
 
 
-class ParameterizedThing:
+class ParameterizedThing(object):
     """Base class for :class:`Parameter` and :class:`ParameterizedFunction`.
 
     This exists purely for :func:`isinstance` checks.
@@ -387,7 +382,7 @@ class ParameterizedFunction(ParameterizedThing):
         return self.__values
 
 
-class Node:
+class Node(object):
     """Base class for filter expression tree nodes.
 
     Tree nodes are considered immutable, even though they can contain
@@ -409,6 +404,10 @@ class Node:
         return super(Node, cls).__new__(cls)
 
     def __eq__(self, other):
+        raise NotImplementedError
+
+    def __ne__(self, other):
+        # Python 2.7 requires this method to be implemented.
         raise NotImplementedError
 
     def __le__(self, unused_other):
@@ -510,6 +509,9 @@ class ParameterNode(Node):
     __slots__ = ("_prop", "_op", "_param")
 
     def __new__(cls, prop, op, param):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         if not isinstance(prop, model.Property):
             raise TypeError("Expected a Property, got {!r}".format(prop))
         if op not in _OPS:
@@ -626,6 +628,9 @@ class FilterNode(Node):
     __slots__ = ("_name", "_opsymbol", "_value")
 
     def __new__(cls, name, opsymbol, value):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         if isinstance(value, model.Key):
             value = value._key
 
@@ -684,6 +689,9 @@ class FilterNode(Node):
             and self._value == other._value
         )
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def _to_filter(self, post=False):
         """Helper to convert to low-level filter.
 
@@ -701,6 +709,9 @@ class FilterNode(Node):
                 never occur since the constructor will create ``OR`` nodes for
                 ``!=`` and ``in``
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         if post:
             return None
         if self._opsymbol in (_NE_OP, _IN_OP):
@@ -774,7 +785,7 @@ class PostFilterNode(Node):
             return None
 
 
-class _BooleanClauses:
+class _BooleanClauses(object):
     """This type will be used for symbolically performing boolean operations.
 
     Internally, the state will track a symbolic expression like::
@@ -956,6 +967,9 @@ class ConjunctionNode(Node):
             Optional[Node]: The single or composite filter corresponding to
                 the pre- or post-filter nodes stored. May return :data:`None`.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
         filters = []
         for node in self._nodes:
             if isinstance(node, PostFilterNode) == post:
@@ -1129,21 +1143,22 @@ def _query_options(wrapped):
     the ``_options`` argument to those functions, bypassing all of the
     other arguments.
     """
-    # If there are any positional arguments, get their names
-    signature = inspect.signature(wrapped)
-    positional = [
-        name
-        for name, parameter in signature.parameters.items()
-        if parameter.kind
-        in (parameter.POSITIONAL_ONLY, parameter.POSITIONAL_OR_KEYWORD)
-        and name != "self"
-    ]
+    # If there are any positional arguments, get their names.
+    # inspect.signature is not available in Python 2.7, so we use the
+    # arguments obtained with inspect.getarspec, which come from the
+    # positional decorator used with all query_options decorated methods.
+    arg_names = getattr(wrapped, "_positional_names", [])
+    positional = [arg for arg in arg_names if arg != "self"]
 
     # Provide dummy values for positional args to avoid TypeError
     dummy_args = [None for _ in positional]
 
     @functools.wraps(wrapped)
     def wrapper(self, *args, **kwargs):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import context as context_module
+        from google.cloud.ndb import _datastore_api
+
         # Maybe we already did this (in the case of X calling X_async)
         if "_options" in kwargs:
             return wrapped(self, *dummy_args, _options=kwargs["_options"])
@@ -1228,6 +1243,8 @@ class QueryOptions(_options.ReadOptions):
         "end_cursor",
         # Both (!?!)
         "projection",
+        # Map only
+        "callback",
     )
 
     def __init__(self, config=None, client=None, **kwargs):
@@ -1235,6 +1252,12 @@ class QueryOptions(_options.ReadOptions):
             raise exceptions.NoLongerImplementedError()
 
         if kwargs.get("prefetch_size"):
+            raise exceptions.NoLongerImplementedError()
+
+        if kwargs.get("pass_batch_into_callback"):
+            raise exceptions.NoLongerImplementedError()
+
+        if kwargs.get("merge_future"):
             raise exceptions.NoLongerImplementedError()
 
         if kwargs.pop("produce_cursors", None):
@@ -1254,7 +1277,7 @@ class QueryOptions(_options.ReadOptions):
                 self.namespace = client.namespace
 
 
-class Query:
+class Query(object):
     """Query object.
 
     Args:
@@ -1297,6 +1320,9 @@ class Query:
         group_by=None,
         default_options=None,
     ):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         self.default_options = None
 
         if app:
@@ -1406,7 +1432,8 @@ class Query:
                     "projection must be a tuple, list or None; "
                     "received {}".format(projection)
                 )
-            self._check_properties(self._to_property_names(projection))
+            projection = self._to_property_names(projection)
+            self._check_properties(projection)
             self.projection = tuple(projection)
 
         if distinct_on is not None and group_by is not None:
@@ -1426,7 +1453,8 @@ class Query:
                     "distinct_on must be a tuple, list or None; "
                     "received {}".format(distinct_on)
                 )
-            self._check_properties(self._to_property_names(distinct_on))
+            distinct_on = self._to_property_names(distinct_on)
+            self._check_properties(distinct_on)
             self.distinct_on = tuple(distinct_on)
 
     def __repr__(self):
@@ -1616,6 +1644,9 @@ class Query:
         )
 
     def _to_property_names(self, properties):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         fixed = []
         for prop in properties:
             if isinstance(prop, str):
@@ -1630,6 +1661,9 @@ class Query:
         return fixed
 
     def _to_property_orders(self, order_by):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         orders = []
         for order in order_by:
             if isinstance(order, PropertyOrder):
@@ -1651,15 +1685,15 @@ class Query:
         return orders
 
     def _check_properties(self, fixed, **kwargs):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import model
+
         modelclass = model.Model._kind_map.get(self.kind)
         if modelclass is not None:
             modelclass._check_properties(fixed, **kwargs)
 
     @_query_options
-    def fetch(
-        self,
-        limit=None,
-        *,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         offset=None,
@@ -1675,7 +1709,9 @@ class Query:
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def fetch(self, limit=None, **kwargs):
         """Run a query, fetching results.
 
         Args:
@@ -1712,13 +1748,10 @@ class Query:
         Returns:
             List([model.Model]): The query results.
         """
-        return self.fetch_async(_options=_options).result()
+        return self.fetch_async(_options=kwargs["_options"]).result()
 
     @_query_options
-    def fetch_async(
-        self,
-        limit=None,
-        *,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         offset=None,
@@ -1734,7 +1767,9 @@ class Query:
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def fetch_async(self, limit=None, **kwargs):
         """Run a query, asynchronously fetching the results.
 
         Args:
@@ -1770,7 +1805,10 @@ class Query:
             tasklets.Future: Eventual result will be a List[model.Model] of the
                 results.
         """
-        return _datastore_query.fetch(_options)
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
+        return _datastore_query.fetch(kwargs["_options"])
 
     def _option(self, name, given, options=None):
         """Get given value or a provided default for an option.
@@ -1817,9 +1855,7 @@ class Query:
         raise exceptions.NoLongerImplementedError()
 
     @_query_options
-    def iter(
-        self,
-        *,
+    @utils.keyword_only(
         keys_only=None,
         limit=None,
         projection=None,
@@ -1836,7 +1872,9 @@ class Query:
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(1)
+    def iter(self, **kwargs):
         """Get an iterator over query results.
 
         Args:
@@ -1871,16 +1909,15 @@ class Query:
         Returns:
             :class:`QueryIterator`: An iterator.
         """
-        return _datastore_query.iterate(_options)
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
+        return _datastore_query.iterate(kwargs["_options"])
 
     __iter__ = iter
 
-    def map(
-        self,
-        callback,
-        *,
-        pass_batch_into_callback=None,
-        merge_future=None,
+    @_query_options
+    @utils.keyword_only(
         keys_only=None,
         limit=None,
         projection=None,
@@ -1896,15 +1933,17 @@ class Query:
         read_policy=None,
         transaction=None,
         options=None,
-    ):
+        pass_batch_into_callback=None,
+        merge_future=None,
+        _options=None,
+    )
+    @utils.positional(2)
+    def map(self, callback, **kwargs):
         """Map a callback function or tasklet over the query results.
-
-        DEPRECATED: This method is no longer supported.
 
         Args:
             callback (Callable): A function or tasklet to be applied to each
                 result; see below.
-            merge_future: Optional ``Future`` subclass; see below.
             keys_only (bool): Return keys instead of entities.
             projection (list[str]): The fields to return as part of the query
                 results.
@@ -1932,39 +1971,22 @@ class Query:
                 Implies ``read_policy=ndb.STRONG``.
             options (QueryOptions): DEPRECATED: An object containing options
                 values for some of these arguments.
+            pass_batch_info_callback: DEPRECATED: No longer implemented.
+            merge_future: DEPRECATED: No longer implemented.
 
-        Callback signature: The callback is normally called with an entity
-        as argument.  However if keys_only=True is given, it is called
-        with a Key.  Also, when pass_batch_into_callback is True, it is
-        called with three arguments: the current batch, the index within
-        the batch, and the entity or Key at that index.  The callback can
-        return whatever it wants.  If the callback is None, a trivial
-        callback is assumed that just returns the entity or key passed in
-        (ignoring produce_cursors).
-
-        Optional merge future: The merge_future is an advanced argument
-        that can be used to override how the callback results are combined
-        into the overall map() return value.  By default a list of
-        callback return values is produced.  By substituting one of a
-        small number of specialized alternatives you can arrange
-        otherwise.  See tasklets.MultiFuture for the default
-        implementation and a description of the protocol the merge_future
-        object must implement the default.  Alternatives from the same
-        module include QueueFuture, SerialQueueFuture and ReducingFuture.
+        Callback signature: The callback is normally called with an entity as
+        argument. However if keys_only=True is given, it is called with a Key.
+        The callback can return whatever it wants.
 
         Returns:
             Any: When the query has run to completion and all callbacks have
                 returned, map() returns a list of the results of all callbacks.
-                (But see 'optional merge future' above.)
         """
-        raise exceptions.NoLongerImplementedError()
+        return self.map_async(None, _options=kwargs["_options"]).result()
 
-    def map_async(
-        self,
-        callback,
-        *,
-        pass_batch_into_callback=None,
-        merge_future=None,
+    @tasklets.tasklet
+    @_query_options
+    @utils.keyword_only(
         keys_only=None,
         limit=None,
         projection=None,
@@ -1980,22 +2002,40 @@ class Query:
         read_policy=None,
         transaction=None,
         options=None,
-    ):
+        pass_batch_into_callback=None,
+        merge_future=None,
+        _options=None,
+    )
+    @utils.positional(2)
+    def map_async(self, callback, **kwargs):
         """Map a callback function or tasklet over the query results.
-
-        DEPRECATED: This method is no longer supported.
 
         This is the asynchronous version of :meth:`Query.map`.
 
         Returns:
             tasklets.Future: See :meth:`Query.map` for eventual result.
         """
-        raise exceptions.NoLongerImplementedError()
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
+        _options = kwargs["_options"]
+        callback = _options.callback
+        futures = []
+        results = _datastore_query.iterate(_options)
+        while (yield results.has_next_async()):
+            result = results.next()
+            mapped = callback(result)
+            if not isinstance(mapped, tasklets.Future):
+                future = tasklets.Future()
+                future.set_result(mapped)
+                mapped = future
+            futures.append(mapped)
+
+        mapped_results = yield futures
+        raise tasklets.Return(mapped_results)
 
     @_query_options
-    def get(
-        self,
-        *,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         batch_size=None,
@@ -2010,7 +2050,9 @@ class Query:
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(1)
+    def get(self, **kwargs):
         """Get the first query result, if any.
 
         This is equivalent to calling ``q.fetch(1)`` and returning the first
@@ -2046,13 +2088,11 @@ class Query:
             Optional[Union[google.cloud.datastore.entity.Entity, key.Key]]:
                 A single result, or :data:`None` if there are no results.
         """
-        return self.get_async(_options=_options).result()
+        return self.get_async(_options=kwargs["_options"]).result()
 
     @tasklets.tasklet
     @_query_options
-    def get_async(
-        self,
-        *,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         offset=None,
@@ -2068,7 +2108,9 @@ class Query:
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(1)
+    def get_async(self, **kwargs):
         """Get the first query result, if any.
 
         This is the asynchronous version of :meth:`Query.get`.
@@ -2076,16 +2118,16 @@ class Query:
         Returns:
             tasklets.Future: See :meth:`Query.get` for eventual result.
         """
-        options = _options.copy(limit=1)
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
+        options = kwargs["_options"].copy(limit=1)
         results = yield _datastore_query.fetch(options)
         if results:
             raise tasklets.Return(results[0])
 
     @_query_options
-    def count(
-        self,
-        limit=None,
-        *,
+    @utils.keyword_only(
         offset=None,
         batch_size=None,
         prefetch_size=None,
@@ -2099,7 +2141,9 @@ class Query:
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def count(self, limit=None, **kwargs):
         """Count the number of query results, up to a limit.
 
         This returns the same result as ``len(q.fetch(limit))``.
@@ -2152,14 +2196,11 @@ class Query:
             Optional[Union[google.cloud.datastore.entity.Entity, key.Key]]:
                 A single result, or :data:`None` if there are no results.
         """
-        return self.count_async(_options=_options).result()
+        return self.count_async(_options=kwargs["_options"]).result()
 
     @tasklets.tasklet
     @_query_options
-    def count_async(
-        self,
-        limit=None,
-        *,
+    @utils.keyword_only(
         offset=None,
         batch_size=None,
         prefetch_size=None,
@@ -2173,7 +2214,9 @@ class Query:
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def count_async(self, limit=None, **kwargs):
         """Count the number of query results, up to a limit.
 
         This is the asynchronous version of :meth:`Query.count`.
@@ -2181,6 +2224,10 @@ class Query:
         Returns:
             tasklets.Future: See :meth:`Query.count` for eventual result.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
+        _options = kwargs["_options"]
         options = _options.copy(keys_only=True)
         results = _datastore_query.iterate(options, raw=True)
         count = 0
@@ -2195,10 +2242,7 @@ class Query:
         raise tasklets.Return(count)
 
     @_query_options
-    def fetch_page(
-        self,
-        page_size,
-        *,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         batch_size=None,
@@ -2213,7 +2257,9 @@ class Query:
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def fetch_page(self, page_size, **kwargs):
         """Fetch a page of results.
 
         This is a specialized method for use by paging user interfaces.
@@ -2265,14 +2311,13 @@ class Query:
                 result returned, and `more` indicates whether there are
                 (likely) more results after that.
         """
-        return self.fetch_page_async(None, _options=_options).result()
+        return self.fetch_page_async(
+            None, _options=kwargs["_options"]
+        ).result()
 
     @tasklets.tasklet
     @_query_options
-    def fetch_page_async(
-        self,
-        page_size,
-        *,
+    @utils.keyword_only(
         keys_only=None,
         projection=None,
         batch_size=None,
@@ -2287,7 +2332,9 @@ class Query:
         transaction=None,
         options=None,
         _options=None,
-    ):
+    )
+    @utils.positional(2)
+    def fetch_page_async(self, page_size, **kwargs):
         """Fetch a page of results.
 
         This is the asynchronous version of :meth:`Query.fetch_page`.
@@ -2295,6 +2342,10 @@ class Query:
         Returns:
             tasklets.Future: See :meth:`Query.fetch_page` for eventual result.
         """
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import _datastore_query
+
+        _options = kwargs["_options"]
         if _options.filters and _options.filters._multiquery:
             raise TypeError(
                 "Can't use 'fetch_page' or 'fetch_page_async' with query that "
@@ -2330,6 +2381,9 @@ def gql(query_string, *args, **kwds):
     Raises:
         google.cloud.ndb.exceptions.BadQueryError: When bad gql is passed in.
     """
+    # Avoid circular import in Python 2.7
+    from google.cloud.ndb import _gql
+
     query = _gql.GQL(query_string).get_query()
     if args or kwds:
         query = query.bind(*args, **kwds)
