@@ -4,6 +4,16 @@
 
 [1]: https://pypi.org/project/google-cloud-ndb/#history
 
+### [0.1.1](https://www.github.com/googleapis/python-ndb/compare/v0.1.0...v0.1.1) (2019-11-06)
+
+
+### Bug Fixes
+
+* **internal:** Enable release-please ([#228](https://www.github.com/googleapis/python-ndb/issues/228)) ([515440f](https://www.github.com/googleapis/python-ndb/commit/515440faf88dba768813cf972b4b0e52f49fe802))
+* **test:** introduce local redis for tests ([#191](https://www.github.com/googleapis/python-ndb/issues/191)) ([65eaef2](https://www.github.com/googleapis/python-ndb/commit/65eaef265471552d3a83943a0acec4b11b81cecd))
+* query.map() and query.map_async() hanging with empty result set. ([#230](https://www.github.com/googleapis/python-ndb/issues/230)) ([0561a34](https://www.github.com/googleapis/python-ndb/commit/0561a340ef6cdd1f79aef64908a08988c2d17ec9)), closes [#227](https://www.github.com/googleapis/python-ndb/issues/227)
+* update README to include Python 2 support. ([#231](https://www.github.com/googleapis/python-ndb/issues/231)) ([bd219fb](https://www.github.com/googleapis/python-ndb/commit/bd219fba996ca3d6a8750c49805de6fff5f26cb7))
+
 ## 0.1.0
 
 09-10-2019 13:43 PDT
