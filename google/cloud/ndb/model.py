@@ -3285,9 +3285,7 @@ class KeyProperty(Property):
             kind = name
             name = temp
         if isinstance(kind, six.string_types) and name is None:
-            temp = kind
-            kind = name
-            name = temp
+            pass
         if isinstance(name, type) and kind is None:
             temp = kind
             kind = name

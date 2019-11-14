@@ -2405,13 +2405,13 @@ class TestKeyProperty:
         assert prop._name is None
         assert prop._kind is None
 
-        name_only_args = [("keyp",), (None, "keyp"), ("keyp", None)]
+        name_only_args = [("keyp",), ("keyp", None)]
         for args in name_only_args:
             prop = model.KeyProperty(*args)
             assert prop._name == "keyp"
             assert prop._kind is None
 
-        kind_only_args = [(Simple,), (None, Simple), (Simple, None)]
+        kind_only_args = [(Simple,), (None, "Simple"), (None, Simple), (Simple, None)]
         for args in kind_only_args:
             prop = model.KeyProperty(*args)
             assert prop._name is None
