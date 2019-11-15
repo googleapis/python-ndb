@@ -91,26 +91,32 @@ def positional(max_pos_args):
     """
 
     def positional_decorator(wrapped):
+        root = getattr(wrapped, "_wrapped", wrapped)
         wrapped._positional_args = max_pos_args
-        argspec = inspect.getargspec(wrapped)
+        argspec = inspect.getargspec(root)
         wrapped._argspec = argspec
         wrapped._positional_names = argspec.args[:max_pos_args]
 
         @functools.wraps(wrapped)
         def positional_wrapper(*args, **kwds):
-            if len(args) > max_pos_args:
-                plural_s = ""
-                if max_pos_args != 1:
-                    plural_s = "s"
-                raise TypeError(
-                    "%s() takes at most %d positional argument%s (%d given)"
-                    % (wrapped.__name__, max_pos_args, plural_s, len(args))
-                )
+            check_positional_args(wrapped, max_pos_args, args)
             return wrapped(*args, **kwds)
 
         return positional_wrapper
 
     return positional_decorator
+
+
+def check_positional_args(wrapped, max_pos_args, args):
+    """Raise an appropriate error if len(args) > max_pos_args"""
+    if len(args) > max_pos_args:
+        plural_s = ""
+        if max_pos_args != 1:
+            plural_s = "s"
+        raise TypeError(
+            "%s() takes at most %d positional argument%s (%d given)"
+            % (wrapped.__name__, max_pos_args, plural_s, len(args))
+        )
 
 
 threading_local = threading.local
