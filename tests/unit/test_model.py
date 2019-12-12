@@ -3433,7 +3433,7 @@ class TestLocalStructuredProperty:
 
         prop = model.LocalStructuredProperty(Simple, name="ent")
         value = {}
-        assert prop._validate(value) is None
+        assert prop._validate(value) is Simple
 
     @staticmethod
     def test__validate_dict_invalid():
