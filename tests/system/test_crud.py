@@ -370,7 +370,7 @@ def test_compressed_repeated_local_structured_property(dispose_of, ds_client):
         dogs = ndb.LocalStructuredProperty(Dog, repeated=True, compressed=True)
 
     entity = House()
-    dogs = [Dog(name='Mika'), Dog(name='Mocha')]
+    dogs = [Dog(name="Mika"), Dog(name="Mocha")]
     entity.dogs = dogs
 
     key = entity.put()
