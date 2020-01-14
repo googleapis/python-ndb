@@ -1891,7 +1891,7 @@ class TestBlobProperty:
         uncompressed_value_one = b"abc" * 1000
         compressed_value_one = zlib.compress(uncompressed_value_one)
         uncompressed_value_two = b"xyz" * 1000
-        compressed_value_two = zlib.compress(uncompressed_value_one)
+        compressed_value_two = zlib.compress(uncompressed_value_two)
         datastore_entity.update(
             {"foo": [compressed_value_one, compressed_value_two]}
         )
