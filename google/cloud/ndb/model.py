@@ -4256,6 +4256,7 @@ class ComputedProperty(GenericProperty):
     """
 
     _kwargs = None
+    _func = None
 
     def __init__(
         self, func, name=None, indexed=None, repeated=None, verbose_name=None
