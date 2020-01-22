@@ -1824,9 +1824,10 @@ class Query(object):
 
         # When projection fields are passed as property objects, fetch needs to
         # convert them into property names. Fixes #295.
-        if hasattr(kwargs["_options"], "projection"):
+        if getattr(kwargs["_options"], "projection", None) is not None:
             kwargs["_options"].projection = self._to_property_names(
-                    kwargs["_options"].projection)
+                kwargs["_options"].projection
+            )
         return _datastore_query.fetch(kwargs["_options"])
 
     def _option(self, name, given, options=None):
