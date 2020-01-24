@@ -69,8 +69,9 @@ def make_stub(client):
             The stub instance.
     """
     if client.secure:
+        user_agent = client.client_info.to_user_agent()
         channel = _helpers.make_secure_channel(
-            client._credentials, _http.DEFAULT_USER_AGENT, client.host
+            client._credentials, user_agent, client.host
         )
     else:
         channel = grpc.insecure_channel(client.host)
