@@ -20,7 +20,6 @@ except ImportError:  # pragma: NO PY3 COVER
 import pytest
 
 from google.api_core import client_info
-from google.cloud import _http
 from google.cloud.datastore import entity
 from google.cloud.datastore import helpers
 from google.cloud.datastore import key as ds_key_module

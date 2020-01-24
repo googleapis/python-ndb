@@ -20,7 +20,6 @@ import logging
 import grpc
 
 from google.cloud import _helpers
-from google.cloud import _http
 from google.cloud.datastore import helpers
 from google.cloud.datastore_v1.proto import datastore_pb2
 from google.cloud.datastore_v1.proto import datastore_pb2_grpc
