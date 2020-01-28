@@ -3233,7 +3233,7 @@ class UserProperty(Property):
         return user_entity
 
     def _from_base_type(self, ds_entity):
-        """Convert the user value from a datatsore entity.
+        """Convert the user value from a datastore entity.
 
         Arguments:
             ds_entity (~google.cloud.datastore.entity.Entity): The datastore
