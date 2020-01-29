@@ -1,12 +1,401 @@
 {
-  "updateTime": "2019-09-12T12:09:50.199519Z",
+  "updateTime": "2020-01-29T13:12:13.500533Z",
   "sources": [
     {
       "template": {
-        "name": "python_library",
+        "name": "python_split_library",
         "origin": "synthtool.gcp",
-        "version": "2019.5.2"
+        "version": "2019.10.17"
       }
+    }
+  ],
+  "newFiles": [
+    {
+      "path": ".appveyor.yml"
+    },
+    {
+      "path": ".circleci/config.yml"
+    },
+    {
+      "path": ".coveragerc"
+    },
+    {
+      "path": ".github/CODEOWNERS"
+    },
+    {
+      "path": ".github/CONTRIBUTING.md"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.md"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/feature_request.md"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/support_request.md"
+    },
+    {
+      "path": ".github/release-please.yml"
+    },
+    {
+      "path": ".gitignore"
+    },
+    {
+      "path": ".kokoro/build.sh"
+    },
+    {
+      "path": ".kokoro/continuous/common.cfg"
+    },
+    {
+      "path": ".kokoro/continuous/continuous.cfg"
+    },
+    {
+      "path": ".kokoro/docs/common.cfg"
+    },
+    {
+      "path": ".kokoro/docs/docs.cfg"
+    },
+    {
+      "path": ".kokoro/presubmit/common.cfg"
+    },
+    {
+      "path": ".kokoro/presubmit/presubmit.cfg"
+    },
+    {
+      "path": ".kokoro/publish-docs.sh"
+    },
+    {
+      "path": ".kokoro/release.sh"
+    },
+    {
+      "path": ".kokoro/release/common.cfg"
+    },
+    {
+      "path": ".kokoro/release/release.cfg"
+    },
+    {
+      "path": ".kokoro/trampoline.sh"
+    },
+    {
+      "path": ".repo-metadata.json"
+    },
+    {
+      "path": "AUTHORS"
+    },
+    {
+      "path": "CHANGELOG.md"
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md"
+    },
+    {
+      "path": "CONTRIBUTING.rst"
+    },
+    {
+      "path": "LICENSE"
+    },
+    {
+      "path": "MIGRATION_NOTES.md"
+    },
+    {
+      "path": "README.md"
+    },
+    {
+      "path": "docs/Makefile"
+    },
+    {
+      "path": "docs/_static/images/favicon.ico"
+    },
+    {
+      "path": "docs/blobstore.rst"
+    },
+    {
+      "path": "docs/client.rst"
+    },
+    {
+      "path": "docs/conf.py"
+    },
+    {
+      "path": "docs/context.rst"
+    },
+    {
+      "path": "docs/django-middleware.rst"
+    },
+    {
+      "path": "docs/exceptions.rst"
+    },
+    {
+      "path": "docs/global_cache.rst"
+    },
+    {
+      "path": "docs/index.rst"
+    },
+    {
+      "path": "docs/key.rst"
+    },
+    {
+      "path": "docs/metadata.rst"
+    },
+    {
+      "path": "docs/migrating.rst"
+    },
+    {
+      "path": "docs/model.rst"
+    },
+    {
+      "path": "docs/msgprop.rst"
+    },
+    {
+      "path": "docs/polymodel.rst"
+    },
+    {
+      "path": "docs/query.rst"
+    },
+    {
+      "path": "docs/spelling_wordlist.txt"
+    },
+    {
+      "path": "docs/stats.rst"
+    },
+    {
+      "path": "docs/tasklets.rst"
+    },
+    {
+      "path": "google/__init__.py"
+    },
+    {
+      "path": "google/cloud/__init__.py"
+    },
+    {
+      "path": "google/cloud/ndb/__init__.py"
+    },
+    {
+      "path": "google/cloud/ndb/_batch.py"
+    },
+    {
+      "path": "google/cloud/ndb/_cache.py"
+    },
+    {
+      "path": "google/cloud/ndb/_datastore_api.py"
+    },
+    {
+      "path": "google/cloud/ndb/_datastore_query.py"
+    },
+    {
+      "path": "google/cloud/ndb/_datastore_types.py"
+    },
+    {
+      "path": "google/cloud/ndb/_eventloop.py"
+    },
+    {
+      "path": "google/cloud/ndb/_gql.py"
+    },
+    {
+      "path": "google/cloud/ndb/_options.py"
+    },
+    {
+      "path": "google/cloud/ndb/_remote.py"
+    },
+    {
+      "path": "google/cloud/ndb/_retry.py"
+    },
+    {
+      "path": "google/cloud/ndb/_transaction.py"
+    },
+    {
+      "path": "google/cloud/ndb/blobstore.py"
+    },
+    {
+      "path": "google/cloud/ndb/client.py"
+    },
+    {
+      "path": "google/cloud/ndb/context.py"
+    },
+    {
+      "path": "google/cloud/ndb/django_middleware.py"
+    },
+    {
+      "path": "google/cloud/ndb/exceptions.py"
+    },
+    {
+      "path": "google/cloud/ndb/global_cache.py"
+    },
+    {
+      "path": "google/cloud/ndb/key.py"
+    },
+    {
+      "path": "google/cloud/ndb/metadata.py"
+    },
+    {
+      "path": "google/cloud/ndb/model.py"
+    },
+    {
+      "path": "google/cloud/ndb/msgprop.py"
+    },
+    {
+      "path": "google/cloud/ndb/polymodel.py"
+    },
+    {
+      "path": "google/cloud/ndb/query.py"
+    },
+    {
+      "path": "google/cloud/ndb/stats.py"
+    },
+    {
+      "path": "google/cloud/ndb/tasklets.py"
+    },
+    {
+      "path": "google/cloud/ndb/utils.py"
+    },
+    {
+      "path": "noxfile.py"
+    },
+    {
+      "path": "setup.py"
+    },
+    {
+      "path": "synth.metadata"
+    },
+    {
+      "path": "synth.py"
+    },
+    {
+      "path": "test_utils/scripts/get_target_packages.py"
+    },
+    {
+      "path": "test_utils/test_utils/credentials.json.enc"
+    },
+    {
+      "path": "test_utils/test_utils/scripts/circleci/get_tagged_package.py"
+    },
+    {
+      "path": "test_utils/test_utils/scripts/circleci/twine_upload.sh"
+    },
+    {
+      "path": "test_utils/test_utils/scripts/get_target_packages.py"
+    },
+    {
+      "path": "test_utils/test_utils/scripts/get_target_packages_kokoro.py"
+    },
+    {
+      "path": "test_utils/test_utils/scripts/run_emulator.py"
+    },
+    {
+      "path": "test_utils/test_utils/setup.py"
+    },
+    {
+      "path": "test_utils/test_utils/test_utils/__init__.py"
+    },
+    {
+      "path": "test_utils/test_utils/test_utils/retry.py"
+    },
+    {
+      "path": "test_utils/test_utils/test_utils/system.py"
+    },
+    {
+      "path": "tests/__init__.py"
+    },
+    {
+      "path": "tests/conftest.py"
+    },
+    {
+      "path": "tests/system/__init__.py"
+    },
+    {
+      "path": "tests/system/conftest.py"
+    },
+    {
+      "path": "tests/system/index.yaml"
+    },
+    {
+      "path": "tests/system/test_crud.py"
+    },
+    {
+      "path": "tests/system/test_metadata.py"
+    },
+    {
+      "path": "tests/system/test_query.py"
+    },
+    {
+      "path": "tests/unit/__init__.py"
+    },
+    {
+      "path": "tests/unit/test__batch.py"
+    },
+    {
+      "path": "tests/unit/test__cache.py"
+    },
+    {
+      "path": "tests/unit/test__datastore_api.py"
+    },
+    {
+      "path": "tests/unit/test__datastore_query.py"
+    },
+    {
+      "path": "tests/unit/test__datastore_types.py"
+    },
+    {
+      "path": "tests/unit/test__eventloop.py"
+    },
+    {
+      "path": "tests/unit/test__gql.py"
+    },
+    {
+      "path": "tests/unit/test__options.py"
+    },
+    {
+      "path": "tests/unit/test__remote.py"
+    },
+    {
+      "path": "tests/unit/test__retry.py"
+    },
+    {
+      "path": "tests/unit/test__transaction.py"
+    },
+    {
+      "path": "tests/unit/test_blobstore.py"
+    },
+    {
+      "path": "tests/unit/test_client.py"
+    },
+    {
+      "path": "tests/unit/test_context.py"
+    },
+    {
+      "path": "tests/unit/test_django_middleware.py"
+    },
+    {
+      "path": "tests/unit/test_global_cache.py"
+    },
+    {
+      "path": "tests/unit/test_key.py"
+    },
+    {
+      "path": "tests/unit/test_metadata.py"
+    },
+    {
+      "path": "tests/unit/test_model.py"
+    },
+    {
+      "path": "tests/unit/test_msgprop.py"
+    },
+    {
+      "path": "tests/unit/test_polymodel.py"
+    },
+    {
+      "path": "tests/unit/test_query.py"
+    },
+    {
+      "path": "tests/unit/test_stats.py"
+    },
+    {
+      "path": "tests/unit/test_tasklets.py"
+    },
+    {
+      "path": "tests/unit/test_utils.py"
+    },
+    {
+      "path": "tests/unit/utils.py"
     }
   ]
 }
