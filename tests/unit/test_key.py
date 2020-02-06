@@ -833,6 +833,29 @@ class Test__project_from_app:
             assert key_module._project_from_app(None) == "jectpro"
 
 
+class Test__location_prefix_from_app:
+    @staticmethod
+    def test_has_prefix():
+        app = "my-prahjekt"
+        prefix = ""
+        assert key_module._location_prefix_from_app(app) == prefix
+
+    @staticmethod
+    def test_no_prefix():
+        project = "my-prahjekt"
+        for prefix in ("s", "e", "dev"):
+            app = "{}~{}".format(prefix, project)
+            assert key_module._location_prefix_from_app(app) == prefix
+
+    @staticmethod
+    def test_app_fallback(context):
+        prefix = "s"
+        context.client.project = "{}~jectpro".format(prefix)
+
+        with context.use():
+            assert key_module._location_prefix_from_app(None) == "s"
+
+
 class Test__from_reference:
     def test_basic(self):
         reference = make_reference()

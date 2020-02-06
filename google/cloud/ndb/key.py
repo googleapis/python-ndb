@@ -454,6 +454,10 @@ class Key(object):
 
         flat = _get_path(None, kwargs["pairs"])
         project = _project_from_app(kwargs["app"])
+        location_prefix = _location_prefix_from_app(kwargs["app"])
+        if location_prefix:
+            project = "{}~{}".format(location_prefix, project)
+
         self._key = _key_module.Key(
             *flat, project=project, namespace=kwargs["namespace"]
         )
@@ -1071,6 +1075,33 @@ def _project_from_app(app, allow_empty=False):
     return parts[-1]
 
 
+def _location_prefix_from_app(app):
+    """Get the location prefix from a legacy Google App Engine
+    app string.
+
+    Args:
+        app (str): The application value to be used. If the caller passes
+            :data:`None` and ``allow_empty`` is :data:`False`, then this will
+            use the project set by the current client context. (See
+            :meth:`~client.Client.context`.)
+
+    Returns:
+        str: The location prefix.
+    """
+    # Avoid circular import in Python 2.7
+    from google.cloud.ndb import context as context_module
+
+    if app is None:
+        client = context_module.get_context().client
+        app = client.project
+
+    parts = app.split("~", 1)
+    if len(parts) == 2:
+        return parts[0]
+
+    return ""
+
+
 def _from_reference(reference, app, namespace):
     """Convert Reference protobuf to :class:`~google.cloud.datastore.key.Key`.
 
@@ -1100,6 +1131,7 @@ def _from_reference(reference, app, namespace):
             ``reference.name_space``.
     """
     project = _project_from_app(reference.app)
+    location_prefix = _location_prefix_from_app(reference.app)
     if app is not None:
         if _project_from_app(app) != project:
             raise RuntimeError(
@@ -1117,6 +1149,10 @@ def _from_reference(reference, app, namespace):
 
     _key_module._check_database_id(reference.database_id)
     flat_path = _key_module._get_flat_path(reference.path)
+
+    if location_prefix:
+        project = "{}~{}".format(location_prefix, project)
+
     return google.cloud.datastore.Key(
         *flat_path, project=project, namespace=parsed_namespace
     )
@@ -1340,14 +1376,19 @@ def _parse_from_args(
     parent_ds_key = None
     if parent is None:
         project = _project_from_app(app)
+        location_prefix = _location_prefix_from_app(app)
     else:
         project = _project_from_app(app, allow_empty=True)
+        location_prefix = _location_prefix_from_app(app)
         if not isinstance(parent, Key):
             raise exceptions.BadValueError(
                 "Expected Key instance, got {!r}".format(parent)
             )
         # Offload verification of parent to ``google.cloud.datastore.Key()``.
         parent_ds_key = parent._key
+
+    if location_prefix:
+        project = "{}~{}".format(location_prefix, project)
 
     return google.cloud.datastore.Key(
         *flat, parent=parent_ds_key, project=project, namespace=namespace

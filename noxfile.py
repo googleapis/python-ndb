@@ -76,7 +76,7 @@ def cover(session):
     session.run("coverage", "erase")
 
 
-def run_black(session, use_check=False):
+def run_black(use_check=False):
     args = ["black"]
     if use_check:
         args.append("--check")
