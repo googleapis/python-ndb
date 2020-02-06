@@ -134,6 +134,7 @@ tasklet, properly yielding when appropriate::
 
 import functools
 import logging
+import six
 
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import _options
@@ -307,7 +308,7 @@ class Parameter(ParameterizedThing):
     __slots__ = ("_key",)
 
     def __init__(self, key):
-        if not isinstance(key, (int, str)):
+        if not isinstance(key, six.integer_types + six.string_types):
             raise TypeError(
                 "Parameter key must be an integer or string, not {}".format(
                     key
@@ -1663,7 +1664,7 @@ class Query(object):
 
         fixed = []
         for prop in properties:
-            if isinstance(prop, str):
+            if isinstance(prop, six.string_types):
                 fixed.append(prop)
             elif isinstance(prop, model.Property):
                 fixed.append(prop._name)
@@ -1686,7 +1687,7 @@ class Query(object):
             elif isinstance(order, model.Property):
                 # use the sign to turn it into a PropertyOrder
                 orders.append(+order)
-            elif isinstance(order, str):
+            elif isinstance(order, six.string_types):
                 name = order
                 reverse = False
                 if order.startswith("-"):
