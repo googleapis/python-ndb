@@ -2213,7 +2213,7 @@ class TestQuery:
         _datastore_query.iterate.return_value = DummyQueryIterator()
         query = query_module.Query()
         query.filters = mock.Mock(
-            _multiquery=False, _post_filters=mock.Mock(return_value=False),
+            _multiquery=False, _post_filters=mock.Mock(return_value=False)
         )
         results, cursor, more = query.fetch_page(5)
         assert results == [0, 1, 2, 3, 4]

@@ -1034,7 +1034,7 @@ def test_computed_key_property(dispose_of):
         s_foobar = ndb.StringProperty()
         key_b = ndb.KeyProperty(kind="BModel", indexed=True)
         key_a = ndb.ComputedProperty(  # Issue here
-            lambda self: self.key_b.get().key_a if self.key_b else None,
+            lambda self: self.key_b.get().key_a if self.key_b else None
         )
 
     key_a = AModel(s_foo="test").put()

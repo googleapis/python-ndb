@@ -2346,7 +2346,7 @@ class TestUserProperty:
     @staticmethod
     def test__to_base_type():
         prop = model.UserProperty(name="u")
-        entity = prop._to_base_type(model.User("email", "auth_domain",))
+        entity = prop._to_base_type(model.User("email", "auth_domain"))
         assert entity["email"] == "email"
         assert "email" in entity.exclude_from_indexes
         assert entity["auth_domain"] == "auth_domain"
