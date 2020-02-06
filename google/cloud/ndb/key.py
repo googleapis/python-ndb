@@ -739,6 +739,22 @@ class Key(object):
         raw_bytes = self.serialized()
         return base64.urlsafe_b64encode(raw_bytes).strip(b"=")
 
+    def legacy_urlsafe(self, location_prefix=None):
+        """A ``Reference`` protobuf encoded as urlsafe base 64.
+
+        .. doctest:: key-urlsafe
+
+            >>> key = ndb.Key("Kind", 1337, project="example")
+            >>> key.legacy_urlsafe()
+            b'agdleGFtcGxlcgsLEgRLaW5kGLkKDA'
+        """
+        return google.cloud.datastore.Key(
+            self._key.kind,
+            self._key.id,
+            namespace=self._key.namespace,
+            project=self._key.project,
+        ).to_legacy_urlsafe(location_prefix=location_prefix)
+
     @_options.ReadOptions.options
     @utils.positional(1)
     def get(
