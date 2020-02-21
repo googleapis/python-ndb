@@ -1203,6 +1203,7 @@ def test_compressed_text_property(dispose_of, ds_client):
 
     https://github.com/googleapis/python-ndb/issues/277
     """
+
     class SomeKind(ndb.Model):
         foo = ndb.TextProperty(compressed=True)
 
