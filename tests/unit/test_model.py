@@ -1987,7 +1987,7 @@ class TestCompressedTextProperty:
     @staticmethod
     def test__validate():
         prop = model.CompressedTextProperty(name="text")
-        assert prop._validate("abc") is None
+        assert prop._validate(u"abc") is None
 
     @staticmethod
     def test__validate_bad_bytes():
