@@ -2662,10 +2662,10 @@ class CompressedTextProperty(BlobProperty):
             value (Union[bytes, str]): The value to be converted.
 
         Returns:
-            Optional[str]: The converted value. If ``value`` is a a valid UTF-8
-            encoded :class:`bytes` string, this will return the decoded
-            :class:`str` corresponding to it. Otherwise, it will return
-            :data:`None`.
+            Optional[str]: The converted value. If ``value`` is a valid UTF-8
+                encoded :class:`bytes` string, this will return the decoded
+                :class:`str` corresponding to it. Otherwise, it will return
+                :data:`None`.
         """
         if isinstance(value, bytes):
             try:
