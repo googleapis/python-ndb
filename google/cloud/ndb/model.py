@@ -4174,7 +4174,7 @@ class StructuredProperty(Property):
         behavior to store everything in a single Datastore entity that uses
         dotted attribute names, rather than nesting entities.
         """
-        # Avoid Python 2.7 circularf import
+        # Avoid Python 2.7 circular import
         from google.cloud.ndb import context as context_module
 
         context = context_module.get_context()
@@ -4333,7 +4333,7 @@ class LocalStructuredProperty(BlobProperty):
         we store them as entities when legacy_data is set to True, which is the
         default behavior.
         """
-        # Avoid Python 2.7 circularf import
+        # Avoid Python 2.7 circular import
         from google.cloud.ndb import context as context_module
 
         context = context_module.get_context()
@@ -5195,7 +5195,7 @@ class Model(_NotEqualMixin):
             tasklets.Future: The eventual result will be the key for the
                 entity. This is always a complete key.
         """
-        # Avoid Python 2.7 circularf import
+        # Avoid Python 2.7 circular import
         from google.cloud.ndb import context as context_module
         from google.cloud.ndb import _datastore_api
 
@@ -5412,7 +5412,7 @@ class Model(_NotEqualMixin):
             tasklets.Future: Eventual result is ``tuple(key.Key)``: Keys for
                 the newly allocated IDs.
         """
-        # Avoid Python 2.7 circularf import
+        # Avoid Python 2.7 circular import
         from google.cloud.ndb import _datastore_api
 
         if max:
