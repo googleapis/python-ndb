@@ -361,7 +361,7 @@ class _TaskletFuture(Future):
             self.waiting_on = yielded
 
         elif isinstance(yielded, (list, tuple)):
-            future = _MultiFuture(yielded)
+            future = self._multi_futurize(yielded)
             future.add_done_callback(done_callback)
             self.waiting_on = future
 
@@ -369,6 +369,16 @@ class _TaskletFuture(Future):
             raise RuntimeError(
                 "A tasklet yielded an illegal value: {!r}".format(yielded)
             )
+
+    def _multi_futurize(self, yielded):
+        futurized = []
+        for y in yielded:
+            if isinstance(y, (list, tuple)):
+                futurized.append(self._multi_futurize(y))
+            else:
+                futurized.append(y)
+
+        return _MultiFuture(futurized)
 
     def cancel(self):
         """Overrides :meth:`Future.cancel`."""
@@ -407,6 +417,10 @@ class _MultiFuture(Future):
     def __init__(self, dependencies):
         super(_MultiFuture, self).__init__()
         self._dependencies = dependencies
+
+        if len(dependencies) == 0:
+            self.set_result(tuple())
+            return
 
         for dependency in dependencies:
             dependency.add_done_callback(self._dependency_done)

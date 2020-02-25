@@ -578,6 +578,33 @@ class Test_tasklet:
         task_foo.check_success()
         task_bar.check_success()
 
+    @staticmethod
+    def test_empty_yield(in_context):
+        @tasklets.tasklet
+        def some_task():
+            value = yield []
+            return value
+
+        assert some_task().result() == ()
+
+    @staticmethod
+    def test_multiple_empty_yield(in_context):
+        @tasklets.tasklet
+        def some_task():
+            (value1, value2) = yield [], []
+            return value1, value2
+
+        assert some_task().result() == ((), ())
+
+    @staticmethod
+    def test_multiple_empty_yield_tuple(in_context):
+        @tasklets.tasklet
+        def some_task():
+            (value1, value2) = yield ([], [])
+            return value1, value2
+
+        assert some_task().result() == ((), ())
+
 
 class Test_wait_any:
     @staticmethod
