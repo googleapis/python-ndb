@@ -4204,6 +4204,15 @@ class StructuredProperty(Property):
                 continue
 
             for prop in _properties_of(value):
+                if self._indexed and not prop._indexed:
+                    # Storing all properties in a single entity has the side
+                    # effect that we can't combine indexed and unindexed
+                    # properties anymore. Instead, all properties have to be
+                    # stored using the _indexed attribute of the main property.
+                    # This causes problems for things like BlobProperty, which
+                    # requires _indexed=False for large values. Safest way out
+                    # is to disable indexing if any property is unindexed.
+                    self._indexed = False
                 keys.extend(
                     prop._to_datastore(
                         value, data, prefix=next_prefix, repeated=next_repeated

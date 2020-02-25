@@ -3477,6 +3477,20 @@ class TestStructuredProperty:
             assert data == {"foo": None}
 
     @staticmethod
+    def test__to_datastore_legacy_subentity_is_unindexed(in_context):
+        class SubKind(model.Model):
+            bar = model.BlobProperty(indexed=False)
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind)
+
+        with in_context.new(legacy_data=True).use():
+            entity = SomeKind(foo=SubKind())
+            data = {}
+            assert SomeKind.foo._to_datastore(entity, data) == {"foo.bar"}
+            assert data == {"foo.bar": None}
+
+    @staticmethod
     def test__to_datastore_legacy_repeated(in_context):
         class SubKind(model.Model):
             bar = model.Property()
