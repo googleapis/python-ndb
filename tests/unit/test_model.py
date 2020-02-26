@@ -3486,8 +3486,9 @@ class TestStructuredProperty:
 
         with in_context.new(legacy_data=True).use():
             entity = SomeKind(foo=SubKind())
-            data = {}
+            data = {"_exclude_from_indexes": []}
             assert SomeKind.foo._to_datastore(entity, data) == {"foo.bar"}
+            data.pop("_exclude_from_indexes")
             assert data == {"foo.bar": None}
 
     @staticmethod
@@ -3696,12 +3697,13 @@ class TestLocalStructuredProperty:
             )
 
         entity = SomeKind(foo=[SubKind(bar="baz")])
-        data = {}
+        data = {"_exclude_from_indexes": []}
         protobuf = model._entity_to_protobuf(entity.foo[0], set_key=False)
         protobuf = protobuf.SerializePartialToString()
         assert SomeKind.foo._to_datastore(entity, data, repeated=True) == (
             "foo",
         )
+        data.pop("_exclude_from_indexes")
         assert data == {"foo": [[protobuf]]}
 
     @staticmethod
@@ -3716,13 +3718,14 @@ class TestLocalStructuredProperty:
 
         with in_context.new(legacy_data=True).use():
             entity = SomeKind(foo=[SubKind(bar="baz")])
-            data = {}
+            data = {"_exclude_from_indexes": []}
             ds_entity = model._entity_to_ds_entity(
                 entity.foo[0], set_key=False
             )
             assert SomeKind.foo._to_datastore(entity, data, repeated=True) == (
                 "foo",
             )
+            data.pop("_exclude_from_indexes")
             assert data == {"foo": [ds_entity]}
 
     @staticmethod
@@ -3735,8 +3738,9 @@ class TestLocalStructuredProperty:
 
         with in_context.new(legacy_data=True).use():
             entity = SomeKind(foo=SubKind(bar="baz"))
-            data = {}
+            data = {"_exclude_from_indexes": []}
             assert SomeKind.foo._to_datastore(entity, data) == ("foo",)
+            data.pop("_exclude_from_indexes")
             ds_entity = model._entity_to_ds_entity(entity.foo, set_key=False)
             assert data == {"foo": ds_entity}
 
