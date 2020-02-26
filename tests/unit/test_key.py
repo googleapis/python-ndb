@@ -569,10 +569,11 @@ class TestKey:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_legacy_urlsafe():
+    def test_to_legacy_urlsafe():
         key = key_module.Key("d", 123, app="f")
         assert (
-            key.legacy_urlsafe(location_prefix="s~") == b"agNzfmZyBwsSAWQYeww"
+            key.to_legacy_urlsafe(location_prefix="s~")
+            == b"agNzfmZyBwsSAWQYeww"
         )
 
     @staticmethod
