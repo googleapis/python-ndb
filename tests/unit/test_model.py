@@ -3488,7 +3488,7 @@ class TestStructuredProperty:
             entity = SomeKind(foo=SubKind())
             data = {"_exclude_from_indexes": []}
             assert SomeKind.foo._to_datastore(entity, data) == {"foo.bar"}
-            data.pop("_exclude_from_indexes")
+            assert data.pop("_exclude_from_indexes") == ["foo.bar"]
             assert data == {"foo.bar": None}
 
     @staticmethod
@@ -3703,7 +3703,7 @@ class TestLocalStructuredProperty:
         assert SomeKind.foo._to_datastore(entity, data, repeated=True) == (
             "foo",
         )
-        data.pop("_exclude_from_indexes")
+        assert data.pop("_exclude_from_indexes") == ["foo"]
         assert data == {"foo": [[protobuf]]}
 
     @staticmethod
@@ -3725,7 +3725,7 @@ class TestLocalStructuredProperty:
             assert SomeKind.foo._to_datastore(entity, data, repeated=True) == (
                 "foo",
             )
-            data.pop("_exclude_from_indexes")
+            assert data.pop("_exclude_from_indexes") == ["foo"]
             assert data == {"foo": [ds_entity]}
 
     @staticmethod
@@ -3740,7 +3740,7 @@ class TestLocalStructuredProperty:
             entity = SomeKind(foo=SubKind(bar="baz"))
             data = {"_exclude_from_indexes": []}
             assert SomeKind.foo._to_datastore(entity, data) == ("foo",)
-            data.pop("_exclude_from_indexes")
+            assert data.pop("_exclude_from_indexes") == ["foo"]
             ds_entity = model._entity_to_ds_entity(entity.foo, set_key=False)
             assert data == {"foo": ds_entity}
 
