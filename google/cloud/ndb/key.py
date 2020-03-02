@@ -739,20 +739,24 @@ class Key(object):
         raw_bytes = self.serialized()
         return base64.urlsafe_b64encode(raw_bytes).strip(b"=")
 
-    def to_legacy_urlsafe(self, location_prefix=None):
-        """A ``Reference`` protobuf serialized and encoded as urlsafe base 64.
+    def to_legacy_urlsafe(self, location_prefix):
+        """
+        A urlsafe serialized ``Reference`` protobuf with an App Engine prefix.
+
+        This will produce a urlsafe string which includes an App Engine
+        location prefix ("partition"), compatible with the Google Datastore
+        admin console.
 
         Arguments:
-            location_prefix (Optional[str]): A prefix to be prepended to the
-                key's `project` when serializing the key. Required (at the time
-                of this writing) for producing strings compatible with the
-                Google Datastore admin console. Eventually this shouldn't be
-                needed. A typical value is "s~".
+            location_prefix (str): A location prefix ("partition") to be
+                prepended to the key's `project` when serializing the key. A
+                typical value is "s~", but "e~" or other partitions are
+                possible depending on the project's region and other factors.
 
         .. doctest:: key-legacy-urlsafe
 
             >>> key = ndb.Key("Kind", 1337, project="example")
-            >>> key.to_legacy_urlsafe(location_prefix="s~")
+            >>> key.to_legacy_urlsafe("s~")
             b'aglzfmV4YW1wbGVyCwsSBEtpbmQYuQoM'
         """
         return google.cloud.datastore.Key(
