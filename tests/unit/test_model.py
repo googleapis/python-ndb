@@ -3753,7 +3753,6 @@ class TestLocalStructuredProperty:
             SubKind, repeated=True, compressed=True
         )
         entity = SubKind(bar="baz")
-        data = {"_exclude_from_indexes": []}
         ds_entity = model._entity_to_ds_entity(entity, set_key=False)
         assert prop._call_from_base_type(ds_entity) == entity
 
