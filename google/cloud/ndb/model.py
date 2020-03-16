@@ -2501,7 +2501,7 @@ class BlobProperty(Property):
 
         if self._compressed and not isinstance(value, _CompressedValue):
             if not value.startswith(_ZLIB_COMPRESSION_MARKER):
-                value = zlib.compress(value)
+                return value
             value = _CompressedValue(value)
 
         if isinstance(value, _CompressedValue):
