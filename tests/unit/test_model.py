@@ -3774,7 +3774,7 @@ class TestLocalStructuredProperty:
                 "child_a",
             )
             assert data.pop("_exclude_from_indexes") == ["child_a"]
-            assert data["child_a"]["child_b"] == None
+            assert data["child_a"]["child_b"] is None
 
 
 class TestGenericProperty:
