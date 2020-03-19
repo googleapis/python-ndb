@@ -3756,6 +3756,47 @@ class TestLocalStructuredProperty:
         ds_entity = model._entity_to_ds_entity(entity, set_key=False)
         assert prop._call_from_base_type(ds_entity) == entity
 
+    @staticmethod
+    def test__get_for_dict():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.LocalStructuredProperty(Mine)
+
+        mine = Mine(foo="Foo")
+        minetoo = MineToo()
+        minetoo.bar = mine
+        assert MineToo.bar._get_for_dict(minetoo) == {"foo": "Foo"}
+
+    @staticmethod
+    def test__get_for_dict_repeated():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.LocalStructuredProperty(Mine, repeated=True)
+
+        mine = Mine(foo="Foo")
+        minetoo = MineToo()
+        minetoo.bar = [mine, mine]
+        assert MineToo.bar._get_for_dict(minetoo) == [
+            {"foo": "Foo"},
+            {"foo": "Foo"},
+        ]
+
+    @staticmethod
+    def test__get_for_dict_no_value():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.LocalStructuredProperty(Mine)
+
+        minetoo = MineToo()
+        minetoo.bar = None
+        assert MineToo.bar._get_for_dict(minetoo) is None
+
 
 class TestGenericProperty:
     @staticmethod
