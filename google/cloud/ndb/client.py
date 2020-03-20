@@ -15,6 +15,7 @@
 """A client for NDB which manages credentials, project, namespace."""
 
 import contextlib
+import gc
 import grpc
 import os
 import requests
@@ -199,6 +200,11 @@ class Client(google_client.ClientWithProject):
 
             # Finish up any work left to do on the event loop
             context.eventloop.run()
+
+        # Work around bug where thread started by `google.auth` angers the
+        # Google App Engine Python 2.7 Runtime. See issue #336.
+        # https://github.com/googleapis/python-ndb/issues/336
+        gc.collect()
 
     @property
     def _http(self):
