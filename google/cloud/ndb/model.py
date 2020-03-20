@@ -3801,7 +3801,7 @@ class DateTimeProperty(Property):
             value (datetime.datetime): The value to be converted.
 
         Returns:
-            google.cloud.datastore.Key: The converted value.
+            Optional[datetime.datetime]: The converted value.
 
         Raises:
             TypeError: If ``value`` is not a :class:`~key.Key`.
@@ -4368,9 +4368,12 @@ class LocalStructuredProperty(BlobProperty):
                 values = [values]
             legacy_values = []
             for value in values:
-                legacy_values.append(
-                    _entity_to_ds_entity(value, set_key=self._keep_keys)
-                )
+                ds_entity = None
+                if value is not None:
+                    ds_entity = _entity_to_ds_entity(
+                        value, set_key=self._keep_keys
+                    )
+                legacy_values.append(ds_entity)
             if not self._repeated:
                 legacy_values = legacy_values[0]
             data[self._name] = legacy_values
