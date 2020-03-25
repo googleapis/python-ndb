@@ -1,11 +1,11 @@
 {
-  "updateTime": "2019-09-12T12:09:50.199519Z",
+  "updateTime": "2020-03-25T12:14:08.477963Z",
   "sources": [
     {
-      "template": {
-        "name": "python_library",
-        "origin": "synthtool.gcp",
-        "version": "2019.5.2"
+      "git": {
+        "name": "synthtool",
+        "remote": "https://github.com/googleapis/synthtool.git",
+        "sha": "ee4330a0e5f4b93978e8683fbda8e6d4148326b7"
       }
     }
   ]
