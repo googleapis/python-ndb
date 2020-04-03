@@ -50,8 +50,8 @@ def transaction(
         retries (int): Number of times to potentially retry the callback in
             case of transient server errors.
         read_only (bool): Whether to run the transaction in read only mode.
-        join (bool): If called the context of an already running transaction,
-            if `join` is `True`, `callback` will be run in the already running
+        join (bool): In the event of an already running transaction, if `join`
+            is `True`, `callback` will be run in the already running
             transaction, otherwise an exception will be raised. Transactions
             cannot be nested.
         xg (bool): Enable cross-group transactions. This argument is included
@@ -213,9 +213,9 @@ def transactional_async(
 
     Unlike func:`transaction`_, the ``join`` argument defaults to ``True``,
     making functions decorated with func:`transactional`_ composable, by
-    default. IE, a function decorated with ``transactional`` can call another
-    function decorated with ``transactional`` and the second function will be
-    executed in the already running transaction.
+    default. IE, a function decorated with ``transactional_async`` can call
+    another function decorated with ``transactional_async`` and the second
+    function will be executed in the already running transaction.
 
     See google.cloud.ndb.transaction above for available options.
     """
@@ -253,9 +253,9 @@ def transactional_tasklet(
 
     Unlike func:`transaction`_, the ``join`` argument defaults to ``True``,
     making functions decorated with func:`transactional`_ composable, by
-    default. IE, a function decorated with ``transactional`` can call another
-    function decorated with ``transactional`` and the second function will be
-    executed in the already running transaction.
+    default. IE, a function decorated with ``transactional_tasklet`` can call
+    another function decorated with ``transactional_tasklet`` and the second
+    function will be executed in the already running transaction.
 
     See google.cloud.ndb.transaction above for available options.
     """
