@@ -16,7 +16,6 @@ import datetime
 import pytest
 import six
 
-from google.cloud.datastore.entity import Entity
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key
 from google.cloud.ndb import model
@@ -417,7 +416,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = Date('not a date')"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -429,7 +428,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = Date(42)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -441,7 +440,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = Date(1, 2, 3, 4)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -453,7 +452,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = Date(100, 200, 300)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -462,7 +461,8 @@ class TestGQL:
             prop1 = model.DateTimeProperty()
 
         gql = gql_module.GQL(
-            "SELECT prop1 FROM SomeKind WHERE prop1 = DateTime(2020, 3, 26, 12, 45, 5)"
+            "SELECT prop1 FROM SomeKind WHERE prop1 = DateTime(2020, 3, 26,"
+            "12, 45, 5)"
         )
         query = gql.get_query()
         assert query.filters == query_module.FilterNode(
@@ -476,7 +476,8 @@ class TestGQL:
             prop1 = model.DateTimeProperty()
 
         gql = gql_module.GQL(
-            "SELECT prop1 FROM SomeKind WHERE prop1 = DateTime('2020-03-26 12:45:05')"
+            "SELECT prop1 FROM SomeKind WHERE prop1 = "
+            "DateTime('2020-03-26 12:45:05')"
         )
         query = gql.get_query()
         assert query.filters == query_module.FilterNode(
@@ -505,7 +506,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = DateTime('not a date')"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -517,7 +518,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = DateTime(42)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -529,7 +530,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = DateTime(100, 200, 300)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -595,7 +596,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = Time('not a time')"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -607,7 +608,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = Time(3.141592)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -619,7 +620,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = Time(1, 2, 3, 4)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -631,7 +632,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = Time(100, 200, 300)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -666,10 +667,11 @@ class TestGQL:
             prop1 = model.GeoPtProperty()
 
         gql = gql_module.GQL(
-            "SELECT prop1 FROM SomeKind WHERE prop1 = GeoPt(20.67,-100.32, 1.5)"
+            "SELECT prop1 FROM SomeKind WHERE prop1 = "
+            "GeoPt(20.67,-100.32, 1.5)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -678,7 +680,8 @@ class TestGQL:
             prop1 = model.KeyProperty()
 
         gql = gql_module.GQL(
-            "SELECT prop1 FROM SomeKind WHERE prop1 = Key('parent', 'c', 'child', 42)"
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Key('parent', 'c', "
+            "'child', 42)"
         )
         query = gql.get_query()
         assert query.filters == query_module.FilterNode(
@@ -707,7 +710,7 @@ class TestGQL:
             "SELECT prop1 FROM SomeKind WHERE prop1 = Key(100, 200, 300)"
         )
         with pytest.raises(exceptions.BadQueryError):
-            query = gql.get_query()
+            gql.get_query()
 
 
 class TestNotImplementedFUNCTIONS:

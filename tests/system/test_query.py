@@ -19,7 +19,6 @@ System tests for queries.
 import datetime
 import functools
 import operator
-import time
 
 import grpc
 import pytest
@@ -28,7 +27,6 @@ import pytz
 import test_utils.system
 
 from google.cloud import ndb
-from google.cloud.datastore import entity as ds_entity_module
 from google.cloud.datastore import key as ds_key_module
 
 from tests.system import KIND, eventually
