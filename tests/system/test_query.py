@@ -1728,8 +1728,9 @@ def test_GeoPt(ds_entity):
 
 
 @pytest.mark.usefixtures("client_context")
-def test_Key(ds_entity, namespace, client_context):
+def test_Key(ds_entity, client_context):
     project = client_context.client.project
+    namespace = client_context.get_namespace()
     for i in range(5):
         entity_id = test_utils.system.unique_resource_id()
         ds_entity(

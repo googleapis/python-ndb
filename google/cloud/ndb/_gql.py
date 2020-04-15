@@ -879,7 +879,7 @@ def _key_function(values):
         context = context_module.get_context()
         client = context.client
         return key.Key(
-            *values, namespace=client.namespace, project=client.project
+            *values, namespace=context.get_namespace(), project=client.project
         )
     _raise_cast_error(
         "Key requires even number of operands or single string, {}".format(
