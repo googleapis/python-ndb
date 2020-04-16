@@ -1233,6 +1233,14 @@ class Property(ModelAttribute):
         """FilterNode: Represents the ``=`` comparison."""
         return self._comparison("=", value)
 
+    # Because we are overriding ``__eq__``, we need to override ``__hash__``,
+    # to avoid an error on Python 3 when calling ``hash`` on a property. Using
+    # ``id`` makes ``hash`` behave the same on both Python 3 and Python 2. See
+    # https://github.com/googleapis/python-ndb/issues/389.
+
+    def __hash__(self):
+        return id(self)
+
     def __ne__(self, value):
         """FilterNode: Represents the ``!=`` comparison."""
         return self._comparison("!=", value)

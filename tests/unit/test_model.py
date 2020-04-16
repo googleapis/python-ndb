@@ -1364,6 +1364,12 @@ class TestProperty:
         ) == ("pre.prop",)
         assert data == {"pre.prop": ["foo"]}
 
+    @staticmethod
+    def test___hash__():
+        prop = model.Property()
+
+        assert hash(prop) == id(prop)
+
 
 class Test__validate_key:
     @staticmethod
