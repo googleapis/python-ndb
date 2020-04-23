@@ -125,12 +125,12 @@ def test_parallel_transactions(dispose_of):
         foo = ndb.IntegerProperty()
 
     @ndb.transactional_tasklet()
-    def update(id, add):
+    def update(id, add, delay=0):
         entity = yield SomeKind.get_by_id_async(id)
         foo = entity.foo
         foo += add
 
-        yield ndb.sleep(1)
+        yield ndb.sleep(delay)
         entity.foo = foo
 
         yield entity.put_async()
@@ -139,7 +139,7 @@ def test_parallel_transactions(dispose_of):
     def concurrent_tasks(id):
         yield [
             update(id, 100),
-            update(id, 100),
+            update(id, 100, 0.01),
         ]
 
     key = SomeKind(foo=42).put()
