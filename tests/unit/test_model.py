@@ -4045,6 +4045,12 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test_constructor_namespace_no_key_parts():
+        entity = model.Model(namespace="myspace")
+        assert entity.__dict__ == {"_values": {}}
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_constructor_app():
         entity = model.Model(app="thisproject")
         key = key_module.Key("Model", None, project="thisproject")
@@ -4069,6 +4075,13 @@ class TestModel:
         key = key_module.Key("Foo", "bar")
         with pytest.raises(exceptions.BadArgumentError):
             model.Model(key=key, id=124)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_constructor_key_and_key_parts_with_namespace():
+        key = key_module.Key("Foo", "bar")
+        with pytest.raises(exceptions.BadArgumentError):
+            model.Model(key=key, namespace="myspace")
 
     @staticmethod
     def test_constructor_user_property_collision():
