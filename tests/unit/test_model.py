@@ -5767,6 +5767,34 @@ def test_get_indexes():
         model.get_indexes()
 
 
+@pytest.mark.usefixtures("in_context")
+def test_serialization():
+
+    # THis is needed because pickle can't serialize local objects
+    global SomeKind, OtherKind
+
+    class OtherKind(model.Model):
+        foo = model.IntegerProperty()
+
+        @classmethod
+        def _get_kind(cls):
+            return "OtherKind"
+
+    class SomeKind(model.Model):
+        other = model.StructuredProperty(OtherKind)
+
+        @classmethod
+        def _get_kind(cls):
+            return "SomeKind"
+
+    entity = SomeKind(
+        other=OtherKind(foo=1, namespace="Test"), namespace="Test"
+    )
+    assert entity.other.key is None or entity.other.key.id() is None
+    entity = pickle.loads(pickle.dumps(entity))
+    assert entity.other.foo == 1
+
+
 def ManyFieldsFactory():
     """Model type class factory.
 
