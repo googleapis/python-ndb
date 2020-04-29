@@ -150,3 +150,80 @@ def test_parallel_transactions(dispose_of):
 
     entity = SomeKind.get_by_id(id)
     assert entity.foo == 242
+
+
+def test_parallel_transactions_w_context_cache(client_context, dispose_of):
+    """Regression test for Issue #394
+
+    https://github.com/googleapis/python-ndb/issues/394
+    """
+
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+
+    @ndb.transactional_tasklet()
+    def update(id, add, delay=0):
+        entity = yield SomeKind.get_by_id_async(id)
+        foo = entity.foo
+        foo += add
+
+        yield ndb.sleep(delay)
+        entity.foo = foo
+
+        yield entity.put_async()
+
+    @ndb.tasklet
+    def concurrent_tasks(id):
+        yield [
+            update(id, 100),
+            update(id, 100, 0.01),
+        ]
+
+    with client_context.new(cache_policy=None).use():
+        key = SomeKind(foo=42).put()
+        dispose_of(key._key)
+        id = key.id()
+
+        concurrent_tasks(id).get_result()
+
+        entity = SomeKind.get_by_id(id)
+        assert entity.foo == 242
+
+
+@pytest.mark.usefixtures("redis_context")
+def test_parallel_transactions_w_redis_cache(dispose_of):
+    """Regression test for Issue #394
+
+    https://github.com/googleapis/python-ndb/issues/394
+    """
+
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+
+    @ndb.transactional_tasklet()
+    def update(id, add, delay=0):
+        entity = yield SomeKind.get_by_id_async(id)
+        foo = entity.foo
+        foo += add
+
+        yield ndb.sleep(delay)
+        entity.foo = foo
+
+        yield entity.put_async()
+
+    @ndb.tasklet
+    def concurrent_tasks(id):
+        yield [
+            update(id, 100),
+            update(id, 100, 0.01),
+        ]
+
+    key = SomeKind(foo=42).put()
+    dispose_of(key._key)
+    id = key.id()
+
+    SomeKind.get_by_id(id)
+    concurrent_tasks(id).get_result()
+
+    entity = SomeKind.get_by_id(id)
+    assert entity.foo == 242
