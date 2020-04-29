@@ -1348,7 +1348,7 @@ def test_insert_structured_property_with_unindexed_subproperty_legacy_data(
 
 @pytest.mark.usefixtures("client_context")
 def test_serialization(dispose_of):
-    """Regression test for #843
+    """Regression test for #384
 
     https://github.com/googleapis/python-ndb/issues/384
     """
