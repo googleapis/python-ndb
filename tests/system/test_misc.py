@@ -15,11 +15,14 @@
 """
 Difficult to classify regression tests.
 """
+import os
 import pickle
 
 import pytest
 
 from google.cloud import ndb
+
+USE_REDIS_CACHE = bool(os.environ.get("REDIS_CACHE_URL"))
 
 
 # Pickle can only pickle/unpickle global classes
@@ -189,7 +192,7 @@ def test_parallel_transactions_w_context_cache(client_context, dispose_of):
         entity = SomeKind.get_by_id(id)
         assert entity.foo == 242
 
-
+@pytest.mark.skipif(not USE_REDIS_CACHE, reason="Redis is not configured")
 @pytest.mark.usefixtures("redis_context")
 def test_parallel_transactions_w_redis_cache(dispose_of):
     """Regression test for Issue #394
