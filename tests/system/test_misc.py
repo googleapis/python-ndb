@@ -192,6 +192,7 @@ def test_parallel_transactions_w_context_cache(client_context, dispose_of):
         entity = SomeKind.get_by_id(id)
         assert entity.foo == 242
 
+
 @pytest.mark.skipif(not USE_REDIS_CACHE, reason="Redis is not configured")
 @pytest.mark.usefixtures("redis_context")
 def test_parallel_transactions_w_redis_cache(dispose_of):
