@@ -115,9 +115,9 @@ def is_transient_error(error):
     if core_retry.if_transient_error(error):
         return True
 
-    method = getattr(error, "code", None)
-    if method is not None:
-        code = method()
+    code_attr = getattr(error, "code", None)
+    if code_attr is not None:
+        code = code_attr() if callable(code_attr) else code_attr
         return code in TRANSIENT_CODES
 
     return False
