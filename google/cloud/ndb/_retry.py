@@ -117,7 +117,7 @@ def is_transient_error(error):
 
     if isinstance(error, grpc.Call):
         method = getattr(error, "code", None)
-        if method is not None and callable(method):
+        if callable(method):
             code = method()
             return code in TRANSIENT_CODES
 
