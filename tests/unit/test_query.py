@@ -1960,6 +1960,20 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_fetch_projection_of_unindexed_property(_datastore_query):
+        class SomeKind(model.Model):
+            foo = model.IntegerProperty(indexed=False)
+
+        future = tasklets.Future("fetch")
+        future.set_result("foo")
+        _datastore_query.fetch.return_value = future
+        query = query_module.Query(kind="SomeKind")
+        with pytest.raises(model.InvalidPropertyError):
+            query.fetch(projection=["foo"])
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_run_to_queue():
         query = query_module.Query()
         with pytest.raises(NotImplementedError):
@@ -2291,6 +2305,36 @@ class TestQuery:
         _datastore_query.iterate.assert_called_once_with(
             query_module.QueryOptions(
                 project="testing", limit=5, start_cursor="cursor000"
+            ),
+            raw=True,
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_fetch_page_no_results(_datastore_query):
+        class DummyQueryIterator:
+            _more_results_after_limit = True
+
+            def __init__(self):
+                self.items = []
+
+            def has_next_async(self):
+                return utils.future_result(bool(self.items))
+
+        _datastore_query.iterate.return_value = DummyQueryIterator()
+        query = query_module.Query()
+        query.filters = mock.Mock(
+            _multiquery=False, _post_filters=mock.Mock(return_value=False),
+        )
+        results, cursor, more = query.fetch_page(5)
+        assert results == []
+        assert cursor is None
+        assert more is False
+
+        _datastore_query.iterate.assert_called_once_with(
+            query_module.QueryOptions(
+                filters=query.filters, project="testing", limit=5
             ),
             raw=True,
         )
