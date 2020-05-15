@@ -1,11 +1,17 @@
 {
-  "updateTime": "2019-09-12T12:09:50.199519Z",
   "sources": [
     {
-      "template": {
-        "name": "python_library",
-        "origin": "synthtool.gcp",
-        "version": "2019.5.2"
+      "git": {
+        "name": ".",
+        "remote": "https://github.com/googleapis/python-ndb.git",
+        "sha": "2b65c04e72a66062e2c792b5b1fb067fb935987f"
+      }
+    },
+    {
+      "git": {
+        "name": "synthtool",
+        "remote": "https://github.com/googleapis/synthtool.git",
+        "sha": "3593e3a995510c0570648d9a48fc756ab2bfc2cb"
       }
     }
   ]
