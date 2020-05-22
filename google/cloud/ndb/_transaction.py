@@ -15,7 +15,6 @@
 import functools
 import logging
 
-from google.cloud.ndb import _eventloop
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import _retry
 from google.cloud.ndb import tasklets
@@ -159,7 +158,7 @@ def _transaction_async(context, callback, read_only=False):
 
             # Make sure we've run everything we can run before calling commit
             _datastore_api.prepare_to_commit(transaction_id)
-            _eventloop.run()
+            tx_context.eventloop.run()
 
             # Commit the transaction
             yield _datastore_api.commit(transaction_id, retries=0)
