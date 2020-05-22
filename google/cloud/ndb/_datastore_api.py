@@ -671,8 +671,8 @@ class _TransactionalCommitBatch(_NonTransactionalCommitBatch):
 
     def idle_callback(self):
         """Call AllocateIds on any incomplete keys in the batch."""
-        # If there are now incomplete mutations, or if we're already preparing
-        # to commit, there's not need to allocate ids.
+        # If there are no incomplete mutations, or if we're already preparing
+        # to commit, there's no need to allocate ids.
         if self.preparing_to_commit or not self.incomplete_mutations:
             return
 
