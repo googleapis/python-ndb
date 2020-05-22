@@ -228,7 +228,7 @@ class Test_transaction_async:
             # more work to be done in the transaction. (Branch coverage.)
             yield tasklets.sleep(0)
 
-            return "I tried, momma."
+            raise tasklets.Return("I tried, momma.")
 
         future = some_tasklet()
 
