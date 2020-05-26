@@ -3990,6 +3990,15 @@ class StructuredProperty(Property):
         """Dynamically get a subproperty."""
         # Optimistically try to use the dict key.
         prop = self._model_class._properties.get(attrname)
+        # We're done if we have a hit and _code_name matches.
+        if prop is None or prop._code_name != attrname:
+            # Otherwise, use linear search looking for a matching _code_name.
+            for prop in self._model_class._properties.values():
+                if prop._code_name == attrname:
+                    break
+            else:
+                # This is executed when we never execute the above break.
+                prop = None
         if prop is None:
             raise AttributeError(
                 "Model subclass %s has no attribute %s"
