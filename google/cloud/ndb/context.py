@@ -279,9 +279,9 @@ class _Context(_ContextTuple):
         if keys:
             yield [_cache.global_delete(key) for key in keys]
 
-    def _use_cache(self, key, options):
+    def _use_cache(self, key, options=None):
         """Return whether to use the context cache for this key."""
-        flag = options.use_cache
+        flag = options.use_cache if options else None
         if flag is None:
             flag = self.cache_policy(key)
         if flag is None:
@@ -300,7 +300,7 @@ class _Context(_ContextTuple):
             flag = True
         return flag
 
-    def _global_cache_timeout(self, key, options):
+    def _global_cache_timeout(self, key, options=None):
         """Return  global cache timeout (expiration) for this key."""
         timeout = None
         if options:
