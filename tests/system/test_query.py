@@ -975,6 +975,7 @@ def test_query_structured_property_rename_subproperty(dispose_of):
 
     https://github.com/googleapis/python-ndb/issues/449
     """
+
     class OtherKind(ndb.Model):
         one = ndb.StringProperty("a_different_name")
 
