@@ -300,7 +300,7 @@ class _Context(_ContextTuple):
             flag = True
         return flag
 
-    def _global_cache_timeout(self, key, options=None):
+    def _global_cache_timeout(self, key, options):
         """Return  global cache timeout (expiration) for this key."""
         timeout = None
         if options:

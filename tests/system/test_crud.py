@@ -1431,7 +1431,6 @@ def test_custom_validator(dispose_of, ds_client):
     assert retrieved.foo == datetime.datetime(2020, 8, 8, 1, 2, 3)
 
 
-@pytest.mark.usefixtures("client_context")
 def test_cache_returns_entity_if_available(dispose_of, client_context):
     """Regression test for #441
 
@@ -1442,19 +1441,35 @@ def test_cache_returns_entity_if_available(dispose_of, client_context):
         foo = ndb.IntegerProperty()
         bar = ndb.StringProperty()
 
-    class OtherKind:
-        def __init__(self, somekind):
-            self.somekind = somekind
-
     client_context.set_cache_policy(None)  # Use default
 
     somekind = SomeKind(foo=1)
     key = somekind.put()
     dispose_of(key._key)
-    otherkind = OtherKind(somekind)
 
     query = ndb.Query(kind="SomeKind")
-    ourkind = [x for x in query.fetch() if x.key == key][0]
+    ourkind = query.get()
     ourkind.bar = "confusing"
 
-    assert otherkind.somekind.bar == "confusing"
+    assert somekind.bar == "confusing"
+
+
+def test_cache_off_new_entity_created(dispose_of, client_context):
+    """Regression test for #441
+
+    https://github.com/googleapis/python-ndb/issues/441
+    """
+
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+        bar = ndb.StringProperty()
+
+    somekind = SomeKind(foo=1)
+    key = somekind.put()
+    dispose_of(key._key)
+
+    query = ndb.Query(kind="SomeKind")
+    ourkind = query.get()
+    ourkind.bar = "confusing"
+
+    assert somekind.bar is None
