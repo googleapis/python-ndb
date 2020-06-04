@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-ndb/#history
 
+### [1.3.1](https://www.github.com/googleapis/python-ndb/compare/v1.3.0...v1.3.1) (2020-06-04)
+
+
+### Bug Fixes
+
+* retry grpc `UNKNOWN` errors ([#458](https://www.github.com/googleapis/python-ndb/issues/458)) ([5d354e4](https://www.github.com/googleapis/python-ndb/commit/5d354e4b4247372f2ffdc9caa2df1516ce97ff8d)), closes [#310](https://www.github.com/googleapis/python-ndb/issues/310)
+
 ## [1.3.0](https://www.github.com/googleapis/python-ndb/compare/v1.2.1...v1.3.0) (2020-06-01)
 
 
