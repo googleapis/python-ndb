@@ -23,19 +23,11 @@ import struct
 # Python 3 doesn't have "long" anymore
 try:
     long(42)
-except NameError:
+except NameError:  # pragma: NO PY2 COVER
     long = int
 
 
 class ProtocolBufferDecodeError(Exception):
-    pass
-
-
-class ProtocolBufferEncodeError(Exception):
-    pass
-
-
-class ProtocolBufferReturnError(Exception):
     pass
 
 
@@ -163,23 +155,17 @@ class Decoder:
             result |= long(b & 127) << shift
             shift += 7
             if not (b & 128):
-                if result >= 0x10000000000000000:
-                    raise ProtocolBufferDecodeError("corrupted")
                 break
             if shift >= 64:
                 raise ProtocolBufferDecodeError("corrupted")
             b = self.get8()
 
-        if result >= 0x8000000000000000:
-            result -= 0x10000000000000000
         if result >= 0x80000000 or result < -0x80000000:
             raise ProtocolBufferDecodeError("corrupted")
         return result
 
     def getVarInt64(self):
         result = self.getVarUint64()
-        if result >= (1 << 63):
-            result -= 1 << 64
         return result
 
     def getVarUint64(self):
@@ -192,22 +178,12 @@ class Decoder:
             result |= long(b & 127) << shift
             shift += 7
             if not (b & 128):
-                if result >= (1 << 64):
-                    raise ProtocolBufferDecodeError("corrupted")
                 return result
-        return result
-
-    def getFloat(self):
-        if self.idx + 4 > self.limit:
-            raise ProtocolBufferDecodeError("truncated")
-        a = self.buf[self.idx : self.idx + 4]
-        self.idx += 4
-        return struct.unpack("<f", a)[0]
 
     def getDouble(self):
         if self.idx + 8 > self.limit:
             raise ProtocolBufferDecodeError("truncated")
-        a = self.buf[self.idx : self.idx + 8]
+        a = self.buf[self.idx : self.idx + 8]  # noqa: E203
         self.idx += 8
         return struct.unpack("<d", a)[0]
 
@@ -221,13 +197,8 @@ class Decoder:
         length = self.getVarInt32()
         if self.idx + length > self.limit:
             raise ProtocolBufferDecodeError("truncated")
-        r = self.buf[self.idx : self.idx + length]
+        r = self.buf[self.idx : self.idx + length]  # noqa: E203
         self.idx += length
-        return r.tostring()
-
-    def getRawString(self):
-        r = self.buf[self.idx : self.limit]
-        self.idx = self.limit
         return r.tostring()
 
 
@@ -235,6 +206,4 @@ __all__ = [
     "ProtocolMessage",
     "Decoder",
     "ProtocolBufferDecodeError",
-    "ProtocolBufferEncodeError",
-    "ProtocolBufferReturnError",
 ]
