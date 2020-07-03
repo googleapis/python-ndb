@@ -759,8 +759,7 @@ class Key(object):
             b'aglzfmV4YW1wbGVyCwsSBEtpbmQYuQoM'
         """
         return google.cloud.datastore.Key(
-            self._key.kind,
-            self._key.id or self._key.name,
+            *self.flat(),
             namespace=self._key.namespace,
             project=self._key.project,
         ).to_legacy_urlsafe(location_prefix=location_prefix)
