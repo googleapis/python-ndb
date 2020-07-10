@@ -344,7 +344,5 @@ def test_do_not_disclose_cache_contents(begin_transaction, client_context):
         callback()
 
     error = error_info.value
-    message = "".join(
-        traceback.format_exception_only(type(error), error)
-    )
+    message = "".join(traceback.format_exception_only(type(error), error))
     assert "hello dad" not in message
