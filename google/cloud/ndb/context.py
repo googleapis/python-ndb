@@ -27,7 +27,7 @@ from google.cloud.ndb import key as key_module
 from google.cloud.ndb import tasklets
 
 
-if sys.version_info.major > 3 and sys.version_info.minor >= 7:
+if sys.version_info.major == 3 and sys.version_info.minor >= 7:
     import contextvars
 
     class _LocalState:
