@@ -41,7 +41,7 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 7:
 
         @context.setter
         def context(self, value):
-            self._context = value
+            self._context.set(value)
 
         @context.getter
         def context(self):
@@ -53,7 +53,7 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 7:
 
         @toplevel_context.setter
         def toplevel_context(self, value):
-            self._toplevel_context = value
+            self._toplevel_context.set(value)
 
         @toplevel_context.getter
         def toplevel_context(self):
