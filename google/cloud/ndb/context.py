@@ -31,9 +31,13 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 7:
     import contextvars
 
     class _LocalState:
+        """Thread local state."""
+
         def __init__(self):
-            self._toplevel_context = contextvars.ContextVar('_toplevel_context', default=None)
-            self._context = contextvars.ContextVar('_context', default=None)
+            self._toplevel_context = contextvars.ContextVar(
+                "_toplevel_context", default=None
+            )
+            self._context = contextvars.ContextVar("_context", default=None)
 
         @property
         def context(self):
@@ -59,13 +63,16 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 7:
         def toplevel_context(self):
             return self._toplevel_context.get()
 
+
 else:
+
     class _LocalState(threading.local):
         """Thread local state."""
 
         def __init__(self):
             self.context = None
             self.toplevel_context = None
+
 
 _state = _LocalState()
 
