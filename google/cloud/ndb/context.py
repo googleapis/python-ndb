@@ -27,7 +27,9 @@ from google.cloud.ndb import key as key_module
 from google.cloud.ndb import tasklets
 
 
-if sys.version_info.major == 3 and sys.version_info.minor >= 7:
+if (
+    sys.version_info.major == 3 and sys.version_info.minor >= 7
+):  # pragma: NO COVER
     import contextvars
 
     class _LocalState:
@@ -64,7 +66,7 @@ if sys.version_info.major == 3 and sys.version_info.minor >= 7:
             return self._toplevel_context.get()
 
 
-else:
+else:  # pragma: NO COVER
 
     class _LocalState(threading.local):
         """Thread local state."""
