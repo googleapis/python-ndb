@@ -18,7 +18,6 @@
 import collections
 import contextlib
 import six
-import sys
 import threading
 
 from google.cloud.ndb import _eventloop
@@ -27,9 +26,7 @@ from google.cloud.ndb import key as key_module
 from google.cloud.ndb import tasklets
 
 
-if (
-    sys.version_info.major == 3 and sys.version_info.minor >= 7
-):  # pragma: NO COVER
+try:  # pragma: NO PY2 COVER
     import contextvars
 
     class _LocalState:
@@ -43,30 +40,22 @@ if (
 
         @property
         def context(self):
-            return self._context
+            return self._context.get()
 
         @context.setter
         def context(self, value):
             self._context.set(value)
 
-        @context.getter
-        def context(self):
-            return self._context.get()
-
         @property
         def toplevel_context(self):
-            return self._context
+            return self._toplevel_context.get()
 
         @toplevel_context.setter
         def toplevel_context(self, value):
             self._toplevel_context.set(value)
 
-        @toplevel_context.getter
-        def toplevel_context(self):
-            return self._toplevel_context.get()
 
-
-else:  # pragma: NO COVER
+except ImportError:  # pragma: NO PY3 COVER
 
     class _LocalState(threading.local):
         """Thread local state."""
