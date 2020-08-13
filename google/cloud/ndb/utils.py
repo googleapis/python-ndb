@@ -23,6 +23,12 @@ import threading
 __all__ = []
 
 
+try:
+    _getfullargspec = inspect.getfullargspec
+except AttributeError:  # pragma: NO PY3 COVER
+    _getfullargspec = inspect.getargspec
+
+
 def code_info(*args, **kwargs):
     raise NotImplementedError
 
@@ -93,7 +99,7 @@ def positional(max_pos_args):
     def positional_decorator(wrapped):
         root = getattr(wrapped, "_wrapped", wrapped)
         wrapped._positional_args = max_pos_args
-        argspec = inspect.getargspec(root)
+        argspec = _getfullargspec(root)
         wrapped._argspec = argspec
         wrapped._positional_names = argspec.args[:max_pos_args]
 

@@ -715,16 +715,6 @@ class GQL(object):
         ancestor = None
         model_filters = list(model_class._default_filters())
         filters = self.query_filters(model_class, model_filters)
-        offset = self.offset()
-        limit = self.limit()
-        if limit < 0:
-            limit = None
-        keys_only = self.is_keys_only()
-        if not keys_only:
-            keys_only = None
-        default_options = query_module.QueryOptions(
-            offset=offset, limit=limit, keys_only=keys_only
-        )
         projection = self.projection()
         project = self._app
         namespace = self._namespace
@@ -745,7 +735,6 @@ class GQL(object):
             order_by=order_by,
             project=project,
             namespace=namespace,
-            default_options=default_options,
             projection=projection,
             distinct_on=distinct_on,
         )
