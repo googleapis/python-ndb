@@ -298,7 +298,8 @@ class TestGQL:
             "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False), PropertyOrder(name='prop1', "
-            "reverse=True)], projection=['prop1', 'prop2'])"
+            "reverse=True)], projection=['prop1', 'prop2'], "
+            "default_options=QueryOptions(limit=10, offset=5))"
         )
         gql = gql_module.GQL(GQL_QUERY)
         query = gql.get_query()
@@ -354,6 +355,16 @@ class TestGQL:
         )
         query = gql.get_query()
         assert "'in'," in str(query.filters)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_keys_only():
+        class SomeKind(model.Model):
+            prop1 = model.StringProperty()
+
+        gql = gql_module.GQL("SELECT __key__ FROM SomeKind WHERE prop1='a'")
+        query = gql.get_query()
+        assert query.default_options.keys_only is True
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
