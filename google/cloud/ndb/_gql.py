@@ -723,10 +723,6 @@ class GQL(object):
         keys_only = self.is_keys_only()
         if not keys_only:
             keys_only = None
-        if offset or limit is not None or keys_only is not None:
-            default_options = query_module.QueryOptions(
-                offset=offset, limit=limit, keys_only=keys_only
-            )
         projection = self.projection()
         project = self._app
         namespace = self._namespace
@@ -750,6 +746,9 @@ class GQL(object):
             default_options=default_options,
             projection=projection,
             distinct_on=distinct_on,
+            limit=limit,
+            offset=offset,
+            keys_only=keys_only,
         )
 
 
