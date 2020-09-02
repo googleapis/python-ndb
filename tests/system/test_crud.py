@@ -1518,4 +1518,4 @@ def test_local_structured_property_with_inheritance(dispose_of):
     dispose_of(subkey._key)
 
     entity = entity.key.get()
-    assert entity.children[0].foo == "bar"
+    assert isinstance(entity.children[0], Base)
