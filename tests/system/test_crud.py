@@ -1509,13 +1509,10 @@ def test_local_structured_property_with_inheritance(dispose_of):
     entity = Container()
 
     subkind = SubKind(foo="bar")
-    subkey = subkind.put()
-
     entity.children.append(subkind)
     key = entity.put()
 
     dispose_of(key._key)
-    dispose_of(subkey._key)
 
     entity = entity.key.get()
     assert isinstance(entity.children[0], Base)
