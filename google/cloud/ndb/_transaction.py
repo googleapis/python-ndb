@@ -23,6 +23,77 @@ from google.cloud.ndb import utils
 log = logging.getLogger(__name__)
 
 
+class Propagation(object):
+    def __init__(self, propagation, join, *args, **kwargs):
+        # Avoid circular import in Python 2.7
+        from google.cloud.ndb import context as context_module
+    
+        propagation_options = context_module.TransactionOptions._PROPAGATION
+        if propagation in propagation_options:
+            self.propagation = propagation
+        else:
+            raise ValueError('Unexpected value for propagation. Got: ' \
+                             f'{propagation}. Expected one of: ' \
+                             f'{propagation_options}')
+            
+        propagation_names = context_module.TransactionOptions_INT_TO_NAME
+        self.propagation_name = propagation_names.get(self.propagation)
+
+        self.join = join
+        joinable_options = context_module.TransactionOptions._JOINABLE
+        self.joinable = propagation in joinable_options
+        super(Propagation, self).__init__(*args, **kwargs)
+
+    def _handle_nested(self):
+        raise exceptions.NoLongerImplementedError()
+
+    def _handle_mandatory(self):
+        if not in_transaction():
+            raise exceptions.TransactionFailedError('Unable to honor ' \
+                'requested propagation option, an existing transaction must ' \
+                'be running first')
+
+    def _handle_allowed(self):
+        # no special handling needed.
+        pass
+
+    def _handle_independent(self):
+        if in_transaction():
+            # Avoid circular import in Python 2.7
+            from google.cloud.ndb import context as context_module
+            ctx = context_module.get_context()
+            # I think that this actually does not "pause" the existing
+            # transaction, it instead forces it to run to completion before
+            # starting the next one... However, this context flushing concept
+            # is included in the old ndb implementation for INDEPENDENT
+            # transactions and the new ndb implementation uses context flushing
+            # each time a new context is started/ended too so keep it here
+            # until it proves to be an issue.
+            ctx.flush()
+            new_ctx = ctx.new(transaction=None,
+                              batches=None,
+                              commit_batches=None,
+                              cache=None)
+            return new_ctx
+
+    def _handle_join(self):
+        change_to = self.joinable
+        if self.join != change_to:
+            logging.warning('Modifying join behaviour to maintain old NDB ' \
+                            f'behaviour. Setting join to {change_to} for ' \
+                            f'propagation value: {self.propagation} ' \
+                            f'({self.propagation_name})')
+        return change_to
+
+    def handle_propagation(self):
+        ctx = None
+        if self.propagation:
+            # ensure we use the correct joining method.
+            ctx = getattr(self, f'_handle_{self.propagation_name}')()
+            join = self._handle_join()
+        return ctx, join
+
+
 def in_transaction():
     """Determine if there is a currently active transaction.
 
@@ -74,6 +145,32 @@ def transaction(
 
 
 def transaction_async(
+    callback,
+    retries=_retry._DEFAULT_RETRIES,
+    read_only=False,
+    join=False,
+    xg=True,
+    propagation=None,
+):
+    new_ctx, join = Propagation(propagation, join).handle_propagation()
+    args = (
+        callback,
+        retries,
+        read_only,
+        join,
+        xg,
+        None # propagation
+    )
+    if new_ctx is None:
+        transaction_return_value = transaction_async_(*args)
+    else:
+        with new_ctx.use() as context:
+            transaction_return_value = transaction_async_(*args)
+            context.flush()
+    return transaction_return_value
+
+
+def transaction_async_(
     callback,
     retries=_retry._DEFAULT_RETRIES,
     read_only=False,

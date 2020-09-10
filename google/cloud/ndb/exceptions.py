@@ -121,3 +121,7 @@ class Cancelled(Error):
     a call to ``Future.cancel`` (possibly on a future that depends on this
     future).
     """
+
+
+class TransactionFailedError(Error):
+    pass
