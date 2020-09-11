@@ -27,16 +27,16 @@ class Propagation(object):
     def __init__(self, propagation, join, *args, **kwargs):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import context as context_module
-    
+
         propagation_options = context_module.TransactionOptions._PROPAGATION
-        if propagation in propagation_options:
+        if propagation is None or propagation in propagation_options:
             self.propagation = propagation
         else:
             raise ValueError('Unexpected value for propagation. Got: ' \
                              f'{propagation}. Expected one of: ' \
                              f'{propagation_options}')
-            
-        propagation_names = context_module.TransactionOptions_INT_TO_NAME
+
+        propagation_names = context_module.TransactionOptions._INT_TO_NAME
         self.propagation_name = propagation_names.get(self.propagation)
 
         self.join = join
@@ -83,15 +83,15 @@ class Propagation(object):
                             f'behaviour. Setting join to {change_to} for ' \
                             f'propagation value: {self.propagation} ' \
                             f'({self.propagation_name})')
-        return change_to
+            self.join = change_to
 
     def handle_propagation(self):
         ctx = None
         if self.propagation:
             # ensure we use the correct joining method.
             ctx = getattr(self, f'_handle_{self.propagation_name}')()
-            join = self._handle_join()
-        return ctx, join
+            self._handle_join()
+        return ctx, self.join
 
 
 def in_transaction():
