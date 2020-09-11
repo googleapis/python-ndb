@@ -43,9 +43,9 @@ class Test_in_transaction:
 class Test_transaction:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_propagation():
+    def test_propagation_nested():
         with pytest.raises(NotImplementedError):
-            _transaction.transaction(None, propagation=1)
+            _transaction.transaction(None, propagation=context_module.TransactionOptions.NESTED)
 
     @staticmethod
     def test_already_in_transaction(in_context):
@@ -132,6 +132,151 @@ class Test_transaction_async:
 
         future.set_result("I tried, momma.")
         assert future.result() == "I tried, momma."
+
+    @staticmethod
+    def test_success_propagation_mandatory(in_context):
+        def callback():
+            return "I tried, momma."
+
+        with mock.patch("google.cloud.ndb._transaction.transaction_async_", side_effect=_transaction.transaction_async_) as transaction_async_:
+            with in_context.new(transaction=b"tx123").use():
+                future = _transaction.transaction_async(callback, join=False, propagation=context_module.TransactionOptions.MANDATORY)
+    
+        assert future.result() == "I tried, momma."
+
+        transaction_async_.assert_called_once_with(
+            callback,
+            3,
+            False,
+            True,
+            True,
+            None,
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_failure_propagation_mandatory():
+        with pytest.raises(exceptions.TransactionFailedError):
+            _transaction.transaction_async(None, join=False, propagation=context_module.TransactionOptions.MANDATORY)
+
+    @staticmethod
+    def test_propagation_allowed_already_in_transaction(in_context):
+        def callback():
+            return "I tried, momma."
+
+        with mock.patch("google.cloud.ndb._transaction.transaction_async_", side_effect=_transaction.transaction_async_) as transaction_async_:
+            with in_context.new(transaction=b"tx123").use():
+                future = _transaction.transaction_async(callback, join=False, propagation=context_module.TransactionOptions.ALLOWED)
+    
+        assert future.result() == "I tried, momma."
+
+        transaction_async_.assert_called_once_with(
+            callback,
+            3,
+            False,
+            True,
+            True,
+            None,
+        )
+        
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_api")
+    def test_propagation_allowed_not_yet_in_transaction(_datastore_api):
+        def callback():
+            return "I tried, momma."
+
+        begin_future = tasklets.Future("begin transaction")
+        _datastore_api.begin_transaction.return_value = begin_future
+
+        commit_future = tasklets.Future("commit transaction")
+        _datastore_api.commit.return_value = commit_future
+
+        with mock.patch("google.cloud.ndb._transaction.transaction_async_", side_effect=_transaction.transaction_async_) as transaction_async_:
+            future = _transaction.transaction_async(callback, join=False, propagation=context_module.TransactionOptions.ALLOWED)
+    
+        _datastore_api.begin_transaction.assert_called_once_with(False, retries=0)
+        begin_future.set_result(b"tx123")
+
+        _datastore_api.commit.assert_called_once_with(b"tx123", retries=0)
+        commit_future.set_result(None)
+
+        assert future.result() == "I tried, momma."
+
+        transaction_async_.assert_called_once_with(
+            callback,
+            3,
+            False,
+            True,
+            True,
+            None,
+        )
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api")
+    def test_propagation_independent_already_in_transaction(_datastore_api, in_context):
+        def callback():
+            return "I tried, momma."
+
+        begin_future = tasklets.Future("begin transaction")
+        _datastore_api.begin_transaction.return_value = begin_future
+
+        commit_future = tasklets.Future("commit transaction")
+        _datastore_api.commit.return_value = commit_future
+
+        with mock.patch("google.cloud.ndb._transaction.transaction_async_", side_effect=_transaction.transaction_async_) as transaction_async_:
+            with in_context.new(transaction=b"tx123").use():
+                future = _transaction.transaction_async(callback, join=True, propagation=context_module.TransactionOptions.INDEPENDENT)
+
+        _datastore_api.begin_transaction.assert_called_once_with(False, retries=0)
+        begin_future.set_result(b"tx456")
+
+        _datastore_api.commit.assert_called_once_with(b"tx456", retries=0)
+        commit_future.set_result(None)
+
+        assert future.result() == "I tried, momma."
+
+        transaction_async_.assert_called_once_with(
+            callback,
+            3,
+            False,
+            False,
+            True,
+            None,
+        )
+        
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_api")
+    def test_propagation_independent_not_yet_in_transaction(_datastore_api):
+        def callback():
+            return "I tried, momma."
+
+        begin_future = tasklets.Future("begin transaction")
+        _datastore_api.begin_transaction.return_value = begin_future
+
+        commit_future = tasklets.Future("commit transaction")
+        _datastore_api.commit.return_value = commit_future
+
+        with mock.patch("google.cloud.ndb._transaction.transaction_async_", side_effect=_transaction.transaction_async_) as transaction_async_:
+            future = _transaction.transaction_async(callback, join=True, propagation=context_module.TransactionOptions.INDEPENDENT)
+
+        _datastore_api.begin_transaction.assert_called_once_with(False, retries=0)
+        begin_future.set_result(b"tx123")
+
+        _datastore_api.commit.assert_called_once_with(b"tx123", retries=0)
+        commit_future.set_result(None)
+
+        assert future.result() == "I tried, momma."
+
+        transaction_async_.assert_called_once_with(
+            callback,
+            3,
+            False,
+            False,
+            True,
+            None,
+        )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
