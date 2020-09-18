@@ -39,7 +39,7 @@ export REDIS_CACHE_URL=redis://localhost
 redis-server &
 
 # Configure local memcached to be used
-export MEMCACHED_HOSTS=localhost
+export MEMCACHED_HOSTS=127.0.0.1
 echo "Starting memcached..."
 cat /etc/memcached.conf
 service memcached start
