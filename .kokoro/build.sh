@@ -41,7 +41,7 @@ redis-server &
 # Configure local memcached to be used
 export MEMCACHED_HOSTS=localhost
 echo "Starting memcached..."
-service memcached start
+memcached &
 
 # Some system tests require indexes. Use gcloud to create them.
 gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS --project=$PROJECT_ID
