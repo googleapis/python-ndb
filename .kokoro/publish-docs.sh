@@ -21,8 +21,8 @@ export PYTHONUNBUFFERED=1
 export PATH="${HOME}/.local/bin:${PATH}"
 
 # Need enchant for spell check
-sudo apt-get update
-sudo apt-get -y install dictionaries-common aspell aspell-en \
+apt-get update
+apt-get -y install dictionaries-common aspell aspell-en \
                         hunspell-en-us libenchant1c2a enchant binutils
 
 # Install nox
