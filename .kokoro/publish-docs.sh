@@ -20,11 +20,6 @@ export PYTHONUNBUFFERED=1
 
 export PATH="${HOME}/.local/bin:${PATH}"
 
-# Need enchant for spell check
-#apt-get update
-#apt-get -y install dictionaries-common aspell aspell-en \
-#                        hunspell-en-us libenchant1c2a enchant binutils
-
 # Install nox
 python3 -m pip install --user --upgrade --quiet nox
 python3 -m nox --version
