@@ -96,7 +96,7 @@ RUN wget -O /tmp/get-pip.py 'https://bootstrap.pypa.io/get-pip.py' \
   && python3.8 /tmp/get-pip.py \
   && rm /tmp/get-pip.py
 
-RUN apt-get install -y --no-install-recommendsdictionaries-common aspell aspell-en \
+RUN apt-get install -y --no-install-recommends dictionaries-common aspell aspell-en \
   hunspell-en-us libenchant1c2a enchant binutils
 
 CMD ["python3.7"]
