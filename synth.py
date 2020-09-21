@@ -40,4 +40,13 @@ s.replace(
     "\g<0>    memcached \\\n"\
 )
 
+s.replace(
+    ".kokoro/docker/docs/Dockerfile",
+    "# Install dependencies.\n",
+    """\g<0># Spell check related
+RUN apt-get update && apt-get install -y dictionaries-common aspell aspell-en \\
+  hunspell-en-us libenchant1c2a enchant binutils
+"""
+)
+
 s.shell.run(["nox", "-s", "blacken"], hide_output=False)
