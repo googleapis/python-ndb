@@ -34,4 +34,10 @@ gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS 
 gcloud --quiet --verbosity=debug datastore indexes create tests/system/index.yaml
 """)
 
+s.replace(
+    ".kokoro/docker/docs/Dockerfile",
+    "libsqlite3-dev.*\n",
+    "\g<0>    memcached \\\n"\
+)
+
 s.shell.run(["nox", "-s", "blacken"], hide_output=False)
