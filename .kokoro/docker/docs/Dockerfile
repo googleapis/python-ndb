@@ -20,6 +20,10 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV PATH /usr/local/bin:$PATH
 
 # Install dependencies.
+# Spell check related
+RUN apt-get update && apt-get install -y dictionaries-common aspell aspell-en \
+  hunspell-en-us libenchant1c2a enchant binutils
+
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
   apt-transport-https \
@@ -95,8 +99,5 @@ RUN wget -O /tmp/get-pip.py 'https://bootstrap.pypa.io/get-pip.py' \
   && python3.7 /tmp/get-pip.py \
   && python3.8 /tmp/get-pip.py \
   && rm /tmp/get-pip.py
-
-RUN apt-get install -y --no-install-recommends dictionaries-common aspell aspell-en \
-  hunspell-en-us libenchant1c2a enchant binutils
 
 CMD ["python3.7"]
