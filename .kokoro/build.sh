@@ -20,7 +20,7 @@ cd github/python-ndb
 # Need enchant for spell check
 sudo apt-get update
 sudo apt-get -y install dictionaries-common aspell aspell-en \
-                        hunspell-en-us libenchant1c2a enchant
+                        hunspell-en-us libenchant1c2a enchant binutils
 
 # Disable buffering, so that the logs stream through.
 export PYTHONUNBUFFERED=1

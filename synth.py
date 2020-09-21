@@ -17,7 +17,7 @@ s.replace([".kokoro/publish-docs.sh", ".kokoro/build.sh"], "cd github/python-ndb
 # Need enchant for spell check
 sudo apt-get update
 sudo apt-get -y install dictionaries-common aspell aspell-en \\
-                        hunspell-en-us libenchant1c2a enchant""")
+                        hunspell-en-us libenchant1c2a enchant binutils""")
 
 s.replace(".kokoro/build.sh", """(export PROJECT_ID=.*)""", """\g<1>
 
