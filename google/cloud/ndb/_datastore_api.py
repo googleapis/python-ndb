@@ -316,8 +316,7 @@ def get_read_options(options, default_read_consistency=None):
         ValueError: When ``read_consistency`` is set to ``EVENTUAL`` and there
             is a transaction.
     """
-    transaction = _get_transaction(options)
-
+    transaction = options.transaction
     read_consistency = options.read_consistency
 
     if transaction is None:
