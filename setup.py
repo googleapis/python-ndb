@@ -26,6 +26,7 @@ def main():
         readme = readme_file.read()
     dependencies = [
         "google-cloud-datastore >= 1.7.0",
+        "pymemcache",
         "redis",
     ]
 
@@ -34,7 +35,7 @@ def main():
 
     setuptools.setup(
         name="google-cloud-ndb",
-        version = "1.5.2",
+        version = "1.6.1",
         description="NDB library for Google Cloud Datastore",
         long_description=readme,
         long_description_content_type="text/markdown",

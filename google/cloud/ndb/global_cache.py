@@ -15,12 +15,14 @@
 """GlobalCache interface and its implementations."""
 
 import abc
+import base64
 import collections
 import os
 import threading
 import time
 import uuid
 
+import pymemcache
 import redis as redis_module
 
 
@@ -84,6 +86,19 @@ class GlobalCache(object):
 
         A future call to :meth:`compare_and_swap` will only set values for keys
         whose values haven't changed since the call to this method.
+
+        Arguments:
+            keys (List[bytes]): The keys to watch.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def unwatch(self, keys):
+        """End an optimistic transaction for the given keys.
+
+        Indicates that value for the key wasn't found in the database, so there will not
+        be a future call to :meth:`compare_and_swap`, and we no longer need to watch
+        this key.
 
         Arguments:
             keys (List[bytes]): The keys to watch.
@@ -157,6 +172,11 @@ class _InProcessGlobalCache(GlobalCache):
         """Implements :meth:`GlobalCache.watch`."""
         for key in keys:
             self._watch_keys[key] = self.cache.get(key)
+
+    def unwatch(self, keys):
+        """Implements :meth:`GlobalCache.unwatch`."""
+        for key in keys:
+            self._watch_keys.pop(key, None)
 
     def compare_and_swap(self, items, expires=None):
         """Implements :meth:`GlobalCache.compare_and_swap`."""
@@ -237,6 +257,13 @@ class RedisCache(GlobalCache):
         for key in keys:
             self.pipes[key] = holder
 
+    def unwatch(self, keys):
+        """Implements :meth:`GlobalCache.watch`."""
+        for key in keys:
+            holder = self.pipes.pop(key, None)
+            if holder:
+                holder.pipe.reset()
+
     def compare_and_swap(self, items, expires=None):
         """Implements :meth:`GlobalCache.compare_and_swap`."""
         pipes = {}
@@ -282,3 +309,128 @@ class RedisCache(GlobalCache):
             self.pipes.pop(key, None)
 
         return results
+
+
+class MemcacheCache(GlobalCache):
+    """Memcache implementation of the :class:`GlobalCache`.
+
+    This is a synchronous implementation. The idea is that calls to Memcache
+    should be fast enough not to warrant the added complexity of an
+    asynchronous implementation.
+
+    Args:
+        client (pymemcache.Client): Instance of Memcache client to use.
+    """
+
+    @staticmethod
+    def _parse_host_string(host_string):
+        split = host_string.split(":")
+        if len(split) == 1:
+            return split[0], 11211
+
+        elif len(split) == 2:
+            host, port = split
+            try:
+                port = int(port)
+                return host, port
+            except ValueError:
+                pass
+
+        raise ValueError("Invalid memcached host_string: {}".format(host_string))
+
+    @staticmethod
+    def _key(key):
+        return base64.b64encode(key)
+
+    @classmethod
+    def from_environment(cls, max_pool_size=4):
+        """Generate a ``pymemcache.Client`` from an environment variable.
+
+        This class method looks for the ``MEMCACHED_HOSTS`` environment
+        variable and, if it is set, parses the value as a space delimited list of
+        hostnames, optionally with ports. For example:
+
+            "localhost"
+            "localhost:11211"
+            "1.1.1.1:11211 2.2.2.2:11211 3.3.3.3:11211"
+
+        Returns:
+            Optional[MemcacheCache]: A :class:`MemcacheCache` instance or
+                :data:`None`, if ``MEMCACHED_HOSTS`` is not set in the
+                environment.
+        """
+        hosts_string = os.environ.get("MEMCACHED_HOSTS")
+        if not hosts_string:
+            return None
+
+        hosts = [
+            cls._parse_host_string(host_string.strip())
+            for host_string in hosts_string.split()
+        ]
+
+        if not max_pool_size:
+            max_pool_size = 1
+
+        if len(hosts) == 1:
+            client = pymemcache.PooledClient(hosts[0], max_pool_size=max_pool_size)
+
+        else:
+            client = pymemcache.HashClient(
+                hosts, use_pooling=True, max_pool_size=max_pool_size
+            )
+
+        return cls(client)
+
+    def __init__(self, client):
+        self.client = client
+        self._cas = threading.local()
+
+    @property
+    def caskeys(self):
+        local = self._cas
+        if not hasattr(local, "caskeys"):
+            local.caskeys = {}
+        return local.caskeys
+
+    def get(self, keys):
+        """Implements :meth:`GlobalCache.get`."""
+        keys = [self._key(key) for key in keys]
+        result = self.client.get_many(keys)
+        return [result.get(key) for key in keys]
+
+    def set(self, items, expires=None):
+        """Implements :meth:`GlobalCache.set`."""
+        items = {self._key(key): value for key, value in items.items()}
+        expires = expires if expires else 0
+        self.client.set_many(items, expire=expires)
+
+    def delete(self, keys):
+        """Implements :meth:`GlobalCache.delete`."""
+        keys = [self._key(key) for key in keys]
+        self.client.delete_many(keys)
+
+    def watch(self, keys):
+        """Implements :meth:`GlobalCache.watch`."""
+        keys = [self._key(key) for key in keys]
+        caskeys = self.caskeys
+        for key, (value, caskey) in self.client.gets_many(keys).items():
+            caskeys[key] = caskey
+
+    def unwatch(self, keys):
+        """Implements :meth:`GlobalCache.unwatch`."""
+        keys = [self._key(key) for key in keys]
+        caskeys = self.caskeys
+        for key in keys:
+            caskeys.pop(key, None)
+
+    def compare_and_swap(self, items, expires=None):
+        """Implements :meth:`GlobalCache.compare_and_swap`."""
+        caskeys = self.caskeys
+        for key, value in items.items():
+            key = self._key(key)
+            caskey = caskeys.pop(key, None)
+            if caskey is None:
+                continue
+
+            expires = expires if expires else 0
+            self.client.cas(key, value, caskey, expire=expires)

@@ -20,6 +20,9 @@ ENV DEBIAN_FRONTEND noninteractive
 ENV PATH /usr/local/bin:$PATH
 
 # Install dependencies.
+# Spell check related
+RUN apt-get update && apt-get install -y dictionaries-common aspell aspell-en \
+  hunspell-en-us libenchant1c2a enchant
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
     apt-transport-https \
@@ -39,6 +42,7 @@ RUN apt-get update \
     libsnappy-dev \
     libssl-dev \
     libsqlite3-dev \
+    memcached \
     portaudio19-dev \
     redis-server \
     software-properties-common \
