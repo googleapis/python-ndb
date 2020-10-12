@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import itertools
+import logging
 
 try:
     from unittest import mock
@@ -44,7 +45,7 @@ class Test_transaction:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_propagation_nested():
-        with pytest.raises(NotImplementedError):
+        with pytest.raises(exceptions.BadRequestError):
             _transaction.transaction(
                 None, propagation=context_module.TransactionOptions.NESTED
             )
@@ -165,11 +166,72 @@ class Test_transaction_async:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_failure_propagation_mandatory():
-        with pytest.raises(exceptions.TransactionFailedError):
+        with pytest.raises(exceptions.BadRequestError):
             _transaction.transaction_async(
                 None,
                 join=False,
                 propagation=context_module.TransactionOptions.MANDATORY,
+            )
+
+    @staticmethod
+    def test_invalid_propagation():
+        with pytest.raises(ValueError):
+            _transaction.transaction_async(
+                None,
+                propagation=99,
+            )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_invalid_join(caplog, in_context):
+        def callback():
+            return "I tried, momma."
+
+        provided_join_arg = False
+
+        with mock.patch(
+            "google.cloud.ndb._transaction.transaction_async_",
+            side_effect=_transaction.transaction_async_,
+        ) as transaction_async_:
+            with in_context.new(transaction=b"tx123").use():
+                with caplog.at_level(logging.WARNING):
+                    future = _transaction.transaction_async(
+                        callback,
+                        join=provided_join_arg,
+                        propagation=context_module.TransactionOptions.MANDATORY,
+                    )
+
+        assert future.result() == "I tried, momma."
+        assert "Modifying join behaviour to maintain old NDB behaviour" in caplog.text
+
+        transaction_async_.assert_called_once_with(
+            callback,
+            3,
+            False,
+            True,
+            (not provided_join_arg),
+            None,
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_propagation_with_no_join_arg(caplog):
+        ctx, join = _transaction._Propagation(
+            context_module.TransactionOptions.ALLOWED
+        ).handle_propagation()
+        assert (
+            "Modifying join behaviour to maintain old NDB behaviour" not in caplog.text
+        )
+        assert ctx is None
+        assert join
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_failure_propagation():
+        with pytest.raises(exceptions.NoLongerImplementedError):
+            _transaction.transaction_async_(
+                None,
+                propagation=context_module.TransactionOptions.ALLOWED,
             )
 
     @staticmethod
@@ -298,7 +360,7 @@ class Test_transaction_async:
         ) as transaction_async_:
             future = _transaction.transaction_async(
                 callback,
-                join=True,
+                join=False,
                 propagation=context_module.TransactionOptions.INDEPENDENT,
             )
 
