@@ -32,9 +32,10 @@ class Propagation(object):
         if propagation is None or propagation in propagation_options:
             self.propagation = propagation
         else:
-            raise ValueError('Unexpected value for propagation. Got: ' \
-                             f'{propagation}. Expected one of: ' \
-                             f'{propagation_options}')
+            raise ValueError(
+                "Unexpected value for propagation. Got: {}. Expected one of: "
+                "{}".format(propagation, propagation_options)
+            )
 
         propagation_names = context_module.TransactionOptions._INT_TO_NAME
         self.propagation_name = propagation_names.get(self.propagation)
@@ -49,9 +50,10 @@ class Propagation(object):
 
     def _handle_mandatory(self):
         if not in_transaction():
-            raise exceptions.TransactionFailedError('Unable to honor ' \
-                'requested propagation option, an existing transaction must ' \
-                'be running first')
+            raise exceptions.TransactionFailedError(
+                "Unable to honor requested propagation option, an existing "
+                "transaction must be running first"
+            )
 
     def _handle_allowed(self):
         # no special handling needed.
@@ -61,6 +63,7 @@ class Propagation(object):
         if in_transaction():
             # Avoid circular import in Python 2.7
             from google.cloud.ndb import context as context_module
+
             ctx = context_module.get_context()
             # I think that this actually does not "pause" the existing
             # transaction, it instead forces it to run to completion before
@@ -70,26 +73,27 @@ class Propagation(object):
             # each time a new context is started/ended too so keep it here
             # until it proves to be an issue.
             ctx.flush()
-            new_ctx = ctx.new(transaction=None,
-                              batches=None,
-                              commit_batches=None,
-                              cache=None)
+            new_ctx = ctx.new(
+                transaction=None, batches=None, commit_batches=None, cache=None
+            )
             return new_ctx
 
     def _handle_join(self):
         change_to = self.joinable
         if self.join != change_to:
-            logging.warning('Modifying join behaviour to maintain old NDB ' \
-                            f'behaviour. Setting join to {change_to} for ' \
-                            f'propagation value: {self.propagation} ' \
-                            f'({self.propagation_name})')
+            logging.warning(
+                "Modifying join behaviour to maintain old NDB behaviour. "
+                "Setting join to {} for propagation value: {} ({})".format(
+                    change_to, self.propagation, self.propagation_name
+                )
+            )
             self.join = change_to
 
     def handle_propagation(self):
         ctx = None
         if self.propagation:
             # ensure we use the correct joining method.
-            ctx = getattr(self, f'_handle_{self.propagation_name}')()
+            ctx = getattr(self, "_handle_{}".format(self.propagation_name))()
             self._handle_join()
         return ctx, self.join
 
@@ -153,14 +157,7 @@ def transaction_async(
     propagation=None,
 ):
     new_ctx, join = Propagation(propagation, join).handle_propagation()
-    args = (
-        callback,
-        retries,
-        read_only,
-        join,
-        xg,
-        None # propagation
-    )
+    args = (callback, retries, read_only, join, xg, None)
     if new_ctx is None:
         transaction_return_value = transaction_async_(*args)
     else:

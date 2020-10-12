@@ -625,18 +625,18 @@ class ContextOptions(object):
 
 
 class TransactionOptions(object):
-    NESTED = 1 # join=False
-    MANDATORY = 2 # join=True
-    ALLOWED = 3 # join=True
-    INDEPENDENT = 4 # join=False
+    NESTED = 1  # join=False
+    MANDATORY = 2  # join=True
+    ALLOWED = 3  # join=True
+    INDEPENDENT = 4  # join=False
 
     _PROPAGATION = frozenset((NESTED, MANDATORY, ALLOWED, INDEPENDENT))
     _JOINABLE = frozenset((MANDATORY, ALLOWED))
     _INT_TO_NAME = {
-        NESTED: 'nested',
-        MANDATORY: 'mandatory',
-        ALLOWED: 'allowed',
-        INDEPENDENT: 'independent'
+        NESTED: "nested",
+        MANDATORY: "mandatory",
+        ALLOWED: "allowed",
+        INDEPENDENT: "independent",
     }
 
 
