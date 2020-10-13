@@ -33,7 +33,7 @@ class _Propagation(object):
     single public method func:`handle_propagation`.
     """
 
-    def __init__(self, propagation, join=None, *args, **kwargs):
+    def __init__(self, propagation, join=None):
         """Args:
         propagation (int): The desired `propagation` option, corresponding
             to a class:`TransactionOptions` option.
@@ -61,7 +61,6 @@ class _Propagation(object):
         self.join = join
         joinable_options = context_module.TransactionOptions._JOINABLE
         self.joinable = propagation in joinable_options
-        super(_Propagation, self).__init__(*args, **kwargs)
 
     def _handle_nested(self):
         """The NESTED propagation policy would commit all changes in the outer
