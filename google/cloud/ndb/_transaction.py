@@ -102,9 +102,7 @@ class _Propagation(object):
             from google.cloud.ndb import context as context_module
 
             context = context_module.get_context()
-            new_context = context.new(
-                transaction=None
-            )
+            new_context = context.new(transaction=None)
             return new_context
 
     def _handle_join(self):
@@ -174,9 +172,9 @@ def transaction(
             for backwards compatibility reasons and is ignored. All Datastore
             transactions are cross-group, up to 25 entity groups, all the time.
         propagation (int): An element from :class:`ndb.TransactionOptions`.
-            This parameter controls what happens if you try to start a new 
-            transaction within a existing transaction. If this argument is 
-            provided the `join` argument will be ignored. 
+            This parameter controls what happens if you try to start a new
+            transaction within a existing transaction. If this argument is
+            provided the `join` argument will be ignored.
     """
     future = transaction_async(
         callback,
@@ -459,7 +457,7 @@ def non_transactional(allow_existing=True):
             # Avoid circular import in Python 2.7
             from google.cloud.ndb import context as context_module
 
-            context = context.get_context()
+            context = context_module.get_context()
             if not context.in_transaction():
                 return wrapped(*args, **kwargs)
             if not allow_existing:
