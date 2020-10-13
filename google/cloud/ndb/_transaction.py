@@ -102,9 +102,8 @@ class _Propagation(object):
             from google.cloud.ndb import context as context_module
 
             context = context_module.get_context()
-            context.flush()
             new_context = context.new(
-                transaction=None, batches=None, commit_batches=None, cache=None
+                transaction=None
             )
             return new_context
 
