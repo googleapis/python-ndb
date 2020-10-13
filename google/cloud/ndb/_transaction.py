@@ -125,7 +125,7 @@ class _Propagation(object):
         met.
 
         Returns:
-            Optional[Context]: A new :class:`Context` instance that should be
+            Context: A new :class:`Context` instance that should be
                 used to run the transaction in or :data:`None` if the
                 transaction should run in the existing :class:`Context`.
             bool: :data:`True` if the new transaction is to be joined to an
@@ -174,9 +174,10 @@ def transaction(
         xg (bool): Enable cross-group transactions. This argument is included
             for backwards compatibility reasons and is ignored. All Datastore
             transactions are cross-group, up to 25 entity groups, all the time.
-        propagation (int): Transaction propagation was a feature of the old
-            Datastore RPC library but is now supported by the
-            class:`_Propagation` class instead.
+        propagation (int): An element from :class:`ndb.TransactionOptions`.
+            This parameter controls what happens if you try to start a new 
+            transaction within a existing transaction. If this argument is 
+            provided the `join` argument will be ignored. 
     """
     future = transaction_async(
         callback,
