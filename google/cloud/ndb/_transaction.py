@@ -102,12 +102,12 @@ class _Propagation(object):
             # Avoid circular import in Python 2.7
             from google.cloud.ndb import context as context_module
 
-            ctx = context_module.get_context()
-            ctx.flush()
-            new_ctx = ctx.new(
+            context = context_module.get_context()
+            context.flush()
+            new_context = context.new(
                 transaction=None, batches=None, commit_batches=None, cache=None
             )
-            return new_ctx
+            return new_context
 
     def _handle_join(self):
         change_to = self.joinable
@@ -132,12 +132,12 @@ class _Propagation(object):
             bool: :data:`True` if the new transaction is to be joined to an
                 existing one otherwise :data:`False`.
         """
-        ctx = None
+        context = None
         if self.propagation:
             # ensure we use the correct joining method.
-            ctx = getattr(self, "_handle_{}".format(self.propagation_name))()
+            context = getattr(self, "_handle_{}".format(self.propagation_name))()
             self._handle_join()
-        return ctx, self.join
+        return context, self.join
 
 
 def in_transaction():
@@ -198,12 +198,12 @@ def transaction_async(
     xg=True,
     propagation=None,
 ):
-    new_ctx, join = _Propagation(propagation, join).handle_propagation()
+    new_context, join = _Propagation(propagation, join).handle_propagation()
     args = (callback, retries, read_only, join, xg, None)
-    if new_ctx is None:
+    if new_context is None:
         transaction_return_value = transaction_async_(*args)
     else:
-        with new_ctx.use() as context:
+        with new_context.use() as context:
             transaction_return_value = transaction_async_(*args)
             context.flush()
     return transaction_return_value
@@ -457,17 +457,18 @@ def non_transactional(allow_existing=True):
     def non_transactional_wrapper(wrapped):
         @functools.wraps(wrapped)
         def non_transactional_inner_wrapper(*args, **kwargs):
-            from . import context
+            # Avoid circular import in Python 2.7
+            from google.cloud.ndb import context as context_module
 
-            ctx = context.get_context()
-            if not ctx.in_transaction():
+            context = context.get_context()
+            if not context.in_transaction():
                 return wrapped(*args, **kwargs)
             if not allow_existing:
                 raise exceptions.BadRequestError(
                     "{} cannot be called within a transaction".format(wrapped.__name__)
                 )
-            new_ctx = ctx.new(transaction=None)
-            with new_ctx.use():
+            new_context = context.new(transaction=None)
+            with new_context.use():
                 return wrapped(*args, **kwargs)
 
         return non_transactional_inner_wrapper
