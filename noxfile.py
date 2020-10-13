@@ -24,10 +24,10 @@ import nox
 
 LOCAL_DEPS = ("google-cloud-core", "google-api-core")
 NOX_DIR = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_INTERPRETER = "3.9"
+DEFAULT_INTERPRETER = "3.8"
 ALL_INTERPRETERS = ("2.7", "3.6", "3.7", "3.8", "3.9")
 PY3_INTERPRETERS = ("3.6", "3.7", "3.8", "3.9")
-MAJOR_INTERPRETERS = ("2.7", "3.9")
+MAJOR_INTERPRETERS = ("2.7", "3.8")
 
 BLACK_VERSION = "black==20.8b1"
 
