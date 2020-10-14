@@ -216,9 +216,10 @@ class Test_transaction_async:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_propagation_with_no_join_arg(caplog):
-        ctx, join = _transaction._Propagation(
-            context_module.TransactionOptions.ALLOWED
-        ).handle_propagation()
+        with caplog.at_level(logging.WARNING):
+            ctx, join = _transaction._Propagation(
+                context_module.TransactionOptions.ALLOWED
+            ).handle_propagation()
         assert (
             "Modifying join behaviour to maintain old NDB behaviour" not in caplog.text
         )
