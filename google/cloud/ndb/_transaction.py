@@ -31,18 +31,17 @@ class _Propagation(object):
 
     It provides limited support for transactions within transactions. It has a
     single public method func:`handle_propagation`.
-    """
 
-    def __init__(self, propagation, join=None):
-        """Args:
+    Args:
         propagation (int): The desired `propagation` option, corresponding
             to a class:`TransactionOptions` option.
         join (:obj:`bool`, optional): If the provided join argument must be
             changed to conform to the requested propagation option then a
             warning will be emitted. If it is not provided, it will be set
             according to the propagation option but no warning is emitted.
-        """
+    """
 
+    def __init__(self, propagation, join=None):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import context as context_module
 
