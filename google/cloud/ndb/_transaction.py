@@ -173,8 +173,8 @@ def transaction(
             transactions are cross-group, up to 25 entity groups, all the time.
         propagation (int): An element from :class:`ndb.TransactionOptions`.
             This parameter controls what happens if you try to start a new
-            transaction within a existing transaction. If this argument is
-            provided the `join` argument will be ignored.
+            transaction within an existing transaction. If this argument is
+            provided, the `join` argument will be ignored.
     """
     future = transaction_async(
         callback,
