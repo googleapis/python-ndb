@@ -250,7 +250,7 @@ class RedisCache(GlobalCache):
             the application. If :data:`True`, connection errors during write will be
             raised as exceptions in the application. Because write operations involve
             cache invalidation, setting this to :data:`False` may allow other clients to
-            retreive stale data from the cache.  If there is a connection error, an
+            retrieve stale data from the cache.  If there is a connection error, an
             internal flag will be set to clear the cache the next time any method is
             called on this object, to try and minimize the opportunity for clients to
             read stale data from the cache.  Default: :data:`True`.
@@ -282,7 +282,7 @@ class RedisCache(GlobalCache):
                 exception in the application. If :data:`True`, connection errors during
                 write will be raised as exceptions in the application. Because write
                 operations involve cache invalidation, setting this to :data:`False` may
-                allow other clients to retreive stale data from the cache.  If there is
+                allow other clients to retrieve stale data from the cache.  If there is
                 a connection error, an internal flag will be set to clear the cache the
                 next time any method is called on this object, to try and minimize the
                 opportunity for clients to read stale data from the cache.  Default:
@@ -408,7 +408,7 @@ class MemcacheCache(GlobalCache):
             the application. If :data:`True`, connection errors during write will be
             raised as exceptions in the application. Because write operations involve
             cache invalidation, setting this to :data:`False` may allow other clients to
-            retreive stale data from the cache.  If there is a connection error, an
+            retrieve stale data from the cache.  If there is a connection error, an
             internal flag will be set to clear the cache the next time any method is
             called on this object, to try and minimize the opportunity for clients to
             read stale data from the cache.  Default: :data:`True`.
@@ -466,7 +466,7 @@ class MemcacheCache(GlobalCache):
                 exception in the application. If :data:`True`, connection errors during
                 write will be raised as exceptions in the application. Because write
                 operations involve cache invalidation, setting this to :data:`False` may
-                allow other clients to retreive stale data from the cache.  If there is
+                allow other clients to retrieve stale data from the cache.  If there is
                 a connection error, an internal flag will be set to clear the cache the
                 next time any method is called on this object, to try and minimize the
                 opportunity for clients to read stale data from the cache.  Default:
