@@ -298,6 +298,41 @@ significant internal refactoring.
   this isn't broadly the case.
 - `model.make_connection` is no longer implemented.
 
+## Differences in urlsafe behavior
+
+``Key.urlsafe()`` now provides a "bytes" object instead of a "string" object in
+Python 3. This is actually just a change in nomenclature. Python 2 "string" is
+a bytestring. It maps directly to the "bytes" object in Python 3. They are the
+same data type, presented with a different name due to the Python 2 to 3
+bytes/unicode migration. This isn't unique to our library but rather applies to
+all string handling in Python 2/3 compatible libraries and is unfortunately
+unavoidable.
+
+Even though the urlsafe data type has not changed (only the name), code that
+serializes urlsafe values to JSON will not work as intended anymore. This is
+because the json module itself has changed. ``json.JSONEncoder`` in Python 2
+accepts str (actually bytes) and unicode, and coerces str to unicode
+automatically. This was dangerous behavior that sometimes resulted in mangled
+strings. json.JSONEncoder in Python 3 only accepts unicode (now called str) to
+avoid any mangling. The user must manually convert strings. Unfortunately,
+there's nothing we can do safely on the library's part to resolve this.
+
+One other difference in behavior is that the string encoded by urlsafe no
+longer includes the App Engine partition. This is because the Cloud Datastore
+backend does not report the App Engine partition to us due to a migration away
+from App Engine semantics to Cloud semantics on project IDs. We can't infer
+what the partition is safely with access to only the Cloud Datastore API, thus
+the to_legacy_urlsafe() command was added to let the user override this
+behavior.
+
+Most apps have a partition prefix of "s~", except for apps in European clusters
+which have a partition prefix of "e~". If for some unexpected reason neither of
+these prefixes result in the correct legacy urlsafe strings for a specific use
+case, the user can take one of the strings from the Cloud Console datastore and
+decode it using base64 to see the partition prefix. Once that partition is
+found, it can be used consistently across all calls to to_legacy_urlsafe() for
+that datastore instance.
+
 ## Comments
 
 - There is rampant use (and abuse) of `__new__` rather than `__init__` as
