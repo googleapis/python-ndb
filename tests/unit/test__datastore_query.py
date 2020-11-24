@@ -416,6 +416,65 @@ class Test_count:
             )
         )
 
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query._datastore_run_query")
+    def test_count_by_skipping_with_empty_batch(run_query):
+        run_query.side_effect = utils.future_results(
+            mock.Mock(
+                batch=mock.Mock(
+                    more_results=_datastore_query.NOT_FINISHED,
+                    skipped_results=2,
+                    entity_results=[],
+                    end_cursor=b"cursor1",
+                    skipped_cursor=b"cursor2",
+                    spec=(
+                        "more_results",
+                        "skipped_results",
+                        "entity_results",
+                        "end_cursor",
+                    ),
+                ),
+                spec=("batch",),
+            ),
+            mock.Mock(
+                batch=mock.Mock(
+                    more_results=_datastore_query.NOT_FINISHED,
+                    skipped_results=0,
+                    entity_results=[],
+                    end_cursor=b"cursor3",
+                    spec=(
+                        "more_results",
+                        "skipped_results",
+                        "entity_results",
+                        "end_cursor",
+                    ),
+                ),
+                spec=("batch",),
+            ),
+            mock.Mock(
+                batch=mock.Mock(
+                    more_results=_datastore_query.NO_MORE_RESULTS,
+                    skipped_results=1,
+                    entity_results=[],
+                    end_cursor=b"cursor4",
+                    skipped_cursor=b"cursor5",
+                    spec=(
+                        "more_results",
+                        "skipped_results",
+                        "entity_results",
+                        "end_cursor",
+                        "skipped_cursor",
+                    ),
+                ),
+                spec=("batch",),
+            ),
+        )
+
+        query = query_module.QueryOptions()
+        future = _datastore_query.count(query)
+        assert future.result() == 3
+
 
 class Test_iterate:
     @staticmethod
