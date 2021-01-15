@@ -101,7 +101,11 @@ def make_call(rpc_name, request, retries=None, timeout=None):
 
         raise tasklets.Return(result)
 
-    if retries:
+    context = context_module.get_context()
+    # When a nested retry fails, the outer retry will never be continued,
+    # because the inner one will raise an exception. Thus, we only set a retry
+    # if we are not already inside one.
+    if retries and not context.in_retry():
         rpc_call = _retry.retry_async(rpc_call, retries=retries)
 
     return rpc_call()

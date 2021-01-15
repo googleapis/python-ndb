@@ -59,6 +59,8 @@ def retry_async(callback, retries=_DEFAULT_RETRIES):
     @tasklets.tasklet
     @wraps_safely(callback)
     def retry_wrapper(*args, **kwargs):
+        from google.cloud.ndb import context as context_module
+
         sleep_generator = core_retry.exponential_sleep_generator(
             _DEFAULT_INITIAL_DELAY,
             _DEFAULT_MAXIMUM_DELAY,
@@ -66,6 +68,13 @@ def retry_async(callback, retries=_DEFAULT_RETRIES):
         )
 
         for sleep_time in itertools.islice(sleep_generator, retries + 1):
+            context = context_module.get_context()
+            if not context.in_retry():
+                # We need to be able to identify if we are inside a nested
+                # retry. Here, we set the retry state in the context. This is
+                # used in the datastore API to avoid the nested retries in rpc
+                # calls.
+                context.set_retry_state(repr(callback))
             try:
                 result = callback(*args, **kwargs)
                 if isinstance(result, tasklets.Future):
@@ -77,6 +86,11 @@ def retry_async(callback, retries=_DEFAULT_RETRIES):
                     raise error
             else:
                 raise tasklets.Return(result)
+            finally:
+                if context.in_retry() and context.retry == repr(callback):  # pragma: NO BRANCH
+                    # No matter what, if we are exiting the top level retry,
+                    # clear the retry state in the context.
+                    context.clear_retry_state()
 
             yield tasklets.sleep(sleep_time)
 

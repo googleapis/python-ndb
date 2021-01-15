@@ -40,6 +40,22 @@ class Test_retry:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test_nested_retry():
+        def callback():
+
+            def nested_callback():
+                return "bar"
+
+            nested = _retry.retry_async(nested_callback)
+            assert nested().result() == "bar"
+
+            return "foo"
+
+        retry = _retry.retry_async(callback)
+        assert retry().result() == "foo"
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_success_callback_is_tasklet():
         tasklet_future = tasklets.Future()
 

@@ -247,6 +247,7 @@ class _Context(_ContextTuple):
         datastore_policy=None,
         on_commit_callbacks=None,
         legacy_data=True,
+        retry=None,
         rpc_time=None,
         wait_time=None,
     ):
@@ -286,6 +287,7 @@ class _Context(_ContextTuple):
         context.set_global_cache_policy(global_cache_policy)
         context.set_global_cache_timeout_policy(global_cache_timeout_policy)
         context.set_datastore_policy(datastore_policy)
+        context.set_retry_state(retry)
 
         return context
 
@@ -544,6 +546,12 @@ class Context(_Context):
 
     set_memcache_timeout_policy = set_global_cache_timeout_policy
 
+    def set_retry_state(self, state):
+        self.retry = state
+
+    def clear_retry_state(self):
+        self.retry = None
+
     def call_on_commit(self, callback):
         """Call a callback upon successful commit of a transaction.
 
@@ -577,6 +585,15 @@ class Context(_Context):
                 :data:`False`.
         """
         return self.transaction is not None
+
+    def in_retry(self):
+        """Get whether we are already in a retry block.
+
+        Returns:
+            bool: :data:`True` if currently in a retry block, otherwise
+                :data:`False`.
+        """
+        return self.retry is not None
 
     def memcache_add(self, *args, **kwargs):
         """Direct pass-through to memcache client."""
