@@ -298,7 +298,9 @@ class _Context(_ContextTuple):
         will be substituted.
         """
         fields = self._fields + tuple(self.__dict__.keys())
-        state = {name: getattr(self, name) for name in fields}
+        state = {
+            name: getattr(self, name) for name in fields if not name.startswith("_")
+        }
         state.update(kwargs)
         return type(self)(**state)
 
@@ -546,11 +548,14 @@ class Context(_Context):
 
     set_memcache_timeout_policy = set_global_cache_timeout_policy
 
+    def get_retry_state(self):
+        return self._retry
+
     def set_retry_state(self, state):
-        self.retry = state
+        self._retry = state
 
     def clear_retry_state(self):
-        self.retry = None
+        self._retry = None
 
     def call_on_commit(self, callback):
         """Call a callback upon successful commit of a transaction.
@@ -593,7 +598,7 @@ class Context(_Context):
             bool: :data:`True` if currently in a retry block, otherwise
                 :data:`False`.
         """
-        return self.retry is not None
+        return self._retry is not None
 
     def memcache_add(self, *args, **kwargs):
         """Direct pass-through to memcache client."""

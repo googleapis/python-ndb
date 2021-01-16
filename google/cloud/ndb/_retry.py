@@ -19,6 +19,7 @@ import itertools
 
 from google.api_core import retry as core_retry
 from google.api_core import exceptions as core_exceptions
+from google.cloud.ndb import exceptions
 from google.cloud.ndb import tasklets
 
 _DEFAULT_INITIAL_DELAY = 1.0  # seconds
@@ -72,24 +73,33 @@ def retry_async(callback, retries=_DEFAULT_RETRIES):
             if not context.in_retry():
                 # We need to be able to identify if we are inside a nested
                 # retry. Here, we set the retry state in the context. This is
-                # used in the datastore API to avoid the nested retries in rpc
-                # calls.
+                # used for deciding if an exception should be raised
+                # immediately or passed up to the outer retry block.
                 context.set_retry_state(repr(callback))
             try:
                 result = callback(*args, **kwargs)
                 if isinstance(result, tasklets.Future):
                     result = yield result
+            except exceptions.NestedRetryException as e:
+                error = e
             except Exception as e:
                 # `e` is removed from locals at end of block
                 error = e  # See: https://goo.gl/5J8BMK
                 if not is_transient_error(error):
-                    raise error
+                    # If we are in an inner retry block, use special nested
+                    # retry exception to bubble up to outer retry. Else, raise
+                    # actual exception.
+                    if context.get_retry_state() != repr(callback):
+                        message = getattr(error, "message", str(error))
+                        raise exceptions.NestedRetryException(message)
+                    else:
+                        raise error
             else:
                 raise tasklets.Return(result)
             finally:
-                if context.in_retry() and context.retry == repr(callback):  # pragma: NO BRANCH
-                    # No matter what, if we are exiting the top level retry,
-                    # clear the retry state in the context.
+                # No matter what, if we are exiting the top level retry,
+                # clear the retry state in the context.
+                if context.get_retry_state() == repr(callback):  # pragma: NO BRANCH
                     context.clear_retry_state()
 
             yield tasklets.sleep(sleep_time)
