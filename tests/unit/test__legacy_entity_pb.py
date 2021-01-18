@@ -522,4 +522,3 @@ class TestDecoder:
         d = _get_decoder(b"\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff")
         with pytest.raises(pb_module.ProtocolBufferDecodeError):
             d.getVarInt64()
-
