@@ -2920,6 +2920,8 @@ class PickleProperty(BlobProperty):
         Returns:
             Any: The unpickled ``value``.
         """
+        if type(value) is bytes:
+            return pickle.loads(value, encoding="bytes")
         return pickle.loads(value)
 
 
