@@ -1089,6 +1089,9 @@ def _project_from_app(app, allow_empty=False):
 
     # NOTE: This is the same behavior as in the helper
     #       ``google.cloud.datastore.key._clean_app()``.
+    if callable(app):
+        app = app()
+    
     parts = app.split("~", 1)
     return parts[-1]
 
@@ -1126,18 +1129,48 @@ def _from_reference(reference, app, namespace):
         if _project_from_app(app) != project:
             raise RuntimeError(_REFERENCE_APP_MISMATCH.format(reference.app, app))
 
-    parsed_namespace = _key_module._get_empty(reference.name_space, "")
+    to_parse = reference.name_space
+    if callable(to_parse):
+        to_parse = to_parse()
+
+    parsed_namespace = _key_module._get_empty(to_parse, "")
     if namespace is not None:
         if namespace != parsed_namespace:
             raise RuntimeError(
-                _REFERENCE_NAMESPACE_MISMATCH.format(reference.name_space, namespace)
+                _REFERENCE_NAMESPACE_MISMATCH.format(to_parse, namespace)
             )
 
-    _key_module._check_database_id(reference.database_id)
-    # legacy entity pb has callable path. Could change that instead though
+    database_id = reference.database_id
+    if callable(database_id):
+        database_id = database_id()
+    _key_module._check_database_id(database_id)
     if callable(reference.path):
+        # legacy_entity_pb doesn't use properties, call to get val
         reference.path = reference.path()
+        # legacy NDB references are different.
+        # - Types can be bytestr
+        # - type and id are functions, not properties.
+        # this area shapes the reference into what is expected by datastore apis.
+        for i in range(len(reference.path.element)):
+            curr_element = reference.path.element[i]
+            # Modify callable types to be properties.
+            if callable(curr_element.type):
+                curr_element.type = curr_element.type()
+            if callable(curr_element.id):
+                curr_element.id = curr_element.id()
+            if callable(curr_element.name):
+                curr_element.name = curr_element.name()
+            
+            # Convert byte-strs to strs.
+            if type(curr_element.type) is bytes:
+                curr_element.type = curr_element.type.decode()
+            if type(curr_element.name) is bytes:
+                curr_element.name = curr_element.name.decode()
+        
+            reference.path.element[i]= curr_element
+
     flat_path = _key_module._get_flat_path(reference.path)
+
     return google.cloud.datastore.Key(
         *flat_path, project=project, namespace=parsed_namespace
     )

@@ -4809,22 +4809,19 @@ class Model(_NotEqualMixin):
 
     will create a query for the reserved ``__key__`` property.
     """
-    """
-     def __getstate__(self):
-    return self._to_pb().Encode()
-
-  def __setstate__(self, serialized_pb):
-    pb = entity_pb.EntityProto(serialized_pb)
-    self.__init__()
-    self.__class__._from_pb(pb, set_key=False, ent=self)
-    """
     # https://github.com/GoogleCloudPlatform/datastore-ndb-python/blob/cf4cab3f1f69cd04e1a9229871be466b53729f3f/ndb/model.py#L2967
 
-    def __setstate__(self, serialized_pb):
-        pb = _legacy_entity_pb.EntityProto()
-        pb.MergePartialFromString(serialized_pb)
-        self.__init__()
-        self.__class__._from_pb(pb, set_key=False, ent=self)
+    def __setstate__(self, state):
+        if type(state) is dict:
+            # this is not a legacy pb. set __dict__
+            self.__init__()
+            self.__dict__ = state
+        else:
+            # this is a legacy pickled object. We need to deserialize.
+            pb = _legacy_entity_pb.EntityProto()
+            pb.MergePartialFromString(state)
+            self.__init__()
+            self.__class__._from_pb(pb, set_key=False, ent=self)
 
     # def __getstate__(self, state):
     #     pass

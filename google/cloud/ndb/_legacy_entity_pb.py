@@ -475,11 +475,11 @@ class Path_Element(ProtocolBuffer.ProtocolMessage):
     has_name_ = 0
     name_ = ""
 
-    @property
+    #@property
     def type(self):
         # should be a str.
-        if type(self.type_) is bytes:
-            return self.type_.decode()
+        # if type(self.type_) is bytes:
+        #     return self.type_.decode()
         return self.type_
 
     def set_type(self, x):
@@ -489,7 +489,7 @@ class Path_Element(ProtocolBuffer.ProtocolMessage):
     def has_type(self):
         return self.has_type_
 
-    @property
+    #@property
     def id(self):
         # TODO
         # should be a str.
@@ -504,7 +504,7 @@ class Path_Element(ProtocolBuffer.ProtocolMessage):
     def has_id(self):
         return self.has_id_
 
-    @property
+    #@property
     def name(self):
         # TODO
         # should be a str.
@@ -586,10 +586,6 @@ class Reference(ProtocolBuffer.ProtocolMessage):
         self.path_ = Path()
 
     # @property
-    # def element(self):
-    #     return self.element_
-
-    @property
     def app(self):
         # todo manage bytes to str here.
         return self.app_
@@ -601,7 +597,7 @@ class Reference(ProtocolBuffer.ProtocolMessage):
     def has_app(self):
         return self.has_app_
 
-    @property
+    #@property
     def name_space(self):
         return self.name_space_
 
@@ -622,7 +618,7 @@ class Reference(ProtocolBuffer.ProtocolMessage):
     def has_path(self):
         return self.has_path_
 
-    @property
+    # @property
     def database_id(self):
         return self.database_id_
 
