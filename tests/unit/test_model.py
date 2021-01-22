@@ -2138,12 +2138,6 @@ class TestPickleProperty:
     UNPICKLED = ["a", {"b": "c"}, {"d", "e"}, (0xF, 0x10), 0x11]
     PICKLED = pickle.dumps(UNPICKLED, pickle.HIGHEST_PROTOCOL)
 
-    class A(ndb.Model):
-        some_prop = ndb.IntegerProperty()
-        source = ndb.StringProperty()
-    class B(ndb.Model):
-        sub_model = ndb.PickleProperty()
-
     def test__to_base_type(self):
         prop = model.PickleProperty(name="pkl")
         assert prop._to_base_type(self.UNPICKLED) == self.PICKLED
