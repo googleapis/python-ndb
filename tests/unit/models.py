@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-'''
+"""
 This file holds ndb models for validating aspects of data loading.
-'''
+"""
 
 from google.cloud import ndb
 
+
 class A(ndb.Model):
-        some_prop = ndb.IntegerProperty()
-        source = ndb.StringProperty()
+    some_prop = ndb.IntegerProperty()
+    source = ndb.StringProperty()
+
+
 class B(ndb.Model):
-        sub_model = ndb.PickleProperty()
+    sub_model = ndb.PickleProperty()

@@ -264,7 +264,9 @@ import pytz
 from google.cloud.datastore import entity as ds_entity_module
 from google.cloud.datastore import helpers
 from google.cloud.datastore_v1.proto import entity_pb2
+from google.cloud import ndb
 
+from google.cloud.ndb import _legacy_entity_pb
 from google.cloud.ndb import _datastore_types
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
@@ -1978,6 +1980,49 @@ class Property(ModelAttribute):
         """
         raise exceptions.NoLongerImplementedError()
 
+    def _legacy_deserialize(self, entity, p, unused_depth=1):
+        # PORTED FROM LEGACY, JUST FOR DECODING PICKLE
+        """Internal helper to deserialize this property from a protocol buffer.
+
+        Subclasses may override this method.
+
+        Args:
+        entity: The entity, a Model (subclass) instance.
+        p: A Property Message object (a protocol buffer).
+        depth: Optional nesting depth, default 1 (unused here, but used
+            by some subclasses that override this method).
+        """
+
+        entity_pb = _legacy_entity_pb
+        if p.meaning() == entity_pb.Property.EMPTY_LIST:
+            self._store_value(entity, [])
+            return
+
+        val = self._legacy_db_get_value(p.value(), p)
+        if val is not None:
+            val = _BaseValue(val)
+
+        # TODO: replace the remainder of the function with the following commented
+        # out code once its feasible to make breaking changes such as not calling
+        # _store_value().
+
+        # if self._repeated:
+        #   entity._values.setdefault(self._name, []).append(val)
+        # else:
+        #   entity._values[self._name] = val
+
+        if self._repeated:
+            if self._has_value(entity):
+                value = self._retrieve_value(entity)
+                assert isinstance(value, list), repr(value)
+                value.append(val)
+            else:
+                # We promote single values to lists if we are a list property
+                value = [val]
+        else:
+            value = val
+        self._store_value(entity, value)
+
     def _db_set_value(self, v, unused_p, value):
         """Helper for :meth:`_serialize`.
 
@@ -1993,6 +2038,74 @@ class Property(ModelAttribute):
             NotImplementedError: Always. This method is deprecated.
         """
         raise exceptions.NoLongerImplementedError()
+
+    @staticmethod
+    def _legacy_db_get_value(v, p):
+        # Ported from https://github.com/GoogleCloudPlatform/datastore-ndb-python/blob/cf4cab3f1f69cd04e1a9229871be466b53729f3f/ndb/model.py#L2647
+        entity_pb = _legacy_entity_pb
+        # A custom 'meaning' for compressed properties.
+        _MEANING_URI_COMPRESSED = "ZLIB"
+        # The Epoch (a zero POSIX timestamp).
+        _EPOCH = datetime.datetime.utcfromtimestamp(0)
+        # This is awkward but there seems to be no faster way to inspect
+        # what union member is present.  datastore_types.FromPropertyPb(),
+        # the undisputed authority, has the same series of if-elif blocks.
+        # (We don't even want to think about multiple members... :-)
+        if v.has_stringvalue():
+            sval = v.stringvalue()
+            meaning = p.meaning()
+            if meaning == entity_pb.Property.BLOBKEY:
+                sval = BlobKey(sval)
+            elif meaning == entity_pb.Property.BLOB:
+                if p.meaning_uri() == _MEANING_URI_COMPRESSED:
+                    sval = _CompressedValue(sval)
+            elif meaning == entity_pb.Property.ENTITY_PROTO:
+                # NOTE: This is only used for uncompressed LocalStructuredProperties.
+                pb = entity_pb.EntityProto()
+                pb.MergePartialFromString(sval)
+                modelclass = Expando
+                if pb.key().path().element_size():
+                    kind = pb.key().path().element(-1).type()
+                    modelclass = Model._kind_map.get(kind, modelclass)
+                sval = modelclass._from_pb(pb)
+            elif meaning != entity_pb.Property.BYTESTRING:
+                try:
+                    sval.decode("ascii")
+                    # If this passes, don't return unicode.
+                except UnicodeDecodeError:
+                    try:
+                        sval = six.text_type(sval.decode("utf-8"))
+                    except UnicodeDecodeError:
+                        pass
+            return sval
+        elif v.has_int64value():
+            ival = v.int64value()
+            if p.meaning() == entity_pb.Property.GD_WHEN:
+                return _EPOCH + datetime.timedelta(microseconds=ival)
+            return ival
+        elif v.has_booleanvalue():
+            # The booleanvalue field is an int32, so booleanvalue() returns
+            # an int, hence the conversion.
+            return bool(v.booleanvalue())
+        elif v.has_doublevalue():
+            return v.doublevalue()
+        elif v.has_referencevalue():
+            rv = v.referencevalue()
+            app = rv.app()
+            namespace = rv.name_space()
+            pairs = [
+                (elem.type(), elem.id() or elem.name())
+                for elem in rv.pathelement_list()
+            ]
+            return Key(pairs=pairs, app=app, namespace=namespace)
+        elif v.has_pointvalue():
+            pv = v.pointvalue()
+            return GeoPt(pv.x(), pv.y())
+        elif v.has_uservalue():
+            return _unpack_user(v)
+        else:
+            # A missing value implies null.
+            return None
 
     def _prepare_for_put(self, entity):
         """Allow this property to define a pre-put hook.
@@ -4696,6 +4809,25 @@ class Model(_NotEqualMixin):
 
     will create a query for the reserved ``__key__`` property.
     """
+    """
+     def __getstate__(self):
+    return self._to_pb().Encode()
+
+  def __setstate__(self, serialized_pb):
+    pb = entity_pb.EntityProto(serialized_pb)
+    self.__init__()
+    self.__class__._from_pb(pb, set_key=False, ent=self)
+    """
+    # https://github.com/GoogleCloudPlatform/datastore-ndb-python/blob/cf4cab3f1f69cd04e1a9229871be466b53729f3f/ndb/model.py#L2967
+
+    def __setstate__(self, serialized_pb):
+        pb = _legacy_entity_pb.EntityProto()
+        pb.MergePartialFromString(serialized_pb)
+        self.__init__()
+        self.__class__._from_pb(pb, set_key=False, ent=self)
+
+    # def __getstate__(self, state):
+    #     pass
 
     def __init__(_self, **kwargs):
         # NOTE: We use ``_self`` rather than ``self`` so users can define a
@@ -4744,6 +4876,65 @@ class Model(_NotEqualMixin):
         # Set the projection last, otherwise it will prevent _set_attributes().
         if projection:
             self._set_projection(projection)
+
+    def _get_property_for(self, p, indexed=True, depth=0):
+        """Internal helper to get the Property for a protobuf-level property."""
+        parts = p.name().decode().split(".")
+        if len(parts) <= depth:
+            # Apparently there's an unstructured value here.
+            # Assume it is a None written for a missing value.
+            # (It could also be that a schema change turned an unstructured
+            # value into a structured one.  In that case, too, it seems
+            # better to return None than to return an unstructured value,
+            # since the latter doesn't match the current schema.)
+            return None
+        next = parts[depth]
+        prop = self._properties.get(next)
+        if prop is None:
+            raise NotImplemented("fake property not implemented")
+            # prop = self._fake_property(p, next, indexed)
+        return prop
+
+    @classmethod
+    def _from_pb(cls, pb, set_key=True, ent=None, key=None):
+        """Internal helper, ported from GoogleCloudPlatform/datastore-ndb-python,
+        to create an entity from an EntityProto protobuf."""
+        if not isinstance(pb, _legacy_entity_pb.EntityProto):
+            raise TypeError("pb must be a EntityProto; received %r" % pb)
+        if ent is None:
+            ent = cls()
+
+        # A key passed in overrides a key in the pb.
+        if key is None and pb.key().path().element_size():
+            # modern NDB expects strings.
+            pb.key_.app_ = pb.key_.app_.decode()
+            pb.key_.name_space_ = pb.key_.name_space_.decode()
+
+            key = Key(reference=pb.key())
+        # If set_key is not set, skip a trivial incomplete key.
+        if key is not None and (set_key or key.id() or key.parent()):
+            ent._key = key
+
+        # NOTE(darke): Keep a map from (indexed, property name) to the property.
+        # This allows us to skip the (relatively) expensive call to
+        # _get_property_for for repeated fields.
+        _property_map = {}
+        projection = []
+        for indexed, plist in (
+            (True, pb.property_list()),
+            # (False, pb.raw_property_list()),
+            (False, pb.property_list()),
+        ):
+            for p in plist:
+                if p.meaning() == _legacy_entity_pb.Property.INDEX_VALUE:
+                    projection.append(p.name())
+                property_map_key = (p.name(), indexed)
+                if property_map_key not in _property_map:
+                    _property_map[property_map_key] = ent._get_property_for(p, indexed)
+                _property_map[property_map_key]._legacy_deserialize(ent, p)
+
+        ent._set_projection(projection)
+        return ent
 
     @classmethod
     def _get_arg(cls, kwargs, keyword, default=None):
@@ -6375,3 +6566,24 @@ def get_indexes_async(**options):
 def get_indexes(**options):
     """Get a data structure representing the configured indexes."""
     raise NotImplementedError
+
+
+def _unpack_user(v):
+    """Internal helper to unpack a User value from a protocol buffer."""
+    uv = v.uservalue()
+    email = six.text_type(uv.email().decode("utf-8"))
+    auth_domain = six.text_type(uv.auth_domain().decode("utf-8"))
+    obfuscated_gaiaid = uv.obfuscated_gaiaid().decode("utf-8")
+    obfuscated_gaiaid = six.text_type(obfuscated_gaiaid)
+
+    federated_identity = None
+    if uv.has_federated_identity():
+        federated_identity = six.text_type(uv.federated_identity().decode("utf-8"))
+
+    value = User(
+        email=email,
+        _auth_domain=auth_domain,
+        _user_id=obfuscated_gaiaid,
+        federated_identity=federated_identity,
+    )
+    return value

@@ -1134,6 +1134,9 @@ def _from_reference(reference, app, namespace):
             )
 
     _key_module._check_database_id(reference.database_id)
+    # legacy entity pb has callable path. Could change that instead though
+    if callable(reference.path):
+        reference.path = reference.path()
     flat_path = _key_module._get_flat_path(reference.path)
     return google.cloud.datastore.Key(
         *flat_path, project=project, namespace=parsed_namespace

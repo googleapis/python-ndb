@@ -2146,17 +2146,19 @@ class TestPickleProperty:
         prop = model.PickleProperty(name="pkl")
         assert prop._from_base_type(self.PICKLED) == self.UNPICKLED
 
-    def test__legacy_from_base_type(self):
+    # @pytest.mark.usefixtures("in_context")
+    @pytest.mark.usefixtures("client_context")
+    def test__legacy_from_base_type(self, client_context):
         # GAE NDB stores pickled properties as bytes and with GAE NDB structures.
         # Validate we can unpickle to a Cloud NDB structure.
         # See https://github.com/googleapis/python-ndb/issues/587
         # TODO: This test fails as code will raise "_pickle.UnpicklingError: state is not a dictionary"
-
-        from . import models
-        
-        gae_ndb_stored_value = b'\x80\x02cunit.models\nA\nq\x01)\x81q\x02URj#j\x0fs~crwilcox-testr\x05\x0b\x12\x01A\x0c\xa2\x01\x08issue587r\x11\x1a\tsome_prop \x00*\x02\x08\x01r\x15\x1a\x06source \x00*\t\x1a\x07gae 2.7\x82\x01\x00b.'
+        gae_ndb_stored_value = b"\x80\x02cunit.models\nA\nq\x01)\x81q\x02URj#j\x0fs~crwilcox-testr\x05\x0b\x12\x01A\x0c\xa2\x01\x08UnitTestr\x11\x1a\tsome_prop \x00*\x02\x08\x01r\x15\x1a\x06source \x00*\t\x1a\x07gae 2.7\x82\x01\x00b."
         prop = model.PickleProperty()
-        prop._from_base_type(gae_ndb_stored_value)
+        val = prop._from_base_type(gae_ndb_stored_value)
+        expected = {"some_prop": 1, "source": "gae 2.7"}
+        actual = val.to_dict()
+        assert expected == actual
 
 
 class TestJsonProperty:

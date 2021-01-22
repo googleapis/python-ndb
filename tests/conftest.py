@@ -19,6 +19,7 @@ modules.
 """
 
 import os
+import uuid
 
 from google.cloud import environment_vars
 from google.cloud.ndb import context as context_module
@@ -110,6 +111,25 @@ def in_context(context):
     with context.use():
         yield context
     assert not context_module._state.context
+
+
+@pytest.fixture
+def namespace():
+    return "UnitTest"
+
+
+@pytest.fixture
+def client_context(namespace):
+    from google.cloud import ndb
+
+    client = ndb.Client()
+    context_manager = client.context(
+        cache_policy=False,
+        legacy_data=False,
+        namespace=namespace,
+    )
+    with context_manager as context:
+        yield context
 
 
 @pytest.fixture
