@@ -32,7 +32,6 @@ from google.cloud.datastore_v1 import types as ds_types
 from google.cloud.datastore_v1.proto import entity_pb2
 import pytest
 
-from google.cloud import ndb
 from google.cloud.ndb import _datastore_types
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
