@@ -19,7 +19,6 @@ modules.
 """
 
 import os
-import uuid
 
 from google.cloud import environment_vars
 from google.cloud.ndb import context as context_module

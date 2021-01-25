@@ -550,6 +550,9 @@ class Path(ProtocolBuffer.ProtocolMessage):
     def element_list(self):
         return self.element_
 
+    def element_size(self):
+        return len(self.element_)
+
     def add_element(self):
         x = Path_Element()
         self.element_.append(x)
@@ -565,12 +568,6 @@ class Path(ProtocolBuffer.ProtocolMessage):
             if tt == 0:
                 raise ProtocolBuffer.ProtocolBufferDecodeError
             d.skipData(tt)
-
-    def element_size(self):
-        return len(self.element_)
-
-    def element_list(self):
-        return self.element_
 
 
 class Reference(ProtocolBuffer.ProtocolMessage):
