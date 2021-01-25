@@ -1981,7 +1981,7 @@ class Property(ModelAttribute):
         raise exceptions.NoLongerImplementedError()
 
     def _legacy_deserialize(self, entity, p, unused_depth=1):
-        # PORTED FROM LEGACY, JUST FOR DECODING PICKLE
+        # Ported from legacy NDB, used for decoding pickle properties.
         """Internal helper to deserialize this property from a protocol buffer.
 
         Subclasses may override this method.
@@ -2002,7 +2002,8 @@ class Property(ModelAttribute):
         if val is not None:
             val = _BaseValue(val)
 
-        # TODO: replace the remainder of the function with the following commented
+        # TODO(from legacy-datastore port): May never be suitable.
+        # replace the remainder of the function with the following commented
         # out code once its feasible to make breaking changes such as not calling
         # _store_value().
 
@@ -4809,7 +4810,6 @@ class Model(_NotEqualMixin):
 
     will create a query for the reserved ``__key__`` property.
     """
-    # https://github.com/GoogleCloudPlatform/datastore-ndb-python/blob/cf4cab3f1f69cd04e1a9229871be466b53729f3f/ndb/model.py#L2967
 
     def __setstate__(self, state):
         if type(state) is dict:
@@ -4822,9 +4822,6 @@ class Model(_NotEqualMixin):
             pb.MergePartialFromString(state)
             self.__init__()
             self.__class__._from_pb(pb, set_key=False, ent=self)
-
-    # def __getstate__(self, state):
-    #     pass
 
     def __init__(_self, **kwargs):
         # NOTE: We use ``_self`` rather than ``self`` so users can define a
@@ -4888,8 +4885,24 @@ class Model(_NotEqualMixin):
         next = parts[depth]
         prop = self._properties.get(next)
         if prop is None:
-            raise NotImplemented("fake property not implemented")
-            # prop = self._fake_property(p, next, indexed)
+            prop = self._fake_property(p, next, indexed)
+        return prop
+
+    def _fake_property(self, p, next, indexed=True):
+        """Internal helper to create a fake Property. Ported from legacy datastore"""
+        # A custom 'meaning' for compressed properties.
+        _MEANING_URI_COMPRESSED = "ZLIB"
+        self._clone_properties()
+        if p.name() != next and not p.name().endswith("." + next):
+            prop = StructuredProperty(Expando, next)
+            prop._store_value(self, _BaseValue(Expando()))
+        else:
+            compressed = p.meaning_uri() == _MEANING_URI_COMPRESSED
+            prop = GenericProperty(
+                next, repeated=p.multiple(), indexed=indexed, compressed=compressed
+            )
+        prop._code_name = next
+        self._properties[prop._name] = prop
         return prop
 
     @classmethod
@@ -4902,7 +4915,6 @@ class Model(_NotEqualMixin):
             ent = cls()
 
         # A key passed in overrides a key in the pb.
-        # if key is None and pb.key().path().element_size():
         if key is None and pb.key().path.element_size():
             # modern NDB expects strings.
             pb.key_.app_ = pb.key_.app_.decode()

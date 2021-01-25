@@ -84,7 +84,7 @@ class TestEntityProto:
         assert entity.key().has_path()
         element = entity.key().path.element_list()[0]
         assert element.has_type()
-        #assert element.type.decode() == "D"
+        # assert element.type.decode() == "D"
         assert element.type == "D"
         assert element.has_id()
         assert element.id == 1

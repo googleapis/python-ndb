@@ -1134,7 +1134,6 @@ def _from_reference(reference, app, namespace):
             )
 
     _key_module._check_database_id(reference.database_id)
-    
     flat_path = _key_module._get_flat_path(reference.path)
     return google.cloud.datastore.Key(
         *flat_path, project=project, namespace=parsed_namespace
