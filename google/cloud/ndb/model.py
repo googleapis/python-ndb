@@ -4902,7 +4902,8 @@ class Model(_NotEqualMixin):
             ent = cls()
 
         # A key passed in overrides a key in the pb.
-        if key is None and pb.key().path().element_size():
+        # if key is None and pb.key().path().element_size():
+        if key is None and pb.key().path.element_size():
             # modern NDB expects strings.
             pb.key_.app_ = pb.key_.app_.decode()
             pb.key_.name_space_ = pb.key_.name_space_.decode()
