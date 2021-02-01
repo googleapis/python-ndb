@@ -2064,8 +2064,8 @@ class Property(ModelAttribute):
                 pb = entity_pb.EntityProto()
                 pb.MergePartialFromString(sval)
                 modelclass = Expando
-                if pb.key().path().element_size():
-                    kind = pb.key().path().element(-1).type()
+                if pb.key().path.element_size():
+                    kind = pb.key().path.element[-1].type
                     modelclass = Model._kind_map.get(kind, modelclass)
                 sval = modelclass._from_pb(pb)
             elif meaning != entity_pb.Property.BYTESTRING:
@@ -4891,8 +4891,9 @@ class Model(_NotEqualMixin):
         """Internal helper to create a fake Property. Ported from legacy datastore"""
         # A custom 'meaning' for compressed properties.
         _MEANING_URI_COMPRESSED = "ZLIB"
-        self._clone_properties()
-        if p.name() != next and not p.name().endswith("." + next):
+        if hasattr(self, "_clone_properties"):
+            self._clone_properties()
+        if p.name() != next and not p.name().endswith(b"." + next.encode("utf-8")):
             prop = StructuredProperty(Expando, next)
             prop._store_value(self, _BaseValue(Expando()))
         else:
@@ -6585,14 +6586,9 @@ def _unpack_user(v):
     obfuscated_gaiaid = uv.obfuscated_gaiaid().decode("utf-8")
     obfuscated_gaiaid = six.text_type(obfuscated_gaiaid)
 
-    federated_identity = None
-    if uv.has_federated_identity():
-        federated_identity = six.text_type(uv.federated_identity().decode("utf-8"))
-
     value = User(
         email=email,
         _auth_domain=auth_domain,
         _user_id=obfuscated_gaiaid,
-        federated_identity=federated_identity,
     )
     return value

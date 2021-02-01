@@ -189,6 +189,40 @@ class PropertyValue_ReferenceValue(ProtocolBuffer.ProtocolMessage):
             d.skipData(tt)
 
 
+class PropertyValue_UserValue(ProtocolBuffer.ProtocolMessage):
+    has_email_ = 0
+    email_ = ""
+    has_auth_domain_ = 0
+    auth_domain_ = ""
+    has_nickname_ = 0
+    nickname_ = ""
+    has_gaiaid_ = 0
+    gaiaid_ = 0
+    has_obfuscated_gaiaid_ = 0
+    obfuscated_gaiaid_ = ""
+
+    def email(self):
+        return self.email_
+
+    def set_email(self, x):
+        self.has_email_ = 1
+        self.email_ = x
+
+    def auth_domain(self):
+        return self.auth_domain_
+
+    def set_auth_domain(self, x):
+        self.has_auth_domain_ = 1
+        self.auth_domain_ = x
+
+    def obfuscated_gaiaid(self):
+        return self.obfuscated_gaiaid_
+
+    def set_obfuscated_gaiaid(self, x):
+        self.has_obfuscated_gaiaid_ = 1
+        self.obfuscated_gaiaid_ = x
+
+
 class PropertyValue(ProtocolBuffer.ProtocolMessage):
     has_int64value_ = 0
     int64value_ = 0
@@ -200,6 +234,8 @@ class PropertyValue(ProtocolBuffer.ProtocolMessage):
     doublevalue_ = 0.0
     has_pointvalue_ = 0
     pointvalue_ = None
+    has_uservalue_ = 0
+    uservalue_ = None
     has_referencevalue_ = 0
     referencevalue_ = None
 
@@ -266,6 +302,18 @@ class PropertyValue(ProtocolBuffer.ProtocolMessage):
 
     def has_referencevalue(self):
         return self.has_referencevalue_
+
+    def uservalue(self):
+        if self.uservalue_ is None:
+            self.uservalue_ = PropertyValue_UserValue()
+        return self.uservalue_
+
+    def mutable_uservalue(self):
+        self.has_uservalue_ = 1
+        return self.uservalue()
+
+    def has_uservalue(self):
+        return self.has_uservalue_
 
     def TryMerge(self, d):
         while d.avail() > 0:

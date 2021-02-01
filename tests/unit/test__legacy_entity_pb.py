@@ -92,6 +92,20 @@ class TestEntityProto:
         assert element.name.decode() == "E"
 
     @staticmethod
+    def test_TryMerge_mutable_key_path_not_bytes():
+        entity = entity_module.EntityProto()
+        d = _get_decoder(b"\x6a\x0c\x72\x0a\x0b\x12\x01\x44\x18\x01\x22\x01\x45\x0c")
+        entity.TryMerge(d)
+        assert entity.has_key()  # noqa: W601
+        assert entity.key().has_path()
+        element = entity.key().path.element_list()[0]
+        assert element.has_type()
+        assert element.type == "D"
+        # Not quite sure how this type could be set from a decoder string
+        element.set_type(u"E")
+        assert element.type == "E"
+
+    @staticmethod
     def test_TryMerge_mutable_key_path_with_skip_data():
         entity = entity_module.EntityProto()
         d = _get_decoder(
