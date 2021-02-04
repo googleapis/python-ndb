@@ -5872,6 +5872,55 @@ class Test__get_property_for:
         assert m._get_property_for(p)._name == "foo"
 
 
+class Test__from_pb:
+    @staticmethod
+    def test_not_entity_proto_raises_error():
+        m = model.Model()
+        with pytest.raises(TypeError):
+            m._from_pb("not a pb")
+
+    @staticmethod
+    def test_with_key():
+        m = model.Model()
+        pb = _legacy_entity_pb.EntityProto()
+        key = key_module.Key("a", "b", app="c", namespace="")
+        ent = m._from_pb(pb, key=key)
+        assert ent.key == key
+
+    @staticmethod
+    def test_with_index_meaning():
+        m = model.Model()
+        pb = _legacy_entity_pb.EntityProto()
+        p = _legacy_entity_pb.Property()
+        p.set_name(b"foo")
+        p.set_meaning(_legacy_entity_pb.Property.INDEX_VALUE)
+        pb.property_ = [p]
+        ent = m._from_pb(pb)
+        assert "foo" in ent._projection
+
+
+class Test__fake_property:
+    @staticmethod
+    def test_with_clone_properties():
+        def clone():
+            pass
+
+        m = model.Model()
+        m._clone_properties = clone
+        p = _legacy_entity_pb.Property()
+        p.set_name(b"foo")
+        fake = m._fake_property(p, "next")
+        assert fake._name == "next"
+
+    @staticmethod
+    def test_with_same_name():
+        m = model.Model()
+        p = _legacy_entity_pb.Property()
+        p.set_name(b"next")
+        fake = m._fake_property(p, "next")
+        assert fake._name == "next"
+
+
 @pytest.mark.usefixtures("in_context")
 @mock.patch("google.cloud.ndb.key.Key")
 @mock.patch("google.cloud.ndb.tasklets.Future")

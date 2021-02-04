@@ -3033,9 +3033,9 @@ class PickleProperty(BlobProperty):
         Returns:
             Any: The unpickled ``value``.
         """
-        if six.PY3 and type(value) is bytes:
-            return pickle.loads(value, encoding="bytes")
-        return pickle.loads(value)
+        if six.PY3 and type(value) is bytes:  # pragma: NO BRANCH
+            return pickle.loads(value, encoding="bytes")  # pragma: NO PY2 COVER
+        return pickle.loads(value)  # pragma: NO PY3 COVER
 
 
 class JsonProperty(BlobProperty):
@@ -4893,7 +4893,9 @@ class Model(_NotEqualMixin):
         _MEANING_URI_COMPRESSED = "ZLIB"
         if hasattr(self, "_clone_properties"):
             self._clone_properties()
-        if p.name() != next and not p.name().endswith(b"." + next.encode("utf-8")):
+        if p.name() != next.encode("utf-8") and not p.name().endswith(
+            b"." + next.encode("utf-8")
+        ):
             prop = StructuredProperty(Expando, next)
             prop._store_value(self, _BaseValue(Expando()))
         else:
@@ -4937,10 +4939,9 @@ class Model(_NotEqualMixin):
         ):
             for p in plist:
                 if p.meaning() == _legacy_entity_pb.Property.INDEX_VALUE:
-                    projection.append(p.name())
+                    projection.append(p.name().decode())
                 property_map_key = (p.name(), indexed)
-                if property_map_key not in _property_map:
-                    _property_map[property_map_key] = ent._get_property_for(p, indexed)
+                _property_map[property_map_key] = ent._get_property_for(p, indexed)
                 _property_map[property_map_key]._legacy_deserialize(ent, p)
 
         ent._set_projection(projection)
