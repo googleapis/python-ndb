@@ -4872,6 +4872,8 @@ class Model(_NotEqualMixin):
 
     def _get_property_for(self, p, indexed=True, depth=0):
         """Internal helper to get the Property for a protobuf-level property."""
+        if isinstance(p.name(), six.text_type):  # pragma: NO PY2 COVER
+            p.set_name(bytes(p.name(), encoding="utf-8"))
         parts = p.name().decode().split(".")
         if len(parts) <= depth:
             # Apparently there's an unstructured value here.
@@ -4919,8 +4921,10 @@ class Model(_NotEqualMixin):
         # A key passed in overrides a key in the pb.
         if key is None and pb.key().path.element_size():
             # modern NDB expects strings.
-            pb.key_.app_ = pb.key_.app_.decode()
-            pb.key_.name_space_ = pb.key_.name_space_.decode()
+            if not isinstance(pb.key_.app_, six.text_type):  # pragma: NO BRANCH
+                pb.key_.app_ = pb.key_.app_.decode()
+            if not isinstance(pb.key_.name_space_, six.text_type):  # pragma: NO BRANCH
+                pb.key_.name_space_ = pb.key_.name_space_.decode()
 
             key = Key(reference=pb.key())
         # If set_key is not set, skip a trivial incomplete key.

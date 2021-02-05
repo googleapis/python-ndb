@@ -5743,14 +5743,71 @@ class Test__legacy_db_get_value:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @pytest.mark.xfail(reason="need to look for correct byte sequence")
     def test_str_entity_proto():
         prop = model.Property()
         p = _legacy_entity_pb.Property()
         p.set_meaning(_legacy_entity_pb.Property.ENTITY_PROTO)
         v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"\x6a\x03\x6a\x01\x42")
+        assert isinstance(prop._legacy_db_get_value(v, p), model.Expando)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_str_entity_proto_no_key():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.ENTITY_PROTO)
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"\x72\x0a\x0b\x12\x01\x44\x18\x01\x22\x01\x45\x0c")
+        assert isinstance(prop._legacy_db_get_value(v, p), model.Expando)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_str_entity_proto_bad():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.ENTITY_PROTO)
+        v = _legacy_entity_pb.PropertyValue()
         v.set_stringvalue(b"\x6a\x0c\x72\x0a\x0b\x12\x01\x44\x18\x01\x22\x01\x45\x0c")
+        with pytest.raises(ValueError):
+            prop._legacy_db_get_value(v, p)
+
+    @staticmethod
+    def test_str_bytestr_meaning():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.BYTESTRING)
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"foo")
         assert prop._legacy_db_get_value(v, p) == b"foo"
+
+    @staticmethod
+    @pytest.mark.skipif(six.PY2, reason="Test for Python 3 only.")
+    def test_str_utf8():  # pragma: NO PY2 COVER
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        v.has_stringvalue_ = 1
+        v.stringvalue_ = bytes("fo\xc3", encoding="utf-8")
+        assert prop._legacy_db_get_value(v, p) == "fo\xc3"
+
+    @staticmethod
+    @pytest.mark.skipif(six.PY3, reason="Test for Python 2 only.")
+    def test_str_utf8_py2():  # pragma: NO PY3 COVER
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        v.has_stringvalue_ = 1
+        v.stringvalue_ = r"fo\xc3"
+        assert prop._legacy_db_get_value(v, p) == r"fo\xc3"
+
+    @staticmethod
+    def test_str_decode_error():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"\xe9")
+        assert prop._legacy_db_get_value(v, p) == b"\xe9"
 
     @staticmethod
     def test_int_gd_when():
