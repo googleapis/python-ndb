@@ -550,10 +550,6 @@ class Path_Element(ProtocolBuffer.ProtocolMessage):
 
     @property
     def name(self):
-        # TODO
-        # should be a str.
-        # if type(self.type_) is bytes:
-        #     return self.type_.decode()
         return self.name_
 
     def set_name(self, x):
