@@ -1994,8 +1994,7 @@ class Property(ModelAttribute):
                    by some subclasses that override this method).
         """
 
-        entity_pb = _legacy_entity_pb
-        if p.meaning() == entity_pb.Property.EMPTY_LIST:
+        if p.meaning() == _legacy_entity_pb.Property.EMPTY_LIST:
             self._store_value(entity, [])
             return
 
