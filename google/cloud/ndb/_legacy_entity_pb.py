@@ -624,7 +624,6 @@ class Reference(ProtocolBuffer.ProtocolMessage):
 
     @property
     def app(self):
-        # todo manage bytes to str here.
         return self.app_
 
     def set_app(self, x):
