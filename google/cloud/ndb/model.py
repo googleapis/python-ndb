@@ -1984,7 +1984,7 @@ class Property(ModelAttribute):
            Ported from legacy NDB, used for decoding pickle properties.
            This is an older style GAE protocol buffer deserializer and is not
            used to deserialize the modern Google Cloud Datastore protocol buffer.
-        
+
         Subclasses may override this method.
 
         Args:
