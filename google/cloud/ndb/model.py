@@ -1980,9 +1980,11 @@ class Property(ModelAttribute):
         raise exceptions.NoLongerImplementedError()
 
     def _legacy_deserialize(self, entity, p, unused_depth=1):
-        # Ported from legacy NDB, used for decoding pickle properties.
         """Internal helper to deserialize this property from a protocol buffer.
-
+           Ported from legacy NDB, used for decoding pickle properties.
+           This is an older style GAE protocol buffer deserializer and is not
+           used to deserialize the modern Google Cloud Datastore protocol buffer.
+        
         Subclasses may override this method.
 
         Args:
@@ -4814,7 +4816,7 @@ class Model(_NotEqualMixin):
         if type(state) is dict:
             # this is not a legacy pb. set __dict__
             self.__init__()
-            self.__dict__ = state
+            self.__dict__.update(state)
         else:
             # this is a legacy pickled object. We need to deserialize.
             pb = _legacy_entity_pb.EntityProto()
