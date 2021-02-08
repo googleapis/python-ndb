@@ -1988,10 +1988,10 @@ class Property(ModelAttribute):
         Subclasses may override this method.
 
         Args:
-        entity: The entity, a Model (subclass) instance.
-        p: A Property Message object (a protocol buffer).
-        depth: Optional nesting depth, default 1 (unused here, but used
-            by some subclasses that override this method).
+            entity: The entity, a Model (subclass) instance.
+            p: A Property Message object (a protocol buffer).
+            depth: Optional nesting depth, default 1 (unused here, but used
+                   by some subclasses that override this method).
         """
 
         entity_pb = _legacy_entity_pb
