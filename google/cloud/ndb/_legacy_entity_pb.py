@@ -539,10 +539,6 @@ class Path_Element(ProtocolBuffer.ProtocolMessage):
 
     @property
     def id(self):
-        # TODO
-        # should be a str.
-        # if type(self.type_) is bytes:
-        #     return self.type_.decode()
         return self.id_
 
     def set_id(self, x):
