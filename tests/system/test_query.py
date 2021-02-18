@@ -1857,3 +1857,25 @@ def test_high_offset(dispose_of):
     index = n_entities - 5
     result = query.fetch(offset=index, limit=1)[0]
     assert result.foo == index
+
+
+def test_uncomitted_deletes(dispose_of, client_context):
+    """Regression test for Issue #586
+
+    https://github.com/googleapis/python-ndb/issues/586
+    """
+    class SomeKind(ndb.Model):
+        foo = ndb.IntegerProperty()
+
+    entity = SomeKind(foo=42)
+    key = entity.put()
+    dispose_of(key._key)
+    eventually(SomeKind.query().fetch, length_equals(1))
+
+    @ndb.transactional()
+    def do_the_thing(key):
+        key.delete()  # Will be cached but not committed when query runs
+        return SomeKind.query().get()
+
+    with client_context.new(cache_policy=None).use():  # Use default cache policy
+        assert do_the_thing(key).foo == 42
