@@ -1868,15 +1868,17 @@ def test_uncomitted_deletes(dispose_of, client_context):
     class SomeKind(ndb.Model):
         foo = ndb.IntegerProperty()
 
-    entity = SomeKind(foo=42)
+    parent = SomeKind(foo=41)
+    parent_key = parent.put()
+    entity = SomeKind(foo=42, parent=parent_key)
     key = entity.put()
     dispose_of(key._key)
-    eventually(SomeKind.query().fetch, length_equals(1))
+    eventually(SomeKind.query().fetch, length_equals(2))
 
     @ndb.transactional()
     def do_the_thing(key):
         key.delete()  # Will be cached but not committed when query runs
-        return SomeKind.query().get()
+        return SomeKind.query(SomeKind.foo == 42, ancestor=parent_key).get()
 
     with client_context.new(cache_policy=None).use():  # Use default cache policy
         assert do_the_thing(key).foo == 42
