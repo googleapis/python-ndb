@@ -4,6 +4,15 @@
 
 [1]: https://pypi.org/project/google-cloud-ndb/#history
 
+### [1.7.4](https://www.github.com/googleapis/python-ndb/compare/v1.7.3...v1.7.4) (2021-02-19)
+
+
+### Bug Fixes
+
+* don't return `None` for entities found in queries ([#612](https://www.github.com/googleapis/python-ndb/issues/612)) ([9e5e255](https://www.github.com/googleapis/python-ndb/commit/9e5e255c14716b3046a9dc70bb8a4596beec1562)), closes [#586](https://www.github.com/googleapis/python-ndb/issues/586)
+* fix failing unit test ([#607](https://www.github.com/googleapis/python-ndb/issues/607)) ([5d3927e](https://www.github.com/googleapis/python-ndb/commit/5d3927e0b0a6d6a447585d2cc90077de26f24c5c)), closes [#606](https://www.github.com/googleapis/python-ndb/issues/606)
+* handle unpickling between GAE NDB (2.7) to Cloud NDB (3) ([#596](https://www.github.com/googleapis/python-ndb/issues/596)) ([5be4225](https://www.github.com/googleapis/python-ndb/commit/5be4225f20b9216b49f953c464b8b8ef9683d8bf))
+
 ### [1.7.3](https://www.github.com/googleapis/python-ndb/compare/v1.7.2...v1.7.3) (2021-01-21)
 
 
