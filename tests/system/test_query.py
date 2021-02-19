@@ -1864,6 +1864,7 @@ def test_uncomitted_deletes(dispose_of, client_context):
 
     https://github.com/googleapis/python-ndb/issues/586
     """
+
     class SomeKind(ndb.Model):
         foo = ndb.IntegerProperty()
 
