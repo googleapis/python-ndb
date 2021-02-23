@@ -195,7 +195,7 @@ def test_ancestor_query_with_default_namespace(
     parent_key = entity1.put()
     dispose_of(entity1.key._key)
 
-    entity2 = Dummy(foo="child", parent=parent_key, namespace=None)
+    entity2 = Dummy(foo="child", parent=parent_key)
     entity2.put()
     dispose_of(entity2.key._key)
 
