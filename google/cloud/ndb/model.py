@@ -699,9 +699,9 @@ def _entity_from_protobuf(protobuf):
 def _properties_of(entity):
     """Get the model properties for an entity.
 
-    Will traverse the entity's MRO (class hierarchy) up from the entity's class
-    through all of its ancestors, collecting an ``Property`` instances defined
-    for those classes.
+    After collecting any properties local to the given entity, will traverse the
+    entity's MRO (class hierarchy) up from the entity's class through all of its
+    ancestors, collecting an ``Property`` instances defined for those classes.
 
     Args:
         entity (model.Model): The entity to get properties for.
@@ -711,11 +711,11 @@ def _properties_of(entity):
     """
     seen = set()
 
-    for cls in type(entity).mro():
-        if not hasattr(cls, "_properties"):
+    for level in (entity,) + tuple(type(entity).mro()):
+        if not hasattr(level, "_properties"):
             continue
 
-        for prop in cls._properties.values():
+        for prop in level._properties.values():
             if (
                 not isinstance(prop, Property)
                 or isinstance(prop, ModelKey)
