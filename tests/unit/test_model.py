@@ -1765,6 +1765,28 @@ class TestBlobProperty:
         assert ds_entity._meanings["foo"][1] == compressed_value
 
     @staticmethod
+    def test__to_datastore_legacy_compressed_with_prefix(in_context):
+        """Regression test for #602
+
+        https://github.com/googleapis/python-ndb/issues/602
+        """
+
+        class ThisKind(model.Model):
+            bar = model.BlobProperty(compressed=True)
+
+        class ParentKind(model.Model):
+            foo = model.StructuredProperty(ThisKind)
+
+        with in_context.new(legacy_data=True).use():
+            uncompressed_value = b"abc" * 1000
+            compressed_value = zlib.compress(uncompressed_value)
+            entity = ParentKind(foo=ThisKind(bar=uncompressed_value))
+            ds_entity = model._entity_to_ds_entity(entity)
+            assert "foo.bar" in ds_entity._meanings
+            assert ds_entity._meanings["foo.bar"][0] == model._MEANING_COMPRESSED
+            assert ds_entity._meanings["foo.bar"][1] == compressed_value
+
+    @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test__to_datastore_compressed_repeated():
         class ThisKind(model.Model):
@@ -5626,6 +5648,8 @@ class TestExpando:
 
         expansive = Expansive(foo="x", bar="y", baz="z")
         assert expansive._properties == {"foo": "x", "bar": "y", "baz": "z"}
+        # Make sure we didn't change properties for the class
+        assert Expansive._properties == {"foo": "foo"}
 
     @staticmethod
     def test___getattr__():
