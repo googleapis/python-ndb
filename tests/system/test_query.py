@@ -751,8 +751,11 @@ def test_multiquery_with_projection_and_order(ds_entity):
 
 
 @pytest.mark.usefixtures("client_context")
-def test_multiquery_with_order_by_key(ds_entity):
-    """Verify multiqueries work when ordering by key"""
+def test_multiquery_with_order_by_entity_key(ds_entity):
+    """Regression test for #629
+
+    https://github.com/googleapis/python-ndb/issues/629
+    """
 
     for i in range(5):
         entity_id = test_utils.system.unique_resource_id()
@@ -770,15 +773,26 @@ def test_multiquery_with_order_by_key(ds_entity):
     results = eventually(query.fetch, length_equals(3))
     assert [entity.foo for entity in results] == [1, 3, 4]
 
+
 @pytest.mark.usefixtures("client_context")
-def test_multiquery_with_order_value_by_key(ds_entity, client_context):
-    """Check ordering by key values an Entity references"""
+def test_multiquery_with_order_key_property(ds_entity, client_context):
+    """Regression test for #629
+
+    https://github.com/googleapis/python-ndb/issues/629
+    """
     project = client_context.client.project
     namespace = client_context.get_namespace()
 
     for i in range(5):
         entity_id = test_utils.system.unique_resource_id()
-        ds_entity(KIND, entity_id, foo=i, bar=ds_key_module.Key("test_key", i + 1, project=project, namespace=namespace))
+        ds_entity(
+            KIND,
+            entity_id,
+            foo=i,
+            bar=ds_key_module.Key(
+                "test_key", i + 1, project=project, namespace=namespace
+            ),
+        )
 
     class SomeKind(ndb.Model):
         foo = ndb.IntegerProperty()
@@ -786,12 +800,13 @@ def test_multiquery_with_order_value_by_key(ds_entity, client_context):
 
     query = (
         SomeKind.query()
-            .order(SomeKind.bar)
-            .filter(ndb.OR(SomeKind.foo == 4, SomeKind.foo == 3, SomeKind.foo == 1))
+        .order(SomeKind.bar)
+        .filter(ndb.OR(SomeKind.foo == 4, SomeKind.foo == 3, SomeKind.foo == 1))
     )
 
     results = eventually(query.fetch, length_equals(3))
     assert [entity.foo for entity in results] == [1, 3, 4]
+
 
 @pytest.mark.usefixtures("client_context")
 def test_count_with_multi_query(ds_entity):
