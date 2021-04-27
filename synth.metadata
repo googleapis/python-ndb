@@ -4,7 +4,7 @@
       "git": {
         "name": ".",
         "remote": "https://github.com/googleapis/python-ndb.git",
-        "sha": "0d3d3ca99df10a3d6e1c6f31ee719faa373ccacf"
+        "sha": "69a9f63be89ca50bbf0a42d0565a9f1fdcf6d143"
       }
     },
     {
