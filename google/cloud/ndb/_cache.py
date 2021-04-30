@@ -297,7 +297,8 @@ def global_set(key, value, expires=None, read=False):
         tasklets.Future: Eventual result will be ``None``.
     """
     options = {}
-    if expires:
+    if expires is not None:
+        # Actually testing if expires isnt set to any other value except None
         options = {"expires": expires}
 
     batch = _batch.get_batch(_GlobalCacheSetBatch, options)
