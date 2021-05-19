@@ -301,7 +301,6 @@ def _transaction_async(context, callback, read_only=False):
             yield _datastore_api.rollback(transaction_id)
             raise e
 
-        tx_context._clear_global_cache()
         for callback in on_commit_callbacks:
             callback()
 
