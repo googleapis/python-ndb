@@ -23,7 +23,6 @@ import threading
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
-from google.cloud.ndb import tasklets
 
 
 try:  # pragma: NO PY2 COVER
@@ -326,25 +325,6 @@ class _Context(_ContextTuple):
             else:
                 _state.toplevel_context = None
             _state.context = prev_context
-
-    @tasklets.tasklet
-    def _clear_global_cache(self):
-        """Clears the global cache.
-
-        Clears keys from the global cache that appear in the local context
-        cache. In this way, only keys that were touched in the current context
-        are affected.
-        """
-        # Prevent circular import in Python 2.7
-        from google.cloud.ndb import _cache
-
-        keys = [
-            _cache.global_cache_key(key._key)
-            for key in self.cache.keys()
-            if self._use_global_cache(key)
-        ]
-        if keys:
-            yield [_cache.global_delete(key) for key in keys]
 
     def _use_cache(self, key, options=None):
         """Return whether to use the context cache for this key."""

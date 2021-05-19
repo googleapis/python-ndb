@@ -15,6 +15,7 @@
 import functools
 import logging
 
+from google.cloud.ndb import _cache
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import _retry
 from google.cloud.ndb import tasklets
@@ -281,6 +282,7 @@ def _transaction_async(context, callback, read_only=False):
 
     context.eventloop.add_idle(run_inner_loop, tx_context)
 
+    tx_context.global_cache_flush_keys = flush_keys = []
     with tx_context.use():
         try:
             # Run the callback
@@ -301,7 +303,10 @@ def _transaction_async(context, callback, read_only=False):
             yield _datastore_api.rollback(transaction_id)
             raise e
 
-        tx_context._clear_global_cache()
+        # Flush keys of entities written during the transaction from the global cache
+        if flush_keys:
+            yield [_cache.global_delete(key) for key in flush_keys]
+
         for callback in on_commit_callbacks:
             callback()
 
