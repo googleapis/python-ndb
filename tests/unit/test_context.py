@@ -93,6 +93,11 @@ class TestContext:
         assert new_context.transaction == "tx123"
         assert context.transaction is None
 
+    def test_new_global_cache_flush_keys(self):
+        context = self._make_one(global_cache_flush_keys=["hi", "mom!"])
+        new_context = context.new()
+        assert new_context.global_cache_flush_keys == ["hi", "mom!"]
+
     def test_new_with_cache(self):
         context = self._make_one()
         context.cache["foo"] = "bar"

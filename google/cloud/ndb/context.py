@@ -241,6 +241,7 @@ class _Context(_ContextTuple):
         cache=None,
         cache_policy=None,
         global_cache=None,
+        global_cache_flush_keys=None,
         global_cache_policy=None,
         global_cache_timeout_policy=None,
         datastore_policy=None,
@@ -287,6 +288,8 @@ class _Context(_ContextTuple):
         context.set_global_cache_timeout_policy(global_cache_timeout_policy)
         context.set_datastore_policy(datastore_policy)
         context.set_retry_state(retry)
+
+        context.global_cache_flush_keys = global_cache_flush_keys
 
         return context
 
