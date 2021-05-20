@@ -28,7 +28,7 @@ from google.cloud.ndb import exceptions
 from google.cloud.ndb import tasklets
 from google.cloud.ndb import _transaction
 
-from tests.unit import utils
+from . import utils
 
 
 class Test_in_transaction:
@@ -409,7 +409,7 @@ class Test_transaction_async:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb._transaction._cache")
+    @mock.patch("google.cloud.ndb._cache")
     @mock.patch("google.cloud.ndb._datastore_api")
     def test_success_flush_keys(_datastore_api, _cache):
         def callback():

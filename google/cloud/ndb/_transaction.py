@@ -15,7 +15,6 @@
 import functools
 import logging
 
-from google.cloud.ndb import _cache
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import _retry
 from google.cloud.ndb import tasklets
@@ -251,6 +250,7 @@ def transaction_async_(
 @tasklets.tasklet
 def _transaction_async(context, callback, read_only=False):
     # Avoid circular import in Python 2.7
+    from google.cloud.ndb import _cache
     from google.cloud.ndb import _datastore_api
 
     # Start the transaction
