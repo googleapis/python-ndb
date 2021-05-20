@@ -384,7 +384,7 @@ def put(entity, options):
 
         if use_global_cache:
             if transaction:
-                context.global_cache_flush_keys.append(cache_key)
+                context.global_cache_flush_keys.add(cache_key)
             else:
                 yield _cache.global_delete(cache_key)
 
@@ -427,7 +427,7 @@ def delete(key, options):
 
     if use_global_cache:
         if transaction:
-            context.global_cache_flush_keys.append(cache_key)
+            context.global_cache_flush_keys.add(cache_key)
         else:
             yield _cache.global_delete(cache_key)
 

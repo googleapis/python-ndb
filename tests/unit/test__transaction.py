@@ -414,7 +414,7 @@ class Test_transaction_async:
     def test_success_flush_keys(_datastore_api, _cache):
         def callback():
             context = context_module.get_context()
-            context.global_cache_flush_keys.append(b"abc123")
+            context.global_cache_flush_keys.add(b"abc123")
             return "I tried, momma."
 
         _cache.global_delete.return_value = utils.future_result(None)

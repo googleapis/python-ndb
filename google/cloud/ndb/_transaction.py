@@ -282,7 +282,7 @@ def _transaction_async(context, callback, read_only=False):
 
     context.eventloop.add_idle(run_inner_loop, tx_context)
 
-    tx_context.global_cache_flush_keys = flush_keys = []
+    tx_context.global_cache_flush_keys = flush_keys = set()
     with tx_context.use():
         try:
             # Run the callback
