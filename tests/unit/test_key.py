@@ -212,6 +212,24 @@ class TestKey:
         )
         assert key._reference is None
 
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_constructor_with_default_namespace_as_empty_string(context):
+        context.client.namespace = "DiffNamespace"
+        key = key_module.Key("Kind", 1337, namespace="")
+
+        assert key._key == google.cloud.datastore.Key("Kind", 1337, project="testing")
+        assert key._reference is None
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_constructor_with_default_namespace_as_None(context):
+        context.client.namespace = "DiffNamespace"
+        key = key_module.Key("Kind", 1337, namespace=None)
+
+        assert key._key == google.cloud.datastore.Key("Kind", 1337, project="testing")
+        assert key._reference is None
+
     @pytest.mark.usefixtures("in_context")
     def test_constructor_with_parent(self):
         parent = key_module.Key(urlsafe=self.URLSAFE)
