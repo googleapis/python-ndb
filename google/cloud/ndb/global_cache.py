@@ -23,6 +23,7 @@ import redis.exceptions
 import threading
 import time
 import uuid
+import warnings
 
 import pymemcache
 import redis as redis_module
@@ -105,6 +106,12 @@ class GlobalCache(object):
             items (Dict[bytes, Union[bytes, None]]): Mapping of keys to
                 serialized entities.
             expires (Optional[float]): Number of seconds until value expires.
+
+        Returns:
+            Optional[Dict[bytes, Any]]: May return :data:`None`, or a `dict` mapping
+                keys to arbitrary results. If the result for a key is an instance of
+                `Exception`, the result will be raised as an exception in that key's
+                future.
         """
         raise NotImplementedError
 
@@ -445,9 +452,22 @@ class MemcacheCache(GlobalCache):
             errors in the cache layer. Default: :data:`True`.
     """
 
+    class KeyNotSet(Exception):
+        def __init__(self, key):
+            self.key = key
+            super(MemcacheCache.KeyNotSet, self).__init__(
+                "SET operation failed in memcache for key: {}".format(key)
+            )
+
+        def __eq__(self, other):
+            if isinstance(other, type(self)):
+                return self.key == other.key
+            return NotImplemented
+
     transient_errors = (
         IOError,
         ConnectionError,
+        KeyNotSet,
         pymemcache.exceptions.MemcacheServerError,
         pymemcache.exceptions.MemcacheUnexpectedCloseError,
     )
@@ -559,7 +579,13 @@ class MemcacheCache(GlobalCache):
         """Implements :meth:`GlobalCache.set`."""
         items = {self._key(key): value for key, value in items.items()}
         expires = expires if expires else 0
-        self.client.set_many(items, expire=expires)
+        unset_keys = self.client.set_many(items, expire=expires, noreply=False)
+        if unset_keys:
+            warnings.warn(
+                "Keys failed to set in memcache: {}".format(unset_keys),
+                RuntimeWarning,
+            )
+            return {key: MemcacheCache.KeyNotSet(key) for key in unset_keys}
 
     def delete(self, keys):
         """Implements :meth:`GlobalCache.delete`."""

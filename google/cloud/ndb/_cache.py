@@ -304,7 +304,7 @@ class _GlobalCacheSetBatch(_GlobalCacheBatch):
     def __init__(self, options):
         self.expires = options.get("expires")
         self.todo = {}
-        self.futures = []
+        self.futures = {}
 
     def add(self, key, value):
         """Add a key, value pair to store in the cache.
@@ -318,8 +318,35 @@ class _GlobalCacheSetBatch(_GlobalCacheBatch):
         """
         future = tasklets.Future(info=self.future_info(key, value))
         self.todo[key] = value
-        self.futures.append(future)
+        self.futures[key] = future
         return future
+
+    def done_callback(self, cache_call):
+        """Process results of call to global cache.
+
+        If there is an exception for the cache call, distribute that to waiting
+        futures, otherwise examine the result of the cache call. If the result is
+        :data:`None`, simply set the result to :data:`None` for all waiting futures.
+        Otherwise, if the result is a `dict`, use that to propogate results for
+        individual keys to waiting figures.
+        """
+        exception = cache_call.exception()
+        if exception:
+            for future in self.futures.values():
+                future.set_exception(exception)
+            return
+
+        result = cache_call.result()
+        if result:
+            for key, future in self.futures.items():
+                key_result = result.get(key, None)
+                if isinstance(key_result, Exception):
+                    future.set_exception(key_result)
+                else:
+                    future.set_result(key_result)
+        else:
+            for future in self.futures.values():
+                future.set_result(None)
 
     def make_call(self):
         """Call :method:`GlobalCache.set`."""
