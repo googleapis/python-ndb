@@ -327,7 +327,7 @@ class _GlobalCacheSetBatch(_GlobalCacheBatch):
         If there is an exception for the cache call, distribute that to waiting
         futures, otherwise examine the result of the cache call. If the result is
         :data:`None`, simply set the result to :data:`None` for all waiting futures.
-        Otherwise, if the result is a `dict`, use that to propogate results for
+        Otherwise, if the result is a `dict`, use that to propagate results for
         individual keys to waiting figures.
         """
         exception = cache_call.exception()
