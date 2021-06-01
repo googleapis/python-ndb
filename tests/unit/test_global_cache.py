@@ -488,10 +488,11 @@ class TestMemcacheCache:
     @staticmethod
     def test_set_failed_key():
         client = mock.Mock(spec=("set_many",))
-        client.set_many.return_value = [b"two"]
         cache = global_cache.MemcacheCache(client)
         key1 = cache._key(b"one")
         key2 = cache._key(b"two")
+        client.set_many.return_value = [key2]
+
         unset = cache.set(
             {
                 b"one": "bun",

@@ -577,10 +577,18 @@ class MemcacheCache(GlobalCache):
 
     def set(self, items, expires=None):
         """Implements :meth:`GlobalCache.set`."""
-        items = {self._key(key): value for key, value in items.items()}
         expires = expires if expires else 0
+        orig_items = items
+        items = {}
+        orig_keys = {}
+        for orig_key, value in orig_items.items():
+            key = self._key(orig_key)
+            orig_keys[key] = orig_key
+            items[key] = value
+
         unset_keys = self.client.set_many(items, expire=expires, noreply=False)
         if unset_keys:
+            unset_keys = [orig_keys[key] for key in unset_keys]
             warnings.warn(
                 "Keys failed to set in memcache: {}".format(unset_keys),
                 RuntimeWarning,
