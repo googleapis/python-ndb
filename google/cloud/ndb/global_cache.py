@@ -117,6 +117,23 @@ class GlobalCache(object):
         raise NotImplementedError
 
     @abc.abstractmethod
+    def set_if_not_exists(self, items, expires=None):
+        """Stores entities in the cache if and only if keys are not already set.
+
+        Arguments:
+            items (Dict[bytes, Union[bytes, None]]): Mapping of keys to
+                serialized entities.
+            expires (Optional[float]): Number of seconds until value expires.
+
+
+        Returns:
+            Dict[bytes, bool]: A `dict` mapping to boolean value wich will be
+                :data:`True` if that key was set with a new value, and :data:`False`
+                otherwise.
+        """
+        raise NotImplementedError
+
+    @abc.abstractmethod
     def delete(self, keys):
         """Remove entities from the cache.
 
@@ -216,6 +233,18 @@ class _InProcessGlobalCache(GlobalCache):
 
         for key, value in items.items():
             self.cache[key] = (value, expires)  # Supposedly threadsafe
+
+    def set_if_not_exists(self, items, expires=None):
+        """Implements :meth:`GlobalCache.set_if_not_exists`."""
+        if expires:
+            expires = time.time() + expires
+
+        results = {}
+        for key, value in items.items():
+            set_value = (value, expires)
+            results[key] = self.cache.setdefault(key, set_value) is set_value
+
+        return results
 
     def delete(self, keys):
         """Implements :meth:`GlobalCache.delete`."""
@@ -354,6 +383,16 @@ class RedisCache(GlobalCache):
         if expires:
             for key in items.keys():
                 self.redis.expire(key, expires)
+
+    def set_if_not_exists(self, items, expires=None):
+        """Implements :meth:`GlobalCache.set_if_not_exists`."""
+        results = {}
+        for key, value in items.items():
+            results[key] = key_was_set = self.redis.setnx(key, value)
+            if key_was_set and expires:
+                self.redis.expire(key, expires)
+
+        return results
 
     def delete(self, keys):
         """Implements :meth:`GlobalCache.delete`."""
@@ -598,6 +637,17 @@ class MemcacheCache(GlobalCache):
                 RuntimeWarning,
             )
             return {key: MemcacheCache.KeyNotSet(key) for key in unset_keys}
+
+    def set_if_not_exists(self, items, expires=None):
+        """Implements :meth:`GlobalCache.set_if_not_exists`."""
+        expires = expires if expires else 0
+        results = {}
+        for key, value in items.items():
+            results[key] = self.client.add(
+                self._key(key), value, expire=expires, noreply=False
+            )
+
+        return results
 
     def delete(self, keys):
         """Implements :meth:`GlobalCache.delete`."""

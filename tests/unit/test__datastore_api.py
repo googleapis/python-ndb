@@ -272,6 +272,28 @@ class Test_lookup_WithGlobalCache:
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
+    def test_cache_miss_lock_not_acquired(_LookupBatch, global_cache):
+        class SomeKind(model.Model):
+            pass
+
+        key = key_module.Key("SomeKind", 1)
+        cache_key = _cache.global_cache_key(key._key)
+
+        entity = SomeKind(key=key)
+        entity_pb = model._entity_to_protobuf(entity)
+
+        batch = _LookupBatch.return_value
+        batch.add.return_value = future_result(entity_pb)
+
+        global_cache.set_if_not_exists = mock.Mock(return_value={cache_key: False})
+
+        future = _api.lookup(key._key, _options.ReadOptions())
+        assert future.result() == entity_pb
+
+        assert global_cache.get([cache_key]) == [None]
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
     def test_cache_miss_no_datastore(_LookupBatch, global_cache):
         class SomeKind(model.Model):
             pass

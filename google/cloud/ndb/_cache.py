@@ -306,6 +306,32 @@ class _GlobalCacheSetBatch(_GlobalCacheBatch):
         self.todo = {}
         self.futures = {}
 
+    def done_callback(self, cache_call):
+        """Process results of call to global cache.
+        If there is an exception for the cache call, distribute that to waiting
+        futures, otherwise examine the result of the cache call. If the result is
+        :data:`None`, simply set the result to :data:`None` for all waiting futures.
+        Otherwise, if the result is a `dict`, use that to propagate results for
+        individual keys to waiting figures.
+        """
+        exception = cache_call.exception()
+        if exception:
+            for future in self.futures.values():
+                future.set_exception(exception)
+            return
+
+        result = cache_call.result()
+        if result:
+            for key, future in self.futures.items():
+                key_result = result.get(key, None)
+                if isinstance(key_result, Exception):
+                    future.set_exception(key_result)
+                else:
+                    future.set_result(key_result)
+        else:
+            for future in self.futures.values():
+                future.set_result(None)
+
     def add(self, key, value):
         """Add a key, value pair to store in the cache.
 
@@ -335,36 +361,66 @@ class _GlobalCacheSetBatch(_GlobalCacheBatch):
         self.futures[key] = future
         return future
 
-    def done_callback(self, cache_call):
-        """Process results of call to global cache.
-
-        If there is an exception for the cache call, distribute that to waiting
-        futures, otherwise examine the result of the cache call. If the result is
-        :data:`None`, simply set the result to :data:`None` for all waiting futures.
-        Otherwise, if the result is a `dict`, use that to propagate results for
-        individual keys to waiting figures.
-        """
-        exception = cache_call.exception()
-        if exception:
-            for future in self.futures.values():
-                future.set_exception(exception)
-            return
-
-        result = cache_call.result()
-        if result:
-            for key, future in self.futures.items():
-                key_result = result.get(key, None)
-                if isinstance(key_result, Exception):
-                    future.set_exception(key_result)
-                else:
-                    future.set_result(key_result)
-        else:
-            for future in self.futures.values():
-                future.set_result(None)
-
     def make_call(self):
         """Call :method:`GlobalCache.set`."""
         return _global_cache().set(self.todo, expires=self.expires)
+
+    def future_info(self, key, value):
+        """Generate info string for Future."""
+        return "GlobalCache.set_if_not_exists({}, {})".format(key, value)
+
+
+@_handle_transient_errors()
+def global_set_if_not_exists(key, value, expires=None, read=False):
+    """Store entity in the global cache if key is not already present.
+
+    Args:
+        key (bytes): The key to save.
+        value (bytes): The entity to save.
+        expires (Optional[float]): Number of seconds until value expires.
+        read (bool): Indicates if being set in a read (lookup) context.
+
+    Returns:
+        tasklets.Future: Eventual result will be a ``bool`` value which will be
+            :data:`True` if a new value was set for the key, or :data:`False` if a value
+            was already set for the key.
+    """
+    options = {}
+    if expires:
+        options = {"expires": expires}
+
+    batch = _batch.get_batch(_GlobalCacheSetIfNotExistsBatch, options)
+    return batch.add(key, value)
+
+
+class _GlobalCacheSetIfNotExistsBatch(_GlobalCacheSetBatch):
+    """Batch for global cache set_if_not_exists requests. """
+
+    def add(self, key, value):
+        """Add a key, value pair to store in the cache.
+
+        Arguments:
+            key (bytes): The key to store in the cache.
+            value (bytes): The value to store in the cache.
+
+        Returns:
+            tasklets.Future: Eventual result will be a ``bool`` value which will be
+                :data:`True` if a new value was set for the key, or :data:`False` if a
+                value was already set for the key.
+        """
+        if key in self.todo:
+            future = tasklets.Future()
+            future.set_result(False)
+            return future
+
+        future = tasklets.Future(info=self.future_info(key, value))
+        self.todo[key] = value
+        self.futures[key] = future
+        return future
+
+    def make_call(self):
+        """Call :method:`GlobalCache.set`."""
+        return _global_cache().set_if_not_exists(self.todo, expires=self.expires)
 
     def future_info(self, key, value):
         """Generate info string for Future."""
@@ -523,6 +579,9 @@ def global_lock(key, read=False):
     Returns:
         tasklets.Future: Eventual result will be ``None``.
     """
+    if read:
+        return global_set_if_not_exists(key, _LOCKED, expires=_LOCK_TIME, read=read)
+
     return global_set(key, _LOCKED, expires=_LOCK_TIME, read=read)
 
 

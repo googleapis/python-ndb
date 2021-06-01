@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import collections
+
 try:
     from unittest import mock
 except ImportError:  # pragma: NO PY3 COVER
@@ -31,6 +33,9 @@ class TestGlobalCache:
 
             def set(self, items, expires=None):
                 return super(MockImpl, self).set(items, expires=expires)
+
+            def set_if_not_exists(self, items, expires=None):
+                return super(MockImpl, self).set_if_not_exists(items, expires=expires)
 
             def delete(self, keys):
                 return super(MockImpl, self).delete(keys)
@@ -58,6 +63,11 @@ class TestGlobalCache:
         cache = self.make_one()
         with pytest.raises(NotImplementedError):
             cache.set({b"foo": "bar"})
+
+    def test_set_if_not_exists(self):
+        cache = self.make_one()
+        with pytest.raises(NotImplementedError):
+            cache.set_if_not_exists({b"foo": "bar"})
 
     def test_delete(self):
         cache = self.make_one()
@@ -115,6 +125,37 @@ class TestInProcessGlobalCache:
             {b"one": b"foo", b"two": b"bar", b"three": b"baz"}, expires=5
         )
         assert result is None
+
+        result = cache.get([b"two", b"three", b"one"])
+        assert result == [b"bar", b"baz", b"foo"]
+
+        time.time.return_value = 10
+        result = cache.get([b"two", b"three", b"one"])
+        assert result == [None, None, None]
+
+    @staticmethod
+    def test_set_if_not_exists():
+        cache = global_cache._InProcessGlobalCache()
+        result = cache.set_if_not_exists({b"one": b"foo", b"two": b"bar"})
+        assert result == {b"one": True, b"two": True}
+
+        result = cache.set_if_not_exists({b"two": b"bar", b"three": b"baz"})
+        assert result == {b"two": False, b"three": True}
+
+        result = cache.get([b"two", b"three", b"one"])
+        assert result == [b"bar", b"baz", b"foo"]
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb.global_cache.time")
+    def test_set_if_not_exists_w_expires(time):
+        time.time.return_value = 0
+
+        cache = global_cache._InProcessGlobalCache()
+        result = cache.set_if_not_exists({b"one": b"foo", b"two": b"bar"}, expires=5)
+        assert result == {b"one": True, b"two": True}
+
+        result = cache.set_if_not_exists({b"two": b"bar", b"three": b"baz"}, expires=5)
+        assert result == {b"two": False, b"three": True}
 
         result = cache.get([b"two", b"three", b"one"])
         assert result == [b"bar", b"baz", b"foo"]
@@ -233,6 +274,37 @@ class TestRedisCache:
         cache.set(cache_items, expires=32)
         redis.mset.assert_called_once_with(cache_items)
         assert expired == {"a": 32, "b": 32}
+
+    @staticmethod
+    def test_set_if_not_exists():
+        redis = mock.Mock(spec=("setnx",))
+        redis.setnx.side_effect = (True, False)
+        cache_items = collections.OrderedDict([("a", "foo"), ("b", "bar")])
+        cache = global_cache.RedisCache(redis)
+        results = cache.set_if_not_exists(cache_items)
+        assert results == {"a": True, "b": False}
+        redis.setnx.assert_has_calls(
+            [
+                mock.call("a", "foo"),
+                mock.call("b", "bar"),
+            ]
+        )
+
+    @staticmethod
+    def test_set_if_not_exists_w_expires():
+        redis = mock.Mock(spec=("setnx", "expire"))
+        redis.setnx.side_effect = (True, False)
+        cache_items = collections.OrderedDict([("a", "foo"), ("b", "bar")])
+        cache = global_cache.RedisCache(redis)
+        results = cache.set_if_not_exists(cache_items, expires=123)
+        assert results == {"a": True, "b": False}
+        redis.setnx.assert_has_calls(
+            [
+                mock.call("a", "foo"),
+                mock.call("b", "bar"),
+            ]
+        )
+        redis.expire.assert_called_once_with("a", 123)
 
     @staticmethod
     def test_delete():
@@ -466,6 +538,36 @@ class TestMemcacheCache:
             },
             expire=0,
             noreply=False,
+        )
+
+    @staticmethod
+    def test_set_if_not_exists():
+        client = mock.Mock(spec=("add",))
+        client.add.side_effect = (True, False)
+        cache_items = collections.OrderedDict([(b"a", b"foo"), (b"b", b"bar")])
+        cache = global_cache.MemcacheCache(client)
+        results = cache.set_if_not_exists(cache_items)
+        assert results == {b"a": True, b"b": False}
+        client.add.assert_has_calls(
+            [
+                mock.call(cache._key(b"a"), b"foo", expire=0, noreply=False),
+                mock.call(cache._key(b"b"), b"bar", expire=0, noreply=False),
+            ]
+        )
+
+    @staticmethod
+    def test_set_if_not_exists_w_expires():
+        client = mock.Mock(spec=("add",))
+        client.add.side_effect = (True, False)
+        cache_items = collections.OrderedDict([(b"a", b"foo"), (b"b", b"bar")])
+        cache = global_cache.MemcacheCache(client)
+        results = cache.set_if_not_exists(cache_items, expires=123)
+        assert results == {b"a": True, b"b": False}
+        client.add.assert_has_calls(
+            [
+                mock.call(cache._key(b"a"), b"foo", expire=123, noreply=False),
+                mock.call(cache._key(b"b"), b"bar", expire=123, noreply=False),
+            ]
         )
 
     @staticmethod
