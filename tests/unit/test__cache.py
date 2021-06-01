@@ -345,6 +345,13 @@ class Test_global_set:
 
 class Test_GlobalCacheSetBatch:
     @staticmethod
+    def test_add_duplicate_key_and_value():
+        batch = _cache._GlobalCacheSetBatch({})
+        future1 = batch.add(b"foo", b"one")
+        future2 = batch.add(b"foo", b"one")
+        assert future1 is future2
+
+    @staticmethod
     def test_add_and_idle_and_done_callbacks(in_context):
         cache = mock.Mock(spec=("set",))
         cache.set.return_value = []
@@ -363,6 +370,25 @@ class Test_GlobalCacheSetBatch:
         )
         assert future1.result() is None
         assert future2.result() is None
+
+    @staticmethod
+    def test_add_and_idle_and_done_callbacks_with_duplicate_keys(in_context):
+        cache = mock.Mock(spec=("set",))
+        cache.set.return_value = []
+
+        batch = _cache._GlobalCacheSetBatch({})
+        future1 = batch.add(b"foo", b"one")
+        future2 = batch.add(b"foo", b"two")
+
+        assert batch.expires is None
+
+        with in_context.new(global_cache=cache).use():
+            batch.idle_callback()
+
+        cache.set.assert_called_once_with({b"foo": b"one"}, expires=None)
+        assert future1.result() is None
+        with pytest.raises(RuntimeError):
+            future2.result()
 
     @staticmethod
     def test_add_and_idle_and_done_callbacks_with_expires(in_context):

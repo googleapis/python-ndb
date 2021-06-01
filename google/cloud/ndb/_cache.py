@@ -316,6 +316,20 @@ class _GlobalCacheSetBatch(_GlobalCacheBatch):
         Returns:
             tasklets.Future: Eventual result will be ``None``.
         """
+        future = self.futures.get(key)
+        if future:
+            if self.todo[key] != value:
+                # I don't think this is likely to happen. I'd like to know about it if
+                # it does because that might indicate a bad software design.
+                future = tasklets.Future()
+                future.set_exception(
+                    RuntimeError(
+                        "Key has already been set in this batch: {}".format(key)
+                    )
+                )
+
+            return future
+
         future = tasklets.Future(info=self.future_info(key, value))
         self.todo[key] = value
         self.futures[key] = future
