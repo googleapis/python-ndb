@@ -308,11 +308,12 @@ class _GlobalCacheSetBatch(_GlobalCacheBatch):
 
     def done_callback(self, cache_call):
         """Process results of call to global cache.
+
         If there is an exception for the cache call, distribute that to waiting
         futures, otherwise examine the result of the cache call. If the result is
         :data:`None`, simply set the result to :data:`None` for all waiting futures.
         Otherwise, if the result is a `dict`, use that to propagate results for
-        individual keys to waiting figures.
+        individual keys to waiting futures.
         """
         exception = cache_call.exception()
         if exception:
