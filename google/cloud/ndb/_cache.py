@@ -368,10 +368,10 @@ class _GlobalCacheSetBatch(_GlobalCacheBatch):
 
     def future_info(self, key, value):
         """Generate info string for Future."""
-        return "GlobalCache.set_if_not_exists({}, {})".format(key, value)
+        return "GlobalCache.set({}, {})".format(key, value)
 
 
-@_handle_transient_errors()
+@tasklets.tasklet
 def global_set_if_not_exists(key, value, expires=None, read=False):
     """Store entity in the global cache if key is not already present.
 
@@ -384,14 +384,21 @@ def global_set_if_not_exists(key, value, expires=None, read=False):
     Returns:
         tasklets.Future: Eventual result will be a ``bool`` value which will be
             :data:`True` if a new value was set for the key, or :data:`False` if a value
-            was already set for the key.
+            was already set for the key or if a transient error occurred while
+            attempting to set the key.
     """
     options = {}
     if expires:
         options = {"expires": expires}
 
+    cache = _global_cache()
     batch = _batch.get_batch(_GlobalCacheSetIfNotExistsBatch, options)
-    return batch.add(key, value)
+    try:
+        success = yield batch.add(key, value)
+    except cache.transient_errors:
+        success = False
+
+    raise tasklets.Return(success)
 
 
 class _GlobalCacheSetIfNotExistsBatch(_GlobalCacheSetBatch):
@@ -425,7 +432,7 @@ class _GlobalCacheSetIfNotExistsBatch(_GlobalCacheSetBatch):
 
     def future_info(self, key, value):
         """Generate info string for Future."""
-        return "GlobalCache.set({}, {})".format(key, value)
+        return "GlobalCache.set_if_not_exists({}, {})".format(key, value)
 
 
 @_handle_transient_errors()
@@ -578,7 +585,9 @@ def global_lock(key, read=False):
         read (bool): Indicates if being called as part of a read (lookup) operation.
 
     Returns:
-        tasklets.Future: Eventual result will be ``None``.
+        tasklets.Future: Eventual result will either be :data:`None`, or a boolean value
+            indicating whether the lock was successfully acquired. The result will
+            always be a boolean when `read` is :data:`True`.
     """
     if read:
         return global_set_if_not_exists(key, _LOCKED, expires=_LOCK_TIME, read=read)

@@ -285,7 +285,9 @@ class Test_lookup_WithGlobalCache:
         batch = _LookupBatch.return_value
         batch.add.return_value = future_result(entity_pb)
 
-        global_cache.set_if_not_exists = mock.Mock(return_value={cache_key: False})
+        global_cache.set_if_not_exists = mock.Mock(
+            return_value=future_result({cache_key: False})
+        )
 
         future = _api.lookup(key._key, _options.ReadOptions())
         assert future.result() == entity_pb

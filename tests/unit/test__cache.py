@@ -475,6 +475,28 @@ class Test_global_set_if_not_exists:
     @staticmethod
     @mock.patch("google.cloud.ndb._cache._global_cache")
     @mock.patch("google.cloud.ndb._cache._batch")
+    def test_transientError(_batch, _global_cache):
+        class TransientError(Exception):
+            pass
+
+        batch = _batch.get_batch.return_value
+        future = _future_exception(TransientError("oops, mom!"))
+        batch.add.return_value = future
+        _global_cache.return_value = mock.Mock(
+            transient_errors=(TransientError,),
+            strict_write=False,
+            spec=("transient_errors", "strict_write"),
+        )
+
+        assert _cache.global_set_if_not_exists(b"key", b"value").result() is False
+        _batch.get_batch.assert_called_once_with(
+            _cache._GlobalCacheSetIfNotExistsBatch, {}
+        )
+        batch.add.assert_called_once_with(b"key", b"value")
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._cache._global_cache")
+    @mock.patch("google.cloud.ndb._cache._batch")
     def test_with_expires(_batch, _global_cache):
         batch = _batch.get_batch.return_value
         future = _future_result("hi mom!")
