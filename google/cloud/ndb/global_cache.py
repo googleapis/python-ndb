@@ -16,14 +16,12 @@
 
 import abc
 import base64
-import collections
 import hashlib
 import os
 import pymemcache.exceptions
 import redis.exceptions
 import threading
 import time
-import uuid
 import warnings
 
 import pymemcache
