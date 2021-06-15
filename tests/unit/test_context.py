@@ -336,6 +336,21 @@ class TestContext:
         context.call_on_commit(callback)
         assert context.on_commit_callbacks == ["himom!"]
 
+    def test_call_on_transaction_complete(self):
+        context = self._make_one()
+        callback = mock.Mock()
+        context.call_on_transaction_complete(callback)
+        callback.assert_called_once_with()
+
+    def test_call_on_transaction_complete_with_transaction(self):
+        callbacks = []
+        callback = "himom!"
+        context = self._make_one(
+            transaction=b"tx123", transaction_complete_callbacks=callbacks
+        )
+        context.call_on_transaction_complete(callback)
+        assert context.transaction_complete_callbacks == ["himom!"]
+
     def test_in_transaction(self):
         context = self._make_one()
         assert context.in_transaction() is False

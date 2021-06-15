@@ -392,8 +392,12 @@ def put(entity, options):
 
         if lock:
             if transaction:
-                # ???
-                context.global_cache_flush_keys.add(cache_key)
+
+                def callback():
+                    _cache.global_unlock_for_write(cache_key, lock).result()
+
+                context.call_on_transaction_complete(callback)
+
             else:
                 yield _cache.global_unlock_for_write(cache_key, lock)
 
@@ -436,8 +440,11 @@ def delete(key, options):
 
     if use_global_cache:
         if transaction:
-            # ???
-            context.global_cache_flush_keys.add(cache_key)
+
+            def callback():
+                _cache.global_unlock_for_write(cache_key, lock).result()
+
+            context.call_on_transaction_complete(callback)
 
         elif use_datastore:
             yield _cache.global_unlock_for_write(cache_key, lock)

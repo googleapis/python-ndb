@@ -91,11 +91,13 @@ class Test_transaction_async:
     def test_success(_datastore_api):
         context_module.get_context().cache["foo"] = "bar"
         on_commit_callback = mock.Mock()
+        transaction_complete_callback = mock.Mock()
 
         def callback():
             context = context_module.get_context()
             assert not context.cache
             context.call_on_commit(on_commit_callback)
+            context.call_on_transaction_complete(transaction_complete_callback)
             return "I tried, momma."
 
         begin_future = tasklets.Future("begin transaction")
@@ -114,6 +116,46 @@ class Test_transaction_async:
 
         assert future.result() == "I tried, momma."
         on_commit_callback.assert_called_once_with()
+        transaction_complete_callback.assert_called_once_with()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_api")
+    def test_failure(_datastore_api):
+        class SpuriousError(Exception):
+            pass
+
+        context_module.get_context().cache["foo"] = "bar"
+        on_commit_callback = mock.Mock()
+        transaction_complete_callback = mock.Mock()
+
+        def callback():
+            context = context_module.get_context()
+            assert not context.cache
+            context.call_on_commit(on_commit_callback)
+            context.call_on_transaction_complete(transaction_complete_callback)
+            raise SpuriousError()
+
+        begin_future = tasklets.Future("begin transaction")
+        _datastore_api.begin_transaction.return_value = begin_future
+
+        rollback_future = tasklets.Future("rollback transaction")
+        _datastore_api.rollback.return_value = rollback_future
+
+        future = _transaction.transaction_async(callback)
+
+        _datastore_api.begin_transaction.assert_called_once_with(False, retries=0)
+        begin_future.set_result(b"tx123")
+
+        _datastore_api.commit.assert_not_called()
+        _datastore_api.rollback.assert_called_once_with(b"tx123")
+        rollback_future.set_result(None)
+
+        with pytest.raises(SpuriousError):
+            future.result()
+
+        on_commit_callback.assert_not_called()
+        transaction_complete_callback.assert_called_once_with()
 
     @staticmethod
     def test_success_join(in_context):

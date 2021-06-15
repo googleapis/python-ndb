@@ -208,6 +208,7 @@ _ContextTuple = collections.namedtuple(
         "cache",
         "global_cache",
         "on_commit_callbacks",
+        "transaction_complete_callbacks",
         "legacy_data",
     ],
 )
@@ -246,6 +247,7 @@ class _Context(_ContextTuple):
         global_cache_timeout_policy=None,
         datastore_policy=None,
         on_commit_callbacks=None,
+        transaction_complete_callbacks=None,
         legacy_data=True,
         retry=None,
         rpc_time=None,
@@ -280,6 +282,7 @@ class _Context(_ContextTuple):
             cache=new_cache,
             global_cache=global_cache,
             on_commit_callbacks=on_commit_callbacks,
+            transaction_complete_callbacks=transaction_complete_callbacks,
             legacy_data=legacy_data,
         )
 
@@ -562,6 +565,29 @@ class Context(_Context):
         """
         if self.in_transaction():
             self.on_commit_callbacks.append(callback)
+        else:
+            callback()
+
+    def call_on_transaction_complete(self, callback):
+        """Call a callback upon completion of a transaction.
+
+        If not in a transaction, the callback is called immediately.
+
+        In a transaction, multiple callbacks may be registered and will be called once
+        the transaction completes, in the order in which they were registered. Callbacks
+        are called regardless of whether transaction is committed or rolled back.
+
+        If the callback raises an exception, it bubbles up normally.  This means: If the
+        callback is called immediately, any exception it raises will bubble up
+        immediately.  If the call is postponed until commit, remaining callbacks will be
+        skipped and the exception will bubble up through the transaction() call.
+        (However, the transaction is already committed or rolled back at that point.)
+
+        Args:
+            callback (Callable): The callback function.
+        """
+        if self.in_transaction():
+            self.transaction_complete_callbacks.append(callback)
         else:
             callback()
 
