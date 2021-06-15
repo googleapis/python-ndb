@@ -28,8 +28,6 @@ from google.cloud.ndb import exceptions
 from google.cloud.ndb import tasklets
 from google.cloud.ndb import _transaction
 
-from . import utils
-
 
 class Test_in_transaction:
     @staticmethod
