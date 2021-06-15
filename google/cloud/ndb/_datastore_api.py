@@ -146,9 +146,9 @@ def lookup(key, options):
                 entity_pb.MergeFromString(result)
 
             elif use_datastore:
-                lock_acquired = yield _cache.global_lock(cache_key, read=True)
-                if lock_acquired:
-                    yield _cache.global_watch(cache_key)
+                lock = yield _cache.global_lock_for_read(cache_key)
+                if lock:
+                    yield _cache.global_watch(cache_key, lock)
 
                 else:
                     # Another thread locked or wrote to this key after the call to
@@ -366,11 +366,12 @@ def put(entity, options):
     if not use_datastore and entity.key.is_partial:
         raise TypeError("Can't store partial keys when use_datastore is False")
 
+    lock = None
     entity_pb = helpers.entity_to_protobuf(entity)
     cache_key = _cache.global_cache_key(entity.key)
     if use_global_cache and not entity.key.is_partial:
         if use_datastore:
-            yield _cache.global_lock(cache_key)
+            lock = yield _cache.global_lock_for_write(cache_key)
         else:
             expires = context._global_cache_timeout(entity.key, options)
             cache_value = entity_pb.SerializeToString()
@@ -389,11 +390,12 @@ def put(entity, options):
         else:
             key = None
 
-        if use_global_cache:
+        if lock:
             if transaction:
+                # ???
                 context.global_cache_flush_keys.add(cache_key)
             else:
-                yield _cache.global_delete(cache_key)
+                yield _cache.global_unlock_for_write(cache_key, lock)
 
         raise tasklets.Return(key)
 
@@ -423,7 +425,7 @@ def delete(key, options):
 
     if use_datastore:
         if use_global_cache:
-            yield _cache.global_lock(cache_key)
+            lock = yield _cache.global_lock_for_write(cache_key)
 
         if transaction:
             batch = _get_commit_batch(transaction, options)
@@ -434,7 +436,12 @@ def delete(key, options):
 
     if use_global_cache:
         if transaction:
+            # ???
             context.global_cache_flush_keys.add(cache_key)
+
+        elif use_datastore:
+            yield _cache.global_unlock_for_write(cache_key, lock)
+
         else:
             yield _cache.global_delete(cache_key)
 

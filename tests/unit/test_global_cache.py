@@ -167,7 +167,10 @@ class TestInProcessGlobalCache:
     @staticmethod
     def test_watch_compare_and_swap():
         cache = global_cache._InProcessGlobalCache()
-        result = cache.watch([b"one", b"two", b"three"])
+        cache.cache[b"one"] = (b"food", None)
+        cache.cache[b"two"] = (b"bard", None)
+        cache.cache[b"three"] = (b"bazz", None)
+        result = cache.watch({b"one": b"food", b"two": b"bard", b"three": b"bazd"})
         assert result is None
 
         cache.cache[b"two"] = (b"hamburgers", None)
@@ -175,10 +178,10 @@ class TestInProcessGlobalCache:
         result = cache.compare_and_swap(
             {b"one": b"foo", b"two": b"bar", b"three": b"baz"}
         )
-        assert result is None
+        assert result == {b"one": True, b"two": False, b"three": False}
 
         result = cache.get([b"one", b"two", b"three"])
-        assert result == [b"foo", b"hamburgers", b"baz"]
+        assert result == [b"foo", b"hamburgers", b"bazz"]
 
     @staticmethod
     @mock.patch("google.cloud.ndb.global_cache.time")
@@ -186,7 +189,10 @@ class TestInProcessGlobalCache:
         time.time.return_value = 0
 
         cache = global_cache._InProcessGlobalCache()
-        result = cache.watch([b"one", b"two", b"three"])
+        cache.cache[b"one"] = (b"food", None)
+        cache.cache[b"two"] = (b"bard", None)
+        cache.cache[b"three"] = (b"bazz", None)
+        result = cache.watch({b"one": b"food", b"two": b"bard", b"three": b"bazd"})
         assert result is None
 
         cache.cache[b"two"] = (b"hamburgers", None)
@@ -194,20 +200,20 @@ class TestInProcessGlobalCache:
         result = cache.compare_and_swap(
             {b"one": b"foo", b"two": b"bar", b"three": b"baz"}, expires=5
         )
-        assert result is None
+        assert result == {b"one": True, b"two": False, b"three": False}
 
         result = cache.get([b"one", b"two", b"three"])
-        assert result == [b"foo", b"hamburgers", b"baz"]
+        assert result == [b"foo", b"hamburgers", b"bazz"]
 
         time.time.return_value = 10
 
         result = cache.get([b"one", b"two", b"three"])
-        assert result == [None, b"hamburgers", None]
+        assert result == [None, b"hamburgers", b"bazz"]
 
     @staticmethod
     def test_watch_unwatch():
         cache = global_cache._InProcessGlobalCache()
-        result = cache.watch([b"one", b"two", b"three"])
+        result = cache.watch({b"one": "foo", b"two": "bar", b"three": "baz"})
         assert result is None
 
         result = cache.unwatch([b"one", b"two", b"three"])
@@ -315,107 +321,119 @@ class TestRedisCache:
         redis.delete.assert_called_once_with(*cache_keys)
 
     @staticmethod
-    @mock.patch("google.cloud.ndb.global_cache.uuid")
-    def test_watch(uuid):
-        uuid.uuid4.return_value = "abc123"
-        redis = mock.Mock(pipeline=mock.Mock(spec=("watch",)), spec=("pipeline",))
-        pipe = redis.pipeline.return_value
-        keys = ["foo", "bar"]
-        cache = global_cache.RedisCache(redis)
-        cache.watch(keys)
+    def test_watch():
+        def mock_redis_get(key):
+            if key == "foo":
+                return "moo"
 
-        pipe.watch.assert_called_once_with("foo", "bar")
-        assert cache.pipes == {
-            "foo": global_cache._Pipeline(pipe, "abc123"),
-            "bar": global_cache._Pipeline(pipe, "abc123"),
-        }
+            return "nope"
+
+        redis = mock.Mock(
+            pipeline=mock.Mock(spec=("watch", "get", "reset")), spec=("pipeline",)
+        )
+        pipe = redis.pipeline.return_value
+        pipe.get.side_effect = mock_redis_get
+        items = {"foo": "moo", "bar": "car"}
+        cache = global_cache.RedisCache(redis)
+        cache.watch(items)
+
+        pipe.watch.assert_has_calls(
+            [
+                mock.call("foo"),
+                mock.call("bar"),
+            ],
+            any_order=True,
+        )
+
+        pipe.get.assert_has_calls(
+            [
+                mock.call("foo"),
+                mock.call("bar"),
+            ],
+            any_order=True,
+        )
+
+        assert cache.pipes == {"foo": pipe}
 
     @staticmethod
     def test_unwatch():
         redis = mock.Mock(spec=())
         cache = global_cache.RedisCache(redis)
-        pipe1 = mock.Mock(spec=("reset",))
-        pipe2 = mock.Mock(spec=("reset",))
+        pipe = mock.Mock(spec=("reset",))
         cache._pipes.pipes = {
-            "ay": global_cache._Pipeline(pipe1, "abc123"),
-            "be": global_cache._Pipeline(pipe1, "abc123"),
-            "see": global_cache._Pipeline(pipe2, "def456"),
-            "dee": global_cache._Pipeline(pipe2, "def456"),
-            "whatevs": global_cache._Pipeline(None, "himom!"),
+            "ay": pipe,
+            "be": pipe,
+            "see": pipe,
+            "dee": pipe,
+            "whatevs": "himom!",
         }
 
         cache.unwatch(["ay", "be", "see", "dee", "nuffin"])
-        assert cache.pipes == {"whatevs": global_cache._Pipeline(None, "himom!")}
+        assert cache.pipes == {"whatevs": "himom!"}
+        pipe.reset.assert_has_calls([mock.call()] * 4)
 
     @staticmethod
     def test_compare_and_swap():
         redis = mock.Mock(spec=())
         cache = global_cache.RedisCache(redis)
-        pipe1 = mock.Mock(spec=("multi", "mset", "execute", "reset"))
-        pipe2 = mock.Mock(spec=("multi", "mset", "execute", "reset"))
-        cache._pipes.pipes = {
-            "ay": global_cache._Pipeline(pipe1, "abc123"),
-            "be": global_cache._Pipeline(pipe1, "abc123"),
-            "see": global_cache._Pipeline(pipe2, "def456"),
-            "dee": global_cache._Pipeline(pipe2, "def456"),
-            "whatevs": global_cache._Pipeline(None, "himom!"),
-        }
+        pipe1 = mock.Mock(spec=("multi", "set", "execute", "reset"))
+        pipe2 = mock.Mock(spec=("multi", "set", "execute", "reset"))
         pipe2.execute.side_effect = redis_module.exceptions.WatchError
+        cache._pipes.pipes = {
+            "foo": pipe1,
+            "bar": pipe2,
+        }
 
-        items = {"ay": "foo", "be": "bar", "see": "baz", "wut": "huh?"}
-        cache.compare_and_swap(items)
+        result = cache.compare_and_swap(
+            {
+                "foo": "moo",
+                "bar": "car",
+                "baz": "maz",
+            }
+        )
+        assert result == {"foo": True, "bar": False, "baz": False}
 
         pipe1.multi.assert_called_once_with()
-        pipe2.multi.assert_called_once_with()
-        pipe1.mset.assert_called_once_with({"ay": "foo", "be": "bar"})
-        pipe2.mset.assert_called_once_with({"see": "baz"})
+        pipe1.set.assert_called_once_with("foo", "moo")
         pipe1.execute.assert_called_once_with()
-        pipe2.execute.assert_called_once_with()
         pipe1.reset.assert_called_once_with()
-        pipe2.reset.assert_called_once_with()
 
-        assert cache.pipes == {"whatevs": global_cache._Pipeline(None, "himom!")}
+        pipe2.multi.assert_called_once_with()
+        pipe2.set.assert_called_once_with("bar", "car")
+        pipe2.execute.assert_called_once_with()
+        pipe2.reset.assert_called_once_with()
 
     @staticmethod
     def test_compare_and_swap_w_expires():
-        expired = {}
-
-        def mock_expire(key, expires):
-            expired[key] = expires
-
         redis = mock.Mock(spec=())
         cache = global_cache.RedisCache(redis)
-        pipe1 = mock.Mock(
-            expire=mock_expire,
-            spec=("multi", "mset", "execute", "expire", "reset"),
-        )
-        pipe2 = mock.Mock(
-            expire=mock_expire,
-            spec=("multi", "mset", "execute", "expire", "reset"),
-        )
-        cache._pipes.pipes = {
-            "ay": global_cache._Pipeline(pipe1, "abc123"),
-            "be": global_cache._Pipeline(pipe1, "abc123"),
-            "see": global_cache._Pipeline(pipe2, "def456"),
-            "dee": global_cache._Pipeline(pipe2, "def456"),
-            "whatevs": global_cache._Pipeline(None, "himom!"),
-        }
+        pipe1 = mock.Mock(spec=("multi", "setex", "execute", "reset"))
+        pipe2 = mock.Mock(spec=("multi", "setex", "execute", "reset"))
         pipe2.execute.side_effect = redis_module.exceptions.WatchError
+        cache._pipes.pipes = {
+            "foo": pipe1,
+            "bar": pipe2,
+        }
 
-        items = {"ay": "foo", "be": "bar", "see": "baz", "wut": "huh?"}
-        cache.compare_and_swap(items, expires=32)
+        result = cache.compare_and_swap(
+            {
+                "foo": "moo",
+                "bar": "car",
+                "baz": "maz",
+            },
+            expires=5,
+        )
+        assert result == {"foo": True, "bar": False, "baz": False}
 
         pipe1.multi.assert_called_once_with()
-        pipe2.multi.assert_called_once_with()
-        pipe1.mset.assert_called_once_with({"ay": "foo", "be": "bar"})
-        pipe2.mset.assert_called_once_with({"see": "baz"})
+        pipe1.setex.assert_called_once_with("foo", "moo", 5)
         pipe1.execute.assert_called_once_with()
-        pipe2.execute.assert_called_once_with()
         pipe1.reset.assert_called_once_with()
-        pipe2.reset.assert_called_once_with()
 
-        assert cache.pipes == {"whatevs": global_cache._Pipeline(None, "himom!")}
-        assert expired == {"ay": 32, "be": 32, "see": 32}
+        pipe2.multi.assert_called_once_with()
+        pipe2.setex.assert_called_once_with("bar", "car", 5)
+        pipe2.execute.assert_called_once_with()
+        pipe2.reset.assert_called_once_with()
 
     @staticmethod
     def test_clear():
@@ -644,11 +662,17 @@ class TestMemcacheCache:
             key1: ("bun", b"0"),
             key2: ("shoe", b"1"),
         }
-        cache.watch((b"one", b"two"))
+        cache.watch(
+            collections.OrderedDict(
+                (
+                    (b"one", "bun"),
+                    (b"two", "shot"),
+                )
+            )
+        )
         client.gets_many.assert_called_once_with([key1, key2])
         assert cache.caskeys == {
             key1: b"0",
-            key2: b"1",
         }
 
     @staticmethod
@@ -669,14 +693,15 @@ class TestMemcacheCache:
         key2 = cache._key(b"two")
         cache.caskeys[key2] = b"5"
         cache.caskeys["whatevs"] = b"6"
-        cache.compare_and_swap(
+        result = cache.compare_and_swap(
             {
                 b"one": "bun",
                 b"two": "shoe",
             }
         )
 
-        client.cas.assert_called_once_with(key2, "shoe", b"5", expire=0)
+        assert result == {b"two": True}
+        client.cas.assert_called_once_with(key2, "shoe", b"5", expire=0, noreply=False)
         assert cache.caskeys == {"whatevs": b"6"}
 
     @staticmethod
@@ -686,7 +711,7 @@ class TestMemcacheCache:
         key2 = cache._key(b"two")
         cache.caskeys[key2] = b"5"
         cache.caskeys["whatevs"] = b"6"
-        cache.compare_and_swap(
+        result = cache.compare_and_swap(
             {
                 b"one": "bun",
                 b"two": "shoe",
@@ -694,7 +719,8 @@ class TestMemcacheCache:
             expires=5,
         )
 
-        client.cas.assert_called_once_with(key2, "shoe", b"5", expire=5)
+        assert result == {b"two": True}
+        client.cas.assert_called_once_with(key2, "shoe", b"5", expire=5, noreply=False)
         assert cache.caskeys == {"whatevs": b"6"}
 
     @staticmethod

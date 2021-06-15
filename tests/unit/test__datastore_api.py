@@ -344,7 +344,7 @@ class Test_lookup_WithGlobalCache:
         entity = SomeKind(key=key)
         entity_pb = model._entity_to_protobuf(entity)
 
-        global_cache.set({cache_key: _cache._LOCKED})
+        global_cache.set({cache_key: _cache._LOCKED_FOR_READ})
 
         batch = _LookupBatch.return_value
         batch.add.return_value = future_result(entity_pb)
@@ -352,7 +352,7 @@ class Test_lookup_WithGlobalCache:
         future = _api.lookup(key._key, _options.ReadOptions())
         assert future.result() == entity_pb
 
-        assert global_cache.get([cache_key]) == [_cache._LOCKED]
+        assert global_cache.get([cache_key]) == [_cache._LOCKED_FOR_READ]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
@@ -369,7 +369,7 @@ class Test_lookup_WithGlobalCache:
         future = _api.lookup(key._key, _options.ReadOptions())
         assert future.result() is _api._NOT_FOUND
 
-        assert global_cache.get([cache_key]) == [_cache._LOCKED]
+        assert global_cache.get([cache_key]) == [_cache._LOCKED_FOR_READ]
         assert len(global_cache._watch_keys) == 0
 
 
