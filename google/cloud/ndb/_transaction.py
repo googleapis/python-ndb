@@ -284,7 +284,6 @@ def _transaction_async(context, callback, read_only=False):
 
     context.eventloop.add_idle(run_inner_loop, tx_context)
 
-    tx_context.global_cache_flush_keys = flush_keys = set()
     with tx_context.use():
         try:
             try:
@@ -305,10 +304,6 @@ def _transaction_async(context, callback, read_only=False):
                 tx_context.cache.clear()
                 yield _datastore_api.rollback(transaction_id)
                 raise e
-
-            # Flush keys of entities written during the transaction from the global cache
-            if flush_keys:
-                yield [_cache.global_delete(key) for key in flush_keys]
 
             for callback in on_commit_callbacks:
                 callback()

@@ -451,35 +451,6 @@ class Test_transaction_async:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @mock.patch("google.cloud.ndb._cache")
-    @mock.patch("google.cloud.ndb._datastore_api")
-    def test_success_flush_keys(_datastore_api, _cache):
-        def callback():
-            context = context_module.get_context()
-            context.global_cache_flush_keys.add(b"abc123")
-            return "I tried, momma."
-
-        _cache.global_delete.return_value = utils.future_result(None)
-
-        begin_future = tasklets.Future("begin transaction")
-        _datastore_api.begin_transaction.return_value = begin_future
-
-        commit_future = tasklets.Future("commit transaction")
-        _datastore_api.commit.return_value = commit_future
-
-        future = _transaction.transaction_async(callback, retries=0)
-
-        _datastore_api.begin_transaction.assert_called_once_with(False, retries=0)
-        begin_future.set_result(b"tx123")
-
-        _datastore_api.commit.assert_called_once_with(b"tx123", retries=0)
-        commit_future.set_result(None)
-
-        assert future.result() == "I tried, momma."
-        _cache.global_delete.assert_called_once_with(b"abc123")
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
     @mock.patch("google.cloud.ndb._datastore_api")
     def test_success_callback_is_tasklet(_datastore_api):
         tasklet = tasklets.Future("tasklet")
