@@ -311,7 +311,7 @@ def _transaction_async(context, callback, read_only=False):
             for callback in transaction_complete_callbacks:
                 callback()
 
-        raise tasklets.Return(result)
+    raise tasklets.Return(result)
 
 
 def transactional(
