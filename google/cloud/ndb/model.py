@@ -696,7 +696,7 @@ def _entity_from_protobuf(protobuf):
     return _entity_from_ds_entity(ds_entity)
 
 
-def _properties_of(entity):
+def _properties_of(*entities):
     """Get the model properties for an entity.
 
     After collecting any properties local to the given entity, will traverse the
@@ -711,7 +711,8 @@ def _properties_of(entity):
     """
     seen = set()
 
-    for level in (entity,) + tuple(type(entity).mro()):
+    entity_type = type(entities[0])  # assume all entities are same type
+    for level in entities + tuple(entity_type.mro()):
         if not hasattr(level, "_properties"):
             continue
 
@@ -4299,6 +4300,8 @@ class StructuredProperty(Property):
         if not self._repeated:
             values = (values,)
 
+        props = tuple(_properties_of(*values))
+
         for value in values:
             if value is None:
                 keys.extend(
@@ -4308,7 +4311,7 @@ class StructuredProperty(Property):
                 )
                 continue
 
-            for prop in _properties_of(value):
+            for prop in props:
                 keys.extend(
                     prop._to_datastore(
                         value, data, prefix=next_prefix, repeated=next_repeated
