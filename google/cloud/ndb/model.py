@@ -717,7 +717,8 @@ def _properties_of(*entities):
         if not hasattr(level, "_properties"):
             continue
 
-        for prop in level._properties.values():
+        level_properties = getattr(level, "_properties", {})
+        for prop in level_properties.values():
             if (
                 not isinstance(prop, Property)
                 or isinstance(prop, ModelKey)
