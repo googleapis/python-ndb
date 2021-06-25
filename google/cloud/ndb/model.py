@@ -697,17 +697,18 @@ def _entity_from_protobuf(protobuf):
 
 
 def _properties_of(*entities):
-    """Get the model properties for an entity.
+    """Get the model properties for one or more entities.
 
-    After collecting any properties local to the given entity, will traverse the
-    entity's MRO (class hierarchy) up from the entity's class through all of its
-    ancestors, collecting an ``Property`` instances defined for those classes.
+    After collecting any properties local to the given entities, will traverse the
+    entities' MRO (class hierarchy) up from the entities' class through all of its
+    ancestors, collecting any ``Property`` instances defined for those classes.
 
     Args:
-        entity (model.Model): The entity to get properties for.
+        entities (Tuple[model.Model]): The entities to get properties for. All entities
+            are expected to be of the same class.
 
     Returns:
-        Iterator[Property]: Iterator over the entity's properties.
+        Iterator[Property]: Iterator over the entities' properties.
     """
     seen = set()
 
