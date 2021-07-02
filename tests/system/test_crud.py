@@ -1184,6 +1184,7 @@ def test_insert_expando_w_legacy_structured_property(client_context, dispose_of)
 
     https://github.com/googleapis/python-ndb/issues/673
     """
+
     class SomeKind(ndb.Expando):
         foo = ndb.IntegerProperty()
 
@@ -1216,6 +1217,7 @@ def test_insert_expando_w_legacy_dynamic_dict(client_context, dispose_of):
 
     https://github.com/googleapis/python-ndb/issues/673
     """
+
     class SomeKind(ndb.Expando):
         foo = ndb.IntegerProperty()
 

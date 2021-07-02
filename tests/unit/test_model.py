@@ -5708,6 +5708,7 @@ class TestExpando:
 
         https://github.com/googleapis/python-ndb/issues/673
         """
+
         class Expansive(model.Expando):
             foo = model.StringProperty()
 
