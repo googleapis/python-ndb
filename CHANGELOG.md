@@ -4,6 +4,14 @@
 
 [1]: https://pypi.org/project/google-cloud-ndb/#history
 
+### [1.9.1](https://www.github.com/googleapis/python-ndb/compare/v1.9.0...v1.9.1) (2021-07-12)
+
+
+### Bug Fixes
+
+* fix bug with repeated structured properties with Expando values ([#671](https://www.github.com/googleapis/python-ndb/issues/671)) ([882dff0](https://www.github.com/googleapis/python-ndb/commit/882dff0517be9ddad5814317853ce87bf99d5db0)), closes [#669](https://www.github.com/googleapis/python-ndb/issues/669)
+* properly handle legacy structured properties in Expando instances ([#676](https://www.github.com/googleapis/python-ndb/issues/676)) ([70710c8](https://www.github.com/googleapis/python-ndb/commit/70710c83c5ace83504167801da990bc81cb43c89)), closes [#673](https://www.github.com/googleapis/python-ndb/issues/673)
+
 ## [1.9.0](https://www.github.com/googleapis/python-ndb/compare/v1.8.0...v1.9.0) (2021-06-07)
 
 
