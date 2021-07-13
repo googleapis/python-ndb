@@ -1,5 +1,4 @@
 #!/bin/bash
-
 # Copyright 2018 Google LLC
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,14 +13,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Need enchant for spell check
-sudo apt-get update
-sudo apt-get -y install dictionaries-common aspell aspell-en \
-	                hunspell-en-us libenchant1c2a enchant
-
 set -eo pipefail
 
-cd github/python-ndb
+if [[ -z "${PROJECT_ROOT:-}" ]]; then
+    PROJECT_ROOT="github/python-ndb"
+fi
+
+cd "${PROJECT_ROOT}"
 
 # Disable buffering, so that the logs stream through.
 export PYTHONUNBUFFERED=1
@@ -29,33 +27,46 @@ export PYTHONUNBUFFERED=1
 # Debug: show build environment
 env | grep KOKORO
 
-# Setup firestore account credentials
-export FIRESTORE_APPLICATION_CREDENTIALS=${KOKORO_GFILE_DIR}/firebase-credentials.json
-
 # Setup service account credentials.
 export GOOGLE_APPLICATION_CREDENTIALS=${KOKORO_GFILE_DIR}/service-account.json
 
 # Setup project id.
 export PROJECT_ID=$(cat "${KOKORO_GFILE_DIR}/project-id.json")
 
-# Find out if this package was modified.
-# Temporarily use Thea's fork of ci-diff-helper w/ Kokoro support.
-# python3.6 -m pip install --quiet git+https://github.com/theacodes/ci-diff-helper.git
-# python3.6 test_utils/scripts/get_target_packages_kokoro.py > ~/target_packages
-# cat ~/target_packages
+# Configure local Redis to be used
+export REDIS_CACHE_URL=redis://localhost
+redis-server &
 
-# if [[ ! -n $(grep -x "$PACKAGE" ~/target_packages) ]]; then
-#     echo "$PACKAGE was not modified, returning."
-#     exit;
-# fi
+# Configure local memcached to be used
+export MEMCACHED_HOSTS=127.0.0.1
+service memcached start
 
-# cd "$PACKAGE"
+# Some system tests require indexes. Use gcloud to create them.
+gcloud auth activate-service-account --key-file=$GOOGLE_APPLICATION_CREDENTIALS --project=$PROJECT_ID
+gcloud --quiet --verbosity=debug datastore indexes create tests/system/index.yaml
+
 
 # Remove old nox
-python3.6 -m pip uninstall --yes --quiet nox-automation
+python3 -m pip uninstall --yes --quiet nox-automation
 
 # Install nox
-python3.6 -m pip install --upgrade --quiet nox
-python3.6 -m nox --version
+python3 -m pip install --upgrade --quiet nox
+python3 -m nox --version
 
-python3.6 -m nox
+# If this is a continuous build, send the test log to the FlakyBot.
+# See https://github.com/googleapis/repo-automation-bots/tree/master/packages/flakybot.
+if [[ $KOKORO_BUILD_ARTIFACTS_SUBDIR = *"continuous"* ]]; then
+  cleanup() {
+    chmod +x $KOKORO_GFILE_DIR/linux_amd64/flakybot
+    $KOKORO_GFILE_DIR/linux_amd64/flakybot
+  }
+  trap cleanup EXIT HUP
+fi
+
+# If NOX_SESSION is set, it only runs the specified session,
+# otherwise run all the sessions.
+if [[ -n "${NOX_SESSION:-}" ]]; then
+    python3 -m nox -s ${NOX_SESSION:-}
+else
+    python3 -m nox
+fi

@@ -16,16 +16,17 @@ The primary differences come from:
 ## Bootstrapping
 
 The biggest difference is in establishing a runtime context for your NDB
-application. In the Google App Engine environment, Legacy NDB could just
-shoehorn the runtime context onto the current HTTP request. Decoupling NDB from
-GAE, means we can't assume we're running in the context of a GAE request. 
+application. The Google App Engine Python 2.7 runtime had a strong assumption
+that all code executed inside a web framework request-response cycle, in a
+single thread per request. In order to decouple from that assumption, Cloud NDB
+implements explicit clients and contexts. This is consistent with other Cloud
+client libraries.
 
-To deal with this, the ``Client`` class has been introduced which by and large
-works the same as Datastore's ``Client`` class and uses ``google.auth`` for
-authentication. While this is different from how Legacy NDB worked, this is
-consistent with how APIs in Google Cloud Platform work. You can pass a
-``credentials`` parameter to ``Client`` or use the
-``GOOGLE_APPLICATION_CREDENTIALS`` environment variable (recommended).
+The ``Client`` class has been introduced which by and large works the same as 
+Datastore's ``Client`` class and uses ``google.auth`` for authentication. You
+can pass a ``credentials`` parameter to ``Client`` or use the
+``GOOGLE_APPLICATION_CREDENTIALS`` environment variable (recommended). See
+[https://cloud.google.com/docs/authentication/getting-started] for details.
 
 Once a client has been obtained, you still need to establish a runtime context,
 which you can do using the ``Client.context`` method.
@@ -36,9 +37,42 @@ from google.cloud import ndb
 # Assume GOOGLE_APPLICATION_CREDENTIALS is set in environment
 client = ndb.Client()
 
-with context as client.context():
+with client.context() as context:
     do_stuff_with_ndb()
 ```
+
+## Memcache
+
+Because the Google App Engine Memcache service is not a part of the Google
+Cloud Platform, it was necessary to refactor the "memcache" functionality of
+NDB. The concept of a memcache has been generalized to that of a "global cache"
+and defined by the `GlobalCache` interface, which is an abstract base class.
+NDB provides a single concrete implementation of `GlobalCache`, `RedisCache`,
+which uses Redis.
+
+In order to enable the global cache, a `GlobalCache` instance must be passed
+into the context. The Bootstrapping example can be amended as follows:
+
+```
+from google.cloud import ndb
+
+# Assume GOOGLE_APPLICATION_CREDENTIALS is set in environment.
+client = ndb.Client()
+
+# Assume REDIS_CACHE_URL is set in environment (or not).
+# If left unset, this will return `None`, which effectively allows you to turn
+# global cache on or off using the environment.
+global_cache = ndb.RedisCache.from_environment()
+
+with client.context(global_cache=global_cache) as context:
+    do_stuff_with_ndb()
+```
+
+`context.Context` had a number of methods that were direct pass-throughs to GAE
+Memcache. These are no longer implemented. The methods of `context.Context`
+that are affected are: `memcache_add`, `memcache_cas`, `memcache_decr`,
+`memcache_delete`, `memcache_get`, `memcache_gets`, `memcache_incr`,
+`memcache_replace`, `memcache_set`. 
 
 ## Differences (between old and new implementations)
 
@@ -174,23 +208,84 @@ with context as client.context():
 - The `max` argument to `Model.allocate_ids` and `Model.allocate_ids_async` is
   no longer supported. The Google Datastore API does not support setting a
   maximum ID, a feature that GAE Datastore presumably had.
+- `model.get_indexes()` and `model.get_indexes_async()` are no longer
+  implemented, as the support in Datastore for these functions has disappeared
+  from GAE to GCP.
+- The `max_memcache_items` option is no longer supported. 
+- The `force_writes` option is no longer supported.
+- The `blobstore` module is no longer supported.
+- The `pass_batch_into_callback` argument to `Query.map` and `Query.map_async`
+  is no longer supported.
+- The `merge_future` argument to `Query.map` and `Query.map_async` is no longer
+  supported.
+- Key.urlsafe() output is subtly different: the original NDB included a GAE 
+  Datastore-specific "location prefix", but that string is neither necessary
+  nor available on Cloud Datastore. For applications that require urlsafe()
+  strings to be exactly consistent between versions, use
+  Key.to_legacy_urlsafe(location_prefix) and pass in your location prefix as an
+  argument. Location prefixes are most commonly "s~" (or "e~" in Europe) but
+  the easiest way to find your prefix is to base64 decode any urlsafe key
+  produced by the original NDB and manually inspect it. The location prefix
+  will be consistent for an App Engine project and its corresponding Datastore
+  instance over its entire lifetime.
+- Key.urlsafe outputs a "bytes" object on Python 3. This is consistent behavior
+  and actually just a change in nomenclature; in Python 2, the "str" type
+  referred to a bytestring, and in Python 3 the corresponding type is called
+  "bytes". Users may notice a difficulty in incorporating urlsafe() strings in
+  JSON objects in Python 3; that is due to a change in the json.JSONEncoder
+  default behavior between Python 2 and Python 3 (in Python 2, json.JSONEncoder
+  accepted bytestrings and attempted to convert them to unicode automatically,
+  which can result in corrupted data and as such is no longer done) and does not
+  reflect a change in NDB behavior.
 
 ## Privatization
 
-One thing legacy NDB didn't do very well, was distinguishing between internal
-private and external public API. A few bits of the nominally public API 
-have been found to be *de facto* private. These are pieces that are omitted
-from public facing documentation and which have no apparent use outside of NDB
-internals. These pieces have been formally renamed and moved to be internally
-facing, private API:
+App Engine NDB exposed some internal utilities as part of the public API. A few
+bits of the nominally public API have been found to be *de facto* private.
+These are pieces that are omitted from public facing documentation and which
+have no apparent use outside of NDB internals. These pieces have been formally
+renamed as part of the private API:
 
 - `eventloop` has been renamed to `_eventloop`.
 - `tasklets.get_return_value` has been renamed to `tasklets._get_return_value`
   and is no longer among top level exports.
 - `tasklets.MultiFuture` has been renamed to `tasklets._MultiFuture`, removed
   from top level exports, and has a much simpler interface.
-- `Query.run_to_queue` is no longer implemented. Appears to be aimed at
-  internal usage, despite being nominally public.
+
+These options classes appear not to have been used directly by users and are
+not implemented—public facing API used keyword arguments instead, which are
+still supported:
+
+- `ContextOptions`
+- `TransactionOptions`
+
+The following pieces appear to have been only used internally and are no longer
+implemented due to the features they were used for having been refactored:
+
+- `Query.run_to_queue`
+- `tasklets.add_flow_exception`
+- `tasklets.make_context`
+- `tasklets.make_default_context`
+- `tasklets.QueueFuture`
+- `tasklets.ReducingFuture`
+- `tasklets.SerialQueueFuture`
+- `tasklets.set_context`
+
+A number of functions in the `utils` package appear to have only been used
+internally and have been made obsolete either by API changes, internal
+refactoring, or new features of Python 3, and are no longer implemented:
+
+- `utils.code_info()`
+- `utils.decorator()`
+- `utils.frame_info()`
+- `utils.func_info()`
+- `utils.gen_info()`
+- `utils.get_stack()`
+- `utils.logging_debug()`
+- `utils.positional()`
+- `utils.tweak_logging()`
+- `utils.wrapping()`
+- `utils.threading_local()`
 
 ## Bare Metal
 

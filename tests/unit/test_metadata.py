@@ -12,7 +12,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import unittest.mock
+try:
+    from unittest import mock
+except ImportError:  # pragma: NO PY3 COVER
+    import mock
 
 import pytest
 
@@ -20,11 +23,12 @@ from google.cloud.ndb import exceptions
 from google.cloud.ndb import metadata
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import tasklets
-import tests.unit.utils
+
+from . import utils
 
 
 def test___all__():
-    tests.unit.utils.verify___all__(metadata)
+    utils.verify___all__(metadata)
 
 
 class Test_BaseMetadata:
@@ -96,11 +100,17 @@ class TestNamespace:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test_key_for_namespace_default():
+        key = key_module.Key(metadata.Namespace.KIND_NAME, "")
+        assert key == metadata.Namespace.key_for_namespace("")
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_key_for_namespace_empty():
         key = key_module.Key(
             metadata.Namespace.KIND_NAME, metadata.Namespace.EMPTY_NAMESPACE_ID
         )
-        assert key == metadata.Namespace.key_for_namespace("")
+        assert key == metadata.Namespace.key_for_namespace(None)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -194,7 +204,7 @@ def test_get_entity_group_version(*args, **kwargs):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+@mock.patch("google.cloud.ndb._datastore_query")
 def test_get_kinds(_datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -204,8 +214,8 @@ def test_get_kinds(_datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-@unittest.mock.patch("google.cloud.ndb.query.Query")
+@mock.patch("google.cloud.ndb._datastore_query")
+@mock.patch("google.cloud.ndb.query.Query")
 def test_get_kinds_with_start(Query, _datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -217,8 +227,8 @@ def test_get_kinds_with_start(Query, _datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-@unittest.mock.patch("google.cloud.ndb.query.Query")
+@mock.patch("google.cloud.ndb._datastore_query")
+@mock.patch("google.cloud.ndb.query.Query")
 def test_get_kinds_with_end(Query, _datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -230,7 +240,7 @@ def test_get_kinds_with_end(Query, _datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+@mock.patch("google.cloud.ndb._datastore_query")
 def test_get_kinds_empty_end(_datastore_query):
     future = tasklets.Future("fetch")
     future.set_result(["not", "empty"])
@@ -240,7 +250,7 @@ def test_get_kinds_empty_end(_datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+@mock.patch("google.cloud.ndb._datastore_query")
 def test_get_namespaces(_datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -250,8 +260,8 @@ def test_get_namespaces(_datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-@unittest.mock.patch("google.cloud.ndb.query.Query")
+@mock.patch("google.cloud.ndb._datastore_query")
+@mock.patch("google.cloud.ndb.query.Query")
 def test_get_namespaces_with_start(Query, _datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -263,8 +273,8 @@ def test_get_namespaces_with_start(Query, _datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-@unittest.mock.patch("google.cloud.ndb.query.Query")
+@mock.patch("google.cloud.ndb._datastore_query")
+@mock.patch("google.cloud.ndb.query.Query")
 def test_get_namespaces_with_end(Query, _datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -276,7 +286,7 @@ def test_get_namespaces_with_end(Query, _datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+@mock.patch("google.cloud.ndb._datastore_query")
 def test_get_properties_of_kind(_datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -286,8 +296,8 @@ def test_get_properties_of_kind(_datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-@unittest.mock.patch("google.cloud.ndb.query.Query")
+@mock.patch("google.cloud.ndb._datastore_query")
+@mock.patch("google.cloud.ndb.query.Query")
 def test_get_properties_of_kind_with_start(Query, _datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -299,8 +309,8 @@ def test_get_properties_of_kind_with_start(Query, _datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-@unittest.mock.patch("google.cloud.ndb.query.Query")
+@mock.patch("google.cloud.ndb._datastore_query")
+@mock.patch("google.cloud.ndb.query.Query")
 def test_get_properties_of_kind_with_end(Query, _datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -312,7 +322,7 @@ def test_get_properties_of_kind_with_end(Query, _datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+@mock.patch("google.cloud.ndb._datastore_query")
 def test_get_properties_of_kind_empty_end(_datastore_query):
     future = tasklets.Future("fetch")
     future.set_result(["not", "empty"])
@@ -322,7 +332,7 @@ def test_get_properties_of_kind_empty_end(_datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+@mock.patch("google.cloud.ndb._datastore_query")
 def test_get_representations_of_kind(_datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -332,7 +342,7 @@ def test_get_representations_of_kind(_datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+@mock.patch("google.cloud.ndb._datastore_query")
 def test_get_representations_of_kind_with_results(_datastore_query):
     class MyProp:
         property_name = "myprop"
@@ -347,8 +357,8 @@ def test_get_representations_of_kind_with_results(_datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-@unittest.mock.patch("google.cloud.ndb.query.Query")
+@mock.patch("google.cloud.ndb._datastore_query")
+@mock.patch("google.cloud.ndb.query.Query")
 def test_get_representations_of_kind_with_start(Query, _datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -360,8 +370,8 @@ def test_get_representations_of_kind_with_start(Query, _datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-@unittest.mock.patch("google.cloud.ndb.query.Query")
+@mock.patch("google.cloud.ndb._datastore_query")
+@mock.patch("google.cloud.ndb.query.Query")
 def test_get_representations_of_kind_with_end(Query, _datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])
@@ -373,7 +383,7 @@ def test_get_representations_of_kind_with_end(Query, _datastore_query):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+@mock.patch("google.cloud.ndb._datastore_query")
 def test_get_representations_of_kind_empty_end(_datastore_query):
     future = tasklets.Future("fetch")
     future.set_result([])

@@ -12,11 +12,15 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import datetime
 import pytest
+import six
 
 from google.cloud.ndb import exceptions
+from google.cloud.ndb import key
 from google.cloud.ndb import model
 from google.cloud.ndb import _gql as gql_module
+from google.cloud.ndb import query as query_module
 
 
 GQL_QUERY = """
@@ -180,9 +184,7 @@ class TestGQL:
     @staticmethod
     def test_cast():
         gql = gql_module.GQL("SELECT * FROM SomeKind WHERE prop1=user('js')")
-        assert gql.filters() == {
-            ("prop1", "="): [("user", [gql_module.Literal("js")])]
-        }
+        assert gql.filters() == {("prop1", "="): [("user", [gql_module.Literal("js")])]}
 
     @staticmethod
     def test_in_list():
@@ -204,12 +206,8 @@ class TestGQL:
 
     @staticmethod
     def test_ancestor_is():
-        gql = gql_module.GQL(
-            "SELECT * FROM SomeKind WHERE ANCESTOR IS 'AnyKind'"
-        )
-        assert gql.filters() == {
-            (-1, "is"): [("nop", [gql_module.Literal("AnyKind")])]
-        }
+        gql = gql_module.GQL("SELECT * FROM SomeKind WHERE ANCESTOR IS 'AnyKind'")
+        assert gql.filters() == {(-1, "is"): [("nop", [gql_module.Literal("AnyKind")])]}
 
     @staticmethod
     def test_ancestor_multiple_ancestors():
@@ -239,37 +237,27 @@ class TestGQL:
     @staticmethod
     def test_null():
         gql = gql_module.GQL("SELECT * FROM SomeKind WHERE prop1=NULL")
-        assert gql.filters() == {
-            ("prop1", "="): [("nop", [gql_module.Literal(None)])]
-        }
+        assert gql.filters() == {("prop1", "="): [("nop", [gql_module.Literal(None)])]}
 
     @staticmethod
     def test_true():
         gql = gql_module.GQL("SELECT * FROM SomeKind WHERE prop1=TRUE")
-        assert gql.filters() == {
-            ("prop1", "="): [("nop", [gql_module.Literal(True)])]
-        }
+        assert gql.filters() == {("prop1", "="): [("nop", [gql_module.Literal(True)])]}
 
     @staticmethod
     def test_false():
         gql = gql_module.GQL("SELECT * FROM SomeKind WHERE prop1=FALSE")
-        assert gql.filters() == {
-            ("prop1", "="): [("nop", [gql_module.Literal(False)])]
-        }
+        assert gql.filters() == {("prop1", "="): [("nop", [gql_module.Literal(False)])]}
 
     @staticmethod
     def test_float():
         gql = gql_module.GQL("SELECT * FROM SomeKind WHERE prop1=3.14")
-        assert gql.filters() == {
-            ("prop1", "="): [("nop", [gql_module.Literal(3.14)])]
-        }
+        assert gql.filters() == {("prop1", "="): [("nop", [gql_module.Literal(3.14)])]}
 
     @staticmethod
     def test_quoted_identifier():
         gql = gql_module.GQL('SELECT * FROM SomeKind WHERE "prop1"=3.14')
-        assert gql.filters() == {
-            ("prop1", "="): [("nop", [gql_module.Literal(3.14)])]
-        }
+        assert gql.filters() == {("prop1", "="): [("nop", [gql_module.Literal(3.14)])]}
 
     @staticmethod
     def test_order_by_ascending():
@@ -291,15 +279,18 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False), PropertyOrder(name='prop1', "
-            "reverse=True)], projection=['prop1', 'prop2'], "
-            "default_options=QueryOptions(limit=10, offset=5))"
+            "reverse=True)], limit=10, offset=5, "
+            "projection=['prop1', 'prop2'])"
         )
         gql = gql_module.GQL(GQL_QUERY)
         query = gql.get_query()
-        assert repr(query) == rep
+        compat_rep = "'xxx'"
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
+            compat_rep = "u'xxx'"
+        assert repr(query) == rep.format(compat_rep)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -325,11 +316,23 @@ class TestGQL:
     @pytest.mark.usefixtures("in_context")
     def test_get_query_in():
         class SomeKind(model.Model):
+            prop1 = model.IntegerProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 IN (1, 2, 3)")
+        query = gql.get_query()
+        assert query.filters == query_module.OR(
+            query_module.FilterNode("prop1", "=", 1),
+            query_module.FilterNode("prop1", "=", 2),
+            query_module.FilterNode("prop1", "=", 3),
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_in_parameterized():
+        class SomeKind(model.Model):
             prop1 = model.StringProperty()
 
-        gql = gql_module.GQL(
-            "SELECT prop1 FROM SomeKind WHERE prop1 IN (1, 2, 3)"
-        )
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 IN (:1, :2, :3)")
         query = gql.get_query()
         assert "'in'," in str(query.filters)
 
@@ -341,4 +344,342 @@ class TestGQL:
 
         gql = gql_module.GQL("SELECT __key__ FROM SomeKind WHERE prop1='a'")
         query = gql.get_query()
-        assert query.default_options.keys_only is True
+        assert query.keys_only is True
+        assert "keys_only=True" in query.__repr__()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_date():
+        class SomeKind(model.Model):
+            prop1 = model.DateProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Date(2020, 3, 26)"
+        )
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode(
+            "prop1", "=", datetime.datetime(2020, 3, 26, 0, 0, 0)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_date_one_parameter():
+        class SomeKind(model.Model):
+            prop1 = model.DateProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Date('2020-03-26')"
+        )
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode(
+            "prop1", "=", datetime.datetime(2020, 3, 26, 0, 0, 0)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_date_parameterized():
+        class SomeKind(model.Model):
+            prop1 = model.DateProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = Date(:1)")
+        query = gql.get_query()
+        assert "'date'" in str(query.filters)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_date_one_parameter_bad_date():
+        class SomeKind(model.Model):
+            prop1 = model.DateProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Date('not a date')"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_date_one_parameter_bad_type():
+        class SomeKind(model.Model):
+            prop1 = model.DateProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = Date(42)")
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_date_too_many_values():
+        class SomeKind(model.Model):
+            prop1 = model.DateProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Date(1, 2, 3, 4)"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_date_bad_values():
+        class SomeKind(model.Model):
+            prop1 = model.DateProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Date(100, 200, 300)"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_datetime():
+        class SomeKind(model.Model):
+            prop1 = model.DateTimeProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = DateTime(2020, 3, 26,"
+            "12, 45, 5)"
+        )
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode(
+            "prop1", "=", datetime.datetime(2020, 3, 26, 12, 45, 5)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_datetime_ome_parameter():
+        class SomeKind(model.Model):
+            prop1 = model.DateTimeProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = "
+            "DateTime('2020-03-26 12:45:05')"
+        )
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode(
+            "prop1", "=", datetime.datetime(2020, 3, 26, 12, 45, 5)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_datetime_parameterized():
+        class SomeKind(model.Model):
+            prop1 = model.DateTimeProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = DateTime(:1)")
+        query = gql.get_query()
+        assert "'datetime'" in str(query.filters)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_datetime_one_parameter_bad_date():
+        class SomeKind(model.Model):
+            prop1 = model.DateTimeProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = DateTime('not a date')"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_datetime_one_parameter_bad_type():
+        class SomeKind(model.Model):
+            prop1 = model.DateTimeProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = DateTime(42)")
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_datetime_bad_values():
+        class SomeKind(model.Model):
+            prop1 = model.DateTimeProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = DateTime(100, 200, 300)"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_time():
+        class SomeKind(model.Model):
+            prop1 = model.TimeProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = Time(12, 45, 5)")
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode(
+            "prop1", "=", datetime.datetime(1970, 1, 1, 12, 45, 5)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_time_one_parameter():
+        class SomeKind(model.Model):
+            prop1 = model.TimeProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Time('12:45:05')"
+        )
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode(
+            "prop1", "=", datetime.datetime(1970, 1, 1, 12, 45, 5)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_time_one_parameter_int():
+        class SomeKind(model.Model):
+            prop1 = model.TimeProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = Time(12)")
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode(
+            "prop1", "=", datetime.datetime(1970, 1, 1, 12)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_time_parameterized():
+        class SomeKind(model.Model):
+            prop1 = model.TimeProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = Time(:1)")
+        query = gql.get_query()
+        assert "'time'" in str(query.filters)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_time_one_parameter_bad_time():
+        class SomeKind(model.Model):
+            prop1 = model.TimeProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Time('not a time')"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_time_one_parameter_bad_type():
+        class SomeKind(model.Model):
+            prop1 = model.TimeProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = Time(3.141592)")
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_time_too_many_values():
+        class SomeKind(model.Model):
+            prop1 = model.TimeProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Time(1, 2, 3, 4)"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_time_bad_values():
+        class SomeKind(model.Model):
+            prop1 = model.TimeProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Time(100, 200, 300)"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_geopt():
+        class SomeKind(model.Model):
+            prop1 = model.GeoPtProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = GeoPt(20.67, -100.32)"
+        )
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode(
+            "prop1", "=", model.GeoPt(20.67, -100.32)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_geopt_parameterized():
+        class SomeKind(model.Model):
+            prop1 = model.GeoPtProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = GeoPt(:1)")
+        query = gql.get_query()
+        assert "'geopt'" in str(query.filters)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_geopt_too_many_values():
+        class SomeKind(model.Model):
+            prop1 = model.GeoPtProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = " "GeoPt(20.67,-100.32, 1.5)"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_key():
+        class SomeKind(model.Model):
+            prop1 = model.KeyProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Key('parent', 'c', "
+            "'child', 42)"
+        )
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode(
+            "prop1", "=", key.Key("parent", "c", "child", 42)
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_key_parameterized():
+        class SomeKind(model.Model):
+            prop1 = model.KeyProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 = Key(:1)")
+        query = gql.get_query()
+        assert "'key'" in str(query.filters)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_key_odd_values():
+        class SomeKind(model.Model):
+            prop1 = model.KeyProperty()
+
+        gql = gql_module.GQL(
+            "SELECT prop1 FROM SomeKind WHERE prop1 = Key(100, 200, 300)"
+        )
+        with pytest.raises(exceptions.BadQueryError):
+            gql.get_query()
+
+
+class TestNotImplementedFUNCTIONS:
+    @staticmethod
+    def test_user():
+        with pytest.raises(NotImplementedError):
+            gql_module.FUNCTIONS["user"]("any arg")
+
+    @staticmethod
+    def test_nop():
+        with pytest.raises(NotImplementedError):
+            gql_module.FUNCTIONS["nop"]("any arg")

@@ -13,9 +13,14 @@
 # limitations under the License.
 
 import pickle
-import unittest.mock
+
+try:
+    from unittest import mock
+except ImportError:  # pragma: NO PY3 COVER
+    import mock
 
 import pytest
+import six
 
 from google.cloud.datastore import entity as datastore_entity
 from google.cloud.datastore import helpers
@@ -28,7 +33,7 @@ from google.cloud.ndb import model
 from google.cloud.ndb import query as query_module
 from google.cloud.ndb import tasklets
 
-from tests.unit import utils
+from . import utils
 
 
 def test___all__():
@@ -44,12 +49,8 @@ class TestQueryOptions:
 
     @staticmethod
     def test_constructor_with_config():
-        config = query_module.QueryOptions(
-            kind="other", namespace="config_test"
-        )
-        options = query_module.QueryOptions(
-            config=config, kind="test", project="app"
-        )
+        config = query_module.QueryOptions(kind="other", namespace="config_test")
+        options = query_module.QueryOptions(config=config, kind="test", project="app")
         assert options.kind == "test"
         assert options.project == "app"
         assert options.namespace == "config_test"
@@ -83,6 +84,12 @@ class TestQueryOptions:
         assert options.kind == "test"
         assert options.project == "app2"
         assert options.namespace == "foo"
+
+    @staticmethod
+    def test_explicitly_set_default_namespace(in_context):
+        with in_context.new(namespace="somethingelse").use() as context:
+            options = query_module.QueryOptions(context=context, namespace="")
+            assert options.namespace == ""
 
 
 class TestPropertyOrder:
@@ -119,9 +126,7 @@ class TestRepeatedStructuredPropertyPredicate:
         predicate = query_module.RepeatedStructuredPropertyPredicate(
             "matilda",
             ["foo", "bar", "baz"],
-            unittest.mock.Mock(
-                properties={"foo": "a", "bar": "b", "baz": "c"}
-            ),
+            mock.Mock(properties={"foo": "a", "bar": "b", "baz": "c"}),
         )
         assert predicate.name == "matilda"
         assert predicate.match_keys == ["foo", "bar", "baz"]
@@ -179,7 +184,7 @@ class TestRepeatedStructuredPropertyPredicate:
         class SomeKind(model.Model):
             foo = model.StructuredProperty(SubKind, repeated=True)
 
-        match_entity = SubKind(bar=1, baz="scoggs")
+        match_entity = SubKind(bar=1, baz=u"scoggs")
         predicate = query_module.RepeatedStructuredPropertyPredicate(
             "foo", ["bar", "baz"], model._entity_to_protobuf(match_entity)
         )
@@ -190,7 +195,7 @@ class TestRepeatedStructuredPropertyPredicate:
             {
                 "something.else": "whocares",
                 "foo.bar": [2, 1],
-                "foo.baz": ["matic", "scoggs"],
+                "foo.baz": [u"matic", u"scoggs"],
             }
         )
 
@@ -223,13 +228,13 @@ class TestParameterizedThing:
     def test___eq__():
         thing = query_module.ParameterizedThing()
         with pytest.raises(NotImplementedError):
-            thing == unittest.mock.sentinel.other
+            thing == mock.sentinel.other
 
     @staticmethod
     def test___ne__():
         thing = query_module.ParameterizedThing()
         with pytest.raises(NotImplementedError):
-            thing != unittest.mock.sentinel.other
+            thing != mock.sentinel.other
 
 
 class TestParameter:
@@ -253,7 +258,7 @@ class TestParameter:
     def test___eq__():
         parameter1 = query_module.Parameter("yep")
         parameter2 = query_module.Parameter("nope")
-        parameter3 = unittest.mock.sentinel.parameter
+        parameter3 = mock.sentinel.parameter
         assert parameter1 == parameter1
         assert not parameter1 == parameter2
         assert not parameter1 == parameter3
@@ -262,7 +267,7 @@ class TestParameter:
     def test___ne__():
         parameter1 = query_module.Parameter("yep")
         parameter2 = query_module.Parameter("nope")
-        parameter3 = unittest.mock.sentinel.parameter
+        parameter3 = mock.sentinel.parameter
         assert not parameter1 != parameter1
         assert parameter1 != parameter2
         assert parameter1 != parameter3
@@ -295,41 +300,59 @@ class TestParameter:
 class TestParameterizedFunction:
     @staticmethod
     def test_constructor():
-        query = query_module.ParameterizedFunction(
-            "user", query_module.Parameter(1)
-        )
+        query = query_module.ParameterizedFunction("user", [query_module.Parameter(1)])
         assert query.func == "user"
-        assert query.values == query_module.Parameter(1)
+        assert query.values == [query_module.Parameter(1)]
+
+    @staticmethod
+    def test_constructor_bad_function():
+        with pytest.raises(ValueError):
+            query_module.ParameterizedFunction("notafunc", ())
 
     @staticmethod
     def test___repr__():
-        query = query_module.ParameterizedFunction(
-            "user", query_module.Parameter(1)
-        )
-        assert (
-            query.__repr__() == "ParameterizedFunction('user', Parameter(1))"
-        )
+        query = query_module.ParameterizedFunction("user", [query_module.Parameter(1)])
+        assert query.__repr__() == "ParameterizedFunction('user', [Parameter(1)])"
 
     @staticmethod
     def test___eq__parameter():
-        query = query_module.ParameterizedFunction(
-            "user", query_module.Parameter(1)
-        )
+        query = query_module.ParameterizedFunction("user", [query_module.Parameter(1)])
         assert (
             query.__eq__(
-                query_module.ParameterizedFunction(
-                    "user", query_module.Parameter(1)
-                )
+                query_module.ParameterizedFunction("user", [query_module.Parameter(1)])
             )
             is True
         )
 
     @staticmethod
     def test___eq__no_parameter():
-        query = query_module.ParameterizedFunction(
-            "user", query_module.Parameter(1)
-        )
+        query = query_module.ParameterizedFunction("user", [query_module.Parameter(1)])
         assert query.__eq__(42) is NotImplemented
+
+    @staticmethod
+    def test_is_parameterized_True():
+        query = query_module.ParameterizedFunction("user", [query_module.Parameter(1)])
+        assert query.is_parameterized()
+
+    @staticmethod
+    def test_is_parameterized_False():
+        query = query_module.ParameterizedFunction("user", [1])
+        assert not query.is_parameterized()
+
+    @staticmethod
+    def test_is_parameterized_no_arguments():
+        query = query_module.ParameterizedFunction("user", ())
+        assert not query.is_parameterized()
+
+    @staticmethod
+    def test_resolve():
+        query = query_module.ParameterizedFunction(
+            "list", [1, query_module.Parameter(2), query_module.Parameter(3)]
+        )
+        used = {}
+        resolved = query.resolve({2: 4, 3: 6}, used)
+        assert resolved == [1, 4, 6]
+        assert used == {2: True, 3: True}
 
 
 class TestNode:
@@ -348,12 +371,12 @@ class TestNode:
     def test___eq__(self):
         node = self._make_one()
         with pytest.raises(NotImplementedError):
-            node == unittest.mock.sentinel.other
+            node == mock.sentinel.other
 
     def test___ne__(self):
         node = self._make_one()
         with pytest.raises(NotImplementedError):
-            node != unittest.mock.sentinel.other
+            node != mock.sentinel.no_node
 
     def test___le__(self):
         node = self._make_one()
@@ -404,10 +427,19 @@ class TestFalseNode:
     def test___eq__():
         false_node1 = query_module.FalseNode()
         false_node2 = query_module.FalseNode()
-        false_node3 = unittest.mock.sentinel.false_node
+        false_node3 = mock.sentinel.false_node
         assert false_node1 == false_node1
         assert false_node1 == false_node2
         assert not false_node1 == false_node3
+
+    @staticmethod
+    def test___ne__():
+        false_node1 = query_module.FalseNode()
+        false_node2 = query_module.FalseNode()
+        false_node3 = mock.sentinel.false_node
+        assert not false_node1 != false_node1
+        assert not false_node1 != false_node2
+        assert false_node1 != false_node3
 
     @staticmethod
     def test__to_filter():
@@ -456,7 +488,7 @@ class TestParameterNode:
         param = query_module.Parameter("abc")
         parameter_node = query_module.ParameterNode(prop, "=", param)
 
-        pickled = pickle.dumps(parameter_node)
+        pickled = pickle.dumps(parameter_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert parameter_node == unpickled
 
@@ -479,13 +511,31 @@ class TestParameterNode:
         parameter_node3 = query_module.ParameterNode(prop1, "<", param1)
         param2 = query_module.Parameter(900)
         parameter_node4 = query_module.ParameterNode(prop1, "=", param2)
-        parameter_node5 = unittest.mock.sentinel.parameter_node
+        parameter_node5 = mock.sentinel.parameter_node
 
         assert parameter_node1 == parameter_node1
         assert not parameter_node1 == parameter_node2
         assert not parameter_node1 == parameter_node3
         assert not parameter_node1 == parameter_node4
         assert not parameter_node1 == parameter_node5
+
+    @staticmethod
+    def test___ne__():
+        prop1 = model.Property(name="val")
+        param1 = query_module.Parameter("abc")
+        parameter_node1 = query_module.ParameterNode(prop1, "=", param1)
+        prop2 = model.Property(name="ue")
+        parameter_node2 = query_module.ParameterNode(prop2, "=", param1)
+        parameter_node3 = query_module.ParameterNode(prop1, "<", param1)
+        param2 = query_module.Parameter(900)
+        parameter_node4 = query_module.ParameterNode(prop1, "=", param2)
+        parameter_node5 = mock.sentinel.parameter_node
+
+        assert not parameter_node1 != parameter_node1
+        assert parameter_node1 != parameter_node2
+        assert parameter_node1 != parameter_node3
+        assert parameter_node1 != parameter_node4
+        assert parameter_node1 != parameter_node5
 
     @staticmethod
     def test__to_filter():
@@ -593,15 +643,13 @@ class TestFilterNode:
 
         filter_node1 = query_module.FilterNode("a", "<", 2.5)
         filter_node2 = query_module.FilterNode("a", ">", 2.5)
-        assert or_node == query_module.DisjunctionNode(
-            filter_node1, filter_node2
-        )
+        assert or_node == query_module.DisjunctionNode(filter_node1, filter_node2)
 
     @staticmethod
     def test_pickling():
         filter_node = query_module.FilterNode("speed", ">=", 88)
 
-        pickled = pickle.dumps(filter_node)
+        pickled = pickle.dumps(filter_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert filter_node == unpickled
 
@@ -616,7 +664,7 @@ class TestFilterNode:
         filter_node2 = query_module.FilterNode("slow", ">=", 88)
         filter_node3 = query_module.FilterNode("speed", "<=", 88)
         filter_node4 = query_module.FilterNode("speed", ">=", 188)
-        filter_node5 = unittest.mock.sentinel.filter_node
+        filter_node5 = mock.sentinel.filter_node
         assert filter_node1 == filter_node1
         assert not filter_node1 == filter_node2
         assert not filter_node1 == filter_node3
@@ -636,7 +684,7 @@ class TestFilterNode:
             filter_node._to_filter()
 
     @staticmethod
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test__to_filter(_datastore_query):
         as_filter = _datastore_query.make_filter.return_value
         filter_node = query_module.FilterNode("speed", ">=", 88)
@@ -647,7 +695,7 @@ class TestFilterNode:
 class TestPostFilterNode:
     @staticmethod
     def test_constructor():
-        predicate = unittest.mock.sentinel.predicate
+        predicate = mock.sentinel.predicate
         post_filter_node = query_module.PostFilterNode(predicate)
         assert post_filter_node.predicate is predicate
 
@@ -656,7 +704,7 @@ class TestPostFilterNode:
         predicate = "must-be-pickle-able"
         post_filter_node = query_module.PostFilterNode(predicate)
 
-        pickled = pickle.dumps(post_filter_node)
+        pickled = pickle.dumps(post_filter_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert post_filter_node == unpickled
 
@@ -668,24 +716,35 @@ class TestPostFilterNode:
 
     @staticmethod
     def test___eq__():
-        predicate1 = unittest.mock.sentinel.predicate1
+        predicate1 = mock.sentinel.predicate1
         post_filter_node1 = query_module.PostFilterNode(predicate1)
-        predicate2 = unittest.mock.sentinel.predicate2
+        predicate2 = mock.sentinel.predicate2
         post_filter_node2 = query_module.PostFilterNode(predicate2)
-        post_filter_node3 = unittest.mock.sentinel.post_filter_node
+        post_filter_node3 = mock.sentinel.post_filter_node
         assert post_filter_node1 == post_filter_node1
         assert not post_filter_node1 == post_filter_node2
         assert not post_filter_node1 == post_filter_node3
 
     @staticmethod
+    def test___ne__():
+        predicate1 = mock.sentinel.predicate1
+        post_filter_node1 = query_module.PostFilterNode(predicate1)
+        predicate2 = mock.sentinel.predicate2
+        post_filter_node2 = query_module.PostFilterNode(predicate2)
+        post_filter_node3 = mock.sentinel.post_filter_node
+        assert not post_filter_node1 != post_filter_node1
+        assert post_filter_node1 != post_filter_node2
+        assert post_filter_node1 != post_filter_node3
+
+    @staticmethod
     def test__to_filter_post():
-        predicate = unittest.mock.sentinel.predicate
+        predicate = mock.sentinel.predicate
         post_filter_node = query_module.PostFilterNode(predicate)
         assert post_filter_node._to_filter(post=True) is predicate
 
     @staticmethod
     def test__to_filter():
-        predicate = unittest.mock.sentinel.predicate
+        predicate = mock.sentinel.predicate
         post_filter_node = query_module.PostFilterNode(predicate)
         assert post_filter_node._to_filter() is None
 
@@ -817,11 +876,9 @@ class TestConjunctionNode:
         ]
 
     @staticmethod
-    @unittest.mock.patch("google.cloud.ndb.query._BooleanClauses")
+    @mock.patch("google.cloud.ndb.query._BooleanClauses")
     def test_constructor_unreachable(boolean_clauses):
-        clauses = unittest.mock.Mock(
-            or_parts=[], spec=("add_node", "or_parts")
-        )
+        clauses = mock.Mock(or_parts=[], spec=("add_node", "or_parts"))
         boolean_clauses.return_value = clauses
 
         node1 = query_module.FilterNode("a", "=", 7)
@@ -830,13 +887,9 @@ class TestConjunctionNode:
         with pytest.raises(RuntimeError):
             query_module.ConjunctionNode(node1, node2)
 
-        boolean_clauses.assert_called_once_with(
-            "ConjunctionNode", combine_or=False
-        )
+        boolean_clauses.assert_called_once_with("ConjunctionNode", combine_or=False)
         assert clauses.add_node.call_count == 2
-        clauses.add_node.assert_has_calls(
-            [unittest.mock.call(node1), unittest.mock.call(node2)]
-        )
+        clauses.add_node.assert_has_calls([mock.call(node1), mock.call(node2)])
 
     @staticmethod
     def test_pickling():
@@ -844,7 +897,7 @@ class TestConjunctionNode:
         node2 = query_module.FilterNode("b", ">", 7.5)
         and_node = query_module.ConjunctionNode(node1, node2)
 
-        pickled = pickle.dumps(and_node)
+        pickled = pickle.dumps(and_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert and_node == unpickled
 
@@ -873,12 +926,28 @@ class TestConjunctionNode:
         and_node1 = query_module.ConjunctionNode(filter_node1, filter_node2)
         and_node2 = query_module.ConjunctionNode(filter_node2, filter_node1)
         and_node3 = query_module.ConjunctionNode(filter_node1, filter_node3)
-        and_node4 = unittest.mock.sentinel.and_node
+        and_node4 = mock.sentinel.and_node
 
         assert and_node1 == and_node1
         assert not and_node1 == and_node2
         assert not and_node1 == and_node3
         assert not and_node1 == and_node4
+
+    @staticmethod
+    def test___ne__():
+        filter_node1 = query_module.FilterNode("a", "=", 7)
+        filter_node2 = query_module.FilterNode("b", ">", 7.5)
+        filter_node3 = query_module.FilterNode("c", "<", "now")
+
+        and_node1 = query_module.ConjunctionNode(filter_node1, filter_node2)
+        and_node2 = query_module.ConjunctionNode(filter_node2, filter_node1)
+        and_node3 = query_module.ConjunctionNode(filter_node1, filter_node3)
+        and_node4 = mock.sentinel.and_node
+
+        assert not and_node1 != and_node1
+        assert and_node1 != and_node2
+        assert and_node1 != and_node3
+        assert and_node1 != and_node4
 
     @staticmethod
     def test__to_filter_empty():
@@ -891,9 +960,9 @@ class TestConjunctionNode:
 
     @staticmethod
     def test__to_filter_single():
-        node1 = unittest.mock.Mock(spec=query_module.FilterNode)
+        node1 = mock.Mock(spec=query_module.FilterNode)
         node2 = query_module.PostFilterNode("predicate")
-        node3 = unittest.mock.Mock(spec=query_module.FilterNode)
+        node3 = mock.Mock(spec=query_module.FilterNode)
         node3._to_filter.return_value = False
         and_node = query_module.ConjunctionNode(node1, node2, node3)
 
@@ -903,11 +972,11 @@ class TestConjunctionNode:
         node1._to_filter.assert_called_once_with(post=False)
 
     @staticmethod
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test__to_filter_multiple(_datastore_query):
-        node1 = unittest.mock.Mock(spec=query_module.FilterNode)
+        node1 = mock.Mock(spec=query_module.FilterNode)
         node2 = query_module.PostFilterNode("predicate")
-        node3 = unittest.mock.Mock(spec=query_module.FilterNode)
+        node3 = mock.Mock(spec=query_module.FilterNode)
         and_node = query_module.ConjunctionNode(node1, node2, node3)
 
         as_filter = _datastore_query.make_composite_and_filter.return_value
@@ -987,7 +1056,7 @@ class TestConjunctionNode:
 
     @staticmethod
     def test_resolve_changed():
-        node1 = unittest.mock.Mock(spec=query_module.FilterNode)
+        node1 = mock.Mock(spec=query_module.FilterNode)
         node2 = query_module.FilterNode("b", ">", 77)
         node3 = query_module.FilterNode("c", "=", 7)
         node1.resolve.return_value = node3
@@ -1033,7 +1102,7 @@ class TestDisjunctionNode:
         node2 = query_module.FilterNode("b", ">", 7.5)
         or_node = query_module.DisjunctionNode(node1, node2)
 
-        pickled = pickle.dumps(or_node)
+        pickled = pickle.dumps(or_node, pickle.HIGHEST_PROTOCOL)
         unpickled = pickle.loads(pickled)
         assert or_node == unpickled
 
@@ -1062,12 +1131,28 @@ class TestDisjunctionNode:
         or_node1 = query_module.DisjunctionNode(filter_node1, filter_node2)
         or_node2 = query_module.DisjunctionNode(filter_node2, filter_node1)
         or_node3 = query_module.DisjunctionNode(filter_node1, filter_node3)
-        or_node4 = unittest.mock.sentinel.or_node
+        or_node4 = mock.sentinel.or_node
 
         assert or_node1 == or_node1
         assert not or_node1 == or_node2
         assert not or_node1 == or_node3
         assert not or_node1 == or_node4
+
+    @staticmethod
+    def test___ne__():
+        filter_node1 = query_module.FilterNode("a", "=", 7)
+        filter_node2 = query_module.FilterNode("b", ">", 7.5)
+        filter_node3 = query_module.FilterNode("c", "<", "now")
+
+        or_node1 = query_module.DisjunctionNode(filter_node1, filter_node2)
+        or_node2 = query_module.DisjunctionNode(filter_node2, filter_node1)
+        or_node3 = query_module.DisjunctionNode(filter_node1, filter_node3)
+        or_node4 = mock.sentinel.or_node
+
+        assert not or_node1 != or_node1
+        assert or_node1 != or_node2
+        assert or_node1 != or_node3
+        assert or_node1 != or_node4
 
     @staticmethod
     def test_resolve():
@@ -1085,7 +1170,7 @@ class TestDisjunctionNode:
 
     @staticmethod
     def test_resolve_changed():
-        node1 = unittest.mock.Mock(spec=query_module.FilterNode)
+        node1 = mock.Mock(spec=query_module.FilterNode)
         node2 = query_module.FilterNode("b", ">", 77)
         node3 = query_module.FilterNode("c", "=", 7)
         node1.resolve.return_value = node3
@@ -1103,8 +1188,8 @@ class TestDisjunctionNode:
 
     @staticmethod
     def test__to_filter_post():
-        node1 = unittest.mock.Mock(spec=query_module.FilterNode)
-        node2 = unittest.mock.Mock(spec=query_module.FilterNode)
+        node1 = mock.Mock(spec=query_module.FilterNode)
+        node2 = mock.Mock(spec=query_module.FilterNode)
         or_node = query_module.DisjunctionNode(node1, node2)
 
         with pytest.raises(NotImplementedError):
@@ -1161,9 +1246,54 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test_constructor_with_ancestor_and_default_namespace():
+        key = key_module.Key("a", "b", namespace=None)
+        query = query_module.Query(ancestor=key, namespace="")
+        assert query.namespace == ""
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_constructor_with_ancestor_parameterized_thing():
         query = query_module.Query(ancestor=query_module.ParameterizedThing())
         assert isinstance(query.ancestor, query_module.ParameterizedThing)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_constructor_with_class_attribute_projection(_datastore_query):
+        class Foo(model.Model):
+            string_attr = model.StringProperty()
+
+        class Bar(model.Model):
+            bar_attr = model.StructuredProperty(Foo)
+
+        query = Bar.query(projection=[Bar.bar_attr.string_attr])
+
+        assert query.projection[0] == ("bar_attr.string_attr",)[0]
+
+        query.fetch()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_constructor_with_class_attribute_projection_and_distinct(
+        _datastore_query,
+    ):
+        class Foo(model.Model):
+            string_attr = model.StringProperty()
+
+        class Bar(model.Model):
+            bar_attr = model.StructuredProperty(Foo)
+
+        query = Bar.query(
+            projection=[Bar.bar_attr.string_attr],
+            distinct_on=[Bar.bar_attr.string_attr],
+        )
+
+        assert query.projection[0] == ("bar_attr.string_attr",)[0]
+        assert query.distinct_on[0] == ("bar_attr.string_attr",)[0]
+
+        query.fetch()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1173,24 +1303,20 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.Model._check_properties")
+    @mock.patch("google.cloud.ndb.model.Model._check_properties")
     def test_constructor_with_projection_as_property(_check_props):
-        query = query_module.Query(
-            kind="Foo", projection=[model.Property(name="X")]
-        )
+        query = query_module.Query(kind="Foo", projection=[model.Property(name="X")])
         assert query.projection == ("X",)
         _check_props.assert_not_called()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.Model._check_properties")
+    @mock.patch("google.cloud.ndb.model.Model._check_properties")
     def test_constructor_with_projection_as_property_modelclass(_check_props):
         class Foo(model.Model):
             x = model.IntegerProperty()
 
-        query = query_module.Query(
-            kind="Foo", projection=[model.Property(name="x")]
-        )
+        query = query_module.Query(kind="Foo", projection=[model.Property(name="x")])
         assert query.projection == ("x",)
         _check_props.assert_called_once_with(["x"])
 
@@ -1215,9 +1341,7 @@ class TestQuery:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_constructor_with_filters():
-        query = query_module.Query(
-            filters=query_module.FilterNode("f", None, None)
-        )
+        query = query_module.Query(filters=query_module.FilterNode("f", None, None))
         assert isinstance(query.filters, query_module.Node)
 
     @staticmethod
@@ -1309,7 +1433,7 @@ class TestQuery:
         )
         rep = (
             "Query(project='app', namespace='space', kind='Foo', ancestor="
-            "Key('a', 'b', app='app', namespace='space'), filters="
+            "Key('a', 'b', project='app', namespace='space'), filters="
             "FilterNode('f', None, None), order_by=[], projection=['x'], "
             "distinct_on=['X'], default_options=QueryOptions(kind='Bar'))"
         )
@@ -1320,6 +1444,13 @@ class TestQuery:
     def test___repr__no_params():
         query = query_module.Query()
         rep = "Query()"
+        assert query.__repr__() == rep
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test___repr__keys_only():
+        query = query_module.Query(keys_only=True)
+        rep = "Query(keys_only=True)"
         assert query.__repr__() == rep
 
     @staticmethod
@@ -1535,7 +1666,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async(_datastore_query):
         future = tasklets.Future("fetch")
         _datastore_query.fetch.return_value = future
@@ -1544,7 +1675,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_w_project_and_namespace_from_query(_datastore_query):
         query = query_module.Query(project="foo", namespace="bar")
         response = _datastore_query.fetch.return_value
@@ -1555,20 +1686,18 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_keys_only(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(keys_only=True) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", projection=["__key__"]
-            )
+            query_module.QueryOptions(project="testing", projection=["__key__"])
         )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_keys_only_as_option(_datastore_query):
         query = query_module.Query()
         options = query_module.QueryOptions(keys_only=True)
@@ -1587,34 +1716,52 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_projection(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(projection=("foo", "bar")) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", projection=("foo", "bar")
-            )
+            query_module.QueryOptions(project="testing", projection=["foo", "bar"])
         )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_fetch_async_with_projection_with_properties(_datastore_query):
+        query = query_module.Query()
+        response = _datastore_query.fetch.return_value
+        foo = model.IntegerProperty()
+        foo._name = "foo"
+        bar = model.IntegerProperty()
+        bar._name = "bar"
+        assert query.fetch_async(projection=(foo, bar)) is response
+        _datastore_query.fetch.assert_called_once_with(
+            query_module.QueryOptions(project="testing", projection=["foo", "bar"])
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_projection_from_query(_datastore_query):
         query = query_module.Query(projection=("foo", "bar"))
         options = query_module.QueryOptions()
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(options=options) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", projection=("foo", "bar")
-            )
+            query_module.QueryOptions(project="testing", projection=("foo", "bar"))
         )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    def test_fetch_async_with_bad_projection():
+        query = query_module.Query()
+        with pytest.raises(TypeError):
+            query.fetch_async(projection=[45])
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_offset(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
@@ -1625,7 +1772,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_limit(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
@@ -1636,7 +1783,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_limit_as_positional_arg(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
@@ -1668,7 +1815,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_produce_cursors(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
@@ -1679,7 +1826,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_start_cursor(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
@@ -1690,7 +1837,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_end_cursor(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
@@ -1701,7 +1848,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_deadline(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
@@ -1712,7 +1859,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_timeout(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
@@ -1723,20 +1870,18 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_read_policy(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(read_policy="foo") is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", read_consistency="foo"
-            )
+            query_module.QueryOptions(project="testing", read_consistency="foo")
         )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_transaction(_datastore_query):
         query = query_module.Query()
         response = _datastore_query.fetch.return_value
@@ -1747,7 +1892,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_tx_and_read_consistency(_datastore_query):
         query = query_module.Query()
         with pytest.raises(TypeError):
@@ -1757,13 +1902,11 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_async_with_tx_and_read_policy(_datastore_query):
         query = query_module.Query()
         with pytest.raises(TypeError):
-            query.fetch_async(
-                transaction="foo", read_policy=_datastore_api.EVENTUAL
-            )
+            query.fetch_async(transaction="foo", read_policy=_datastore_api.EVENTUAL)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1774,7 +1917,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch(_datastore_query):
         future = tasklets.Future("fetch")
         future.set_result("foo")
@@ -1784,7 +1927,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_with_limit_as_positional_arg(_datastore_query):
         future = tasklets.Future("fetch")
         future.set_result("foo")
@@ -1794,6 +1937,36 @@ class TestQuery:
         _datastore_query.fetch.assert_called_once_with(
             query_module.QueryOptions(project="testing", limit=20)
         )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_fetch_projection_of_unindexed_property(_datastore_query):
+        class SomeKind(model.Model):
+            foo = model.IntegerProperty(indexed=False)
+
+        future = tasklets.Future("fetch")
+        future.set_result("foo")
+        _datastore_query.fetch.return_value = future
+        query = query_module.Query(kind="SomeKind")
+        with pytest.raises(model.InvalidPropertyError):
+            query.fetch(projection=["foo"])
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_count(_datastore_query):
+        _datastore_query.count.return_value = utils.future_result(42)
+        query = query_module.Query()
+        assert query.count() == 42
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_count_async(_datastore_query):
+        _datastore_query.count.return_value = utils.future_result(42)
+        query = query_module.Query()
+        assert query.count_async().result() == 42
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1812,6 +1985,18 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test_iter_with_projection():
+        query = query_module.Query()
+        foo = model.IntegerProperty()
+        foo._name = "foo"
+        iterator = query.iter(projection=(foo,))
+        assert isinstance(iterator, _datastore_query.QueryIterator)
+        assert iterator._query == query_module.QueryOptions(
+            project="testing", projection=["foo"]
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test___iter__():
         query = query_module.Query()
         iterator = iter(query)
@@ -1820,26 +2005,88 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_map():
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_map(_datastore_query):
+        class DummyQueryIterator:
+            def __init__(self, items):
+                self.items = list(items)
+
+            def has_next_async(self):
+                return utils.future_result(bool(self.items))
+
+            def next(self):
+                return self.items.pop(0)
+
+        _datastore_query.iterate.return_value = DummyQueryIterator(range(5))
+
+        def callback(result):
+            return result + 1
+
         query = query_module.Query()
-        with pytest.raises(NotImplementedError):
-            query.map(None)
+        assert query.map(callback) == (1, 2, 3, 4, 5)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_map_async():
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_map_empty_result_set(_datastore_query):
+        class DummyQueryIterator:
+            def __init__(self, items):
+                self.items = list(items)
+
+            def has_next_async(self):
+                return utils.future_result(bool(self.items))
+
+        _datastore_query.iterate.return_value = DummyQueryIterator(())
+
+        def callback(result):  # pragma: NO COVER
+            raise Exception("Shouldn't get called.")
+
         query = query_module.Query()
-        with pytest.raises(NotImplementedError):
-            query.map_async(None)
+        assert query.map(callback) == ()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_map_async(_datastore_query):
+        class DummyQueryIterator:
+            def __init__(self, items):
+                self.items = list(items)
+
+            def has_next_async(self):
+                return utils.future_result(bool(self.items))
+
+            def next(self):
+                return self.items.pop(0)
+
+        _datastore_query.iterate.return_value = DummyQueryIterator(range(5))
+
+        def callback(result):
+            return utils.future_result(result + 1)
+
+        query = query_module.Query()
+        future = query.map_async(callback)
+        assert future.result() == (1, 2, 3, 4, 5)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_map_pass_batch_into_callback():
+        query = query_module.Query()
+        with pytest.raises(NotImplementedError):
+            query.map(None, pass_batch_into_callback=True)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_map_merge_future():
+        query = query_module.Query()
+        with pytest.raises(NotImplementedError):
+            query.map(None, merge_future="hi mom!")
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_get(_datastore_query):
         query = query_module.Query()
-        _datastore_query.fetch.return_value = utils.future_result(
-            ["foo", "bar"]
-        )
+        _datastore_query.fetch.return_value = utils.future_result(["foo", "bar"])
         assert query.get() == "foo"
         _datastore_query.fetch.assert_called_once_with(
             query_module.QueryOptions(project="testing", limit=1)
@@ -1847,7 +2094,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_get_no_results(_datastore_query):
         query = query_module.Query()
         _datastore_query.fetch.return_value = utils.future_result([])
@@ -1855,95 +2102,24 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_get_async(_datastore_query):
         query = query_module.Query()
-        _datastore_query.fetch.return_value = utils.future_result(
-            ["foo", "bar"]
-        )
+        _datastore_query.fetch.return_value = utils.future_result(["foo", "bar"])
         future = query.get_async()
         assert future.result() == "foo"
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-    def test_count(_datastore_query):
-        class DummyQueryIterator:
-            def __init__(self, items):
-                self.items = list(items)
-
-            def has_next_async(self):
-                return utils.future_result(bool(self.items))
-
-            def next(self):
-                return self.items.pop()
-
-        _datastore_query.iterate.return_value = DummyQueryIterator(range(5))
-        query = query_module.Query()
-        assert query.count() == 5
-        _datastore_query.iterate.assert_called_once_with(
-            query_module.QueryOptions(project="testing", keys_only=True),
-            raw=True,
-        )
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-    def test_count_with_limit(_datastore_query):
-        class DummyQueryIterator:
-            def __init__(self, items):
-                self.items = list(items)
-
-            def has_next_async(self):
-                return utils.future_result(bool(self.items))
-
-            def next(self):
-                return self.items.pop()
-
-        _datastore_query.iterate.return_value = DummyQueryIterator(range(5))
-        query = query_module.Query()
-        assert query.count(3) == 3
-        _datastore_query.iterate.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", keys_only=True, limit=3
-            ),
-            raw=True,
-        )
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
-    def test_count_async(_datastore_query):
-        class DummyQueryIterator:
-            def __init__(self, items):
-                self.items = list(items)
-
-            def has_next_async(self):
-                return utils.future_result(bool(self.items))
-
-            def next(self):
-                return self.items.pop()
-
-        _datastore_query.iterate.return_value = DummyQueryIterator(range(5))
-        query = query_module.Query()
-        future = query.count_async()
-        assert future.result() == 5
-        _datastore_query.iterate.assert_called_once_with(
-            query_module.QueryOptions(project="testing", keys_only=True),
-            raw=True,
-        )
-
-    @staticmethod
-    @pytest.mark.usefixtures("in_context")
     def test_fetch_page_multiquery():
         query = query_module.Query()
-        query.filters = unittest.mock.Mock(_multiquery=True)
+        query.filters = mock.Mock(_multiquery=True)
         with pytest.raises(TypeError):
             query.fetch_page(5)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_page_first_page(_datastore_query):
         class DummyQueryIterator:
             _more_results_after_limit = True
@@ -1956,25 +2132,32 @@ class TestQuery:
 
             def next(self):
                 item = self.items.pop(0)
-                return unittest.mock.Mock(
-                    entity=unittest.mock.Mock(return_value=item),
+                return mock.Mock(
+                    entity=mock.Mock(return_value=item),
                     cursor="cursor{}".format(item),
                 )
 
         _datastore_query.iterate.return_value = DummyQueryIterator()
         query = query_module.Query()
+        query.filters = mock.Mock(
+            _multiquery=False,
+            _post_filters=mock.Mock(return_value=False),
+        )
         results, cursor, more = query.fetch_page(5)
         assert results == [0, 1, 2, 3, 4]
         assert cursor == "cursor4"
         assert more
 
         _datastore_query.iterate.assert_called_once_with(
-            query_module.QueryOptions(project="testing", limit=5), raw=True
+            query_module.QueryOptions(
+                filters=query.filters, project="testing", limit=5
+            ),
+            raw=True,
         )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_page_last_page(_datastore_query):
         class DummyQueryIterator:
             _more_results_after_limit = False
@@ -1990,8 +2173,8 @@ class TestQuery:
 
             def next(self):
                 item = self.items.pop(0)
-                return unittest.mock.Mock(
-                    entity=unittest.mock.Mock(return_value=item),
+                return mock.Mock(
+                    entity=mock.Mock(return_value=item),
                     cursor="cursor{}".format(item),
                 )
 
@@ -2011,7 +2194,7 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_page_beyond_last_page(_datastore_query):
         class DummyQueryIterator:
             # Emulates the Datastore emulator behavior
@@ -2038,7 +2221,38 @@ class TestQuery:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.query._datastore_query")
+    @mock.patch("google.cloud.ndb._datastore_query")
+    def test_fetch_page_no_results(_datastore_query):
+        class DummyQueryIterator:
+            _more_results_after_limit = True
+
+            def __init__(self):
+                self.items = []
+
+            def has_next_async(self):
+                return utils.future_result(bool(self.items))
+
+        _datastore_query.iterate.return_value = DummyQueryIterator()
+        query = query_module.Query()
+        query.filters = mock.Mock(
+            _multiquery=False,
+            _post_filters=mock.Mock(return_value=False),
+        )
+        results, cursor, more = query.fetch_page(5)
+        assert results == []
+        assert cursor is None
+        assert more is False
+
+        _datastore_query.iterate.assert_called_once_with(
+            query_module.QueryOptions(
+                filters=query.filters, project="testing", limit=5
+            ),
+            raw=True,
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_query")
     def test_fetch_page_async(_datastore_query):
         class DummyQueryIterator:
             _more_results_after_limit = True
@@ -2051,8 +2265,8 @@ class TestQuery:
 
             def next(self):
                 item = self.items.pop(0)
-                return unittest.mock.Mock(
-                    entity=unittest.mock.Mock(return_value=item),
+                return mock.Mock(
+                    entity=mock.Mock(return_value=item),
                     cursor="cursor{}".format(item),
                 )
 
@@ -2072,6 +2286,7 @@ class TestQuery:
 class TestGQL:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    @pytest.mark.filterwarnings("ignore")
     def test_gql():
         class SomeKind(model.Model):
             prop1 = model.StringProperty()
@@ -2080,17 +2295,20 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
-            "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
-            "default_options=QueryOptions(limit=10, offset=5))"
+            "'prop4', reverse=False)], limit=10, offset=5, "
+            "projection=['prop1', 'prop2'])"
         )
         gql_query = (
             "SELECT prop1, prop2 FROM SomeKind WHERE prop3>5 and prop2='xxx' "
             "ORDER BY prop4 LIMIT 10 OFFSET 5"
         )
         query = query_module.gql(gql_query)
-        assert query.__repr__() == rep
+        compat_rep = "'xxx'"
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
+            compat_rep = "u'xxx'"
+        assert query.__repr__() == rep.format(compat_rep)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -2102,10 +2320,10 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
-            "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
-            "default_options=QueryOptions(limit=10, offset=5))"
+            "'prop4', reverse=False)], limit=10, offset=5, "
+            "projection=['prop1', 'prop2'])"
         )
         gql_query = (
             "SELECT prop1, prop2 FROM SomeKind WHERE prop3>:1 AND prop2=:2 "
@@ -2113,7 +2331,10 @@ class TestGQL:
         )
         positional = [5, "xxx"]
         query = query_module.gql(gql_query, *positional)
-        assert query.__repr__() == rep
+        compat_rep = "'xxx'"
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
+            compat_rep = "u'xxx'"
+        assert query.__repr__() == rep.format(compat_rep)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -2125,10 +2346,10 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
-            "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
-            "default_options=QueryOptions(limit=10, offset=5))"
+            "'prop4', reverse=False)], limit=10, offset=5, "
+            "projection=['prop1', 'prop2'])"
         )
         gql_query = (
             "SELECT prop1, prop2 FROM SomeKind WHERE prop3 > :param1 and "
@@ -2136,7 +2357,10 @@ class TestGQL:
         )
         keywords = {"param1": 5, "param2": "xxx"}
         query = query_module.gql(gql_query, **keywords)
-        assert query.__repr__() == rep
+        compat_rep = "'xxx'"
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
+            compat_rep = "u'xxx'"
+        assert query.__repr__() == rep.format(compat_rep)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -2148,10 +2372,10 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', 'xxx'"
+            "Query(kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
-            "'prop4', reverse=False)], projection=['prop1', 'prop2'], "
-            "default_options=QueryOptions(limit=10, offset=5))"
+            "'prop4', reverse=False)], limit=10, offset=5, "
+            "projection=['prop1', 'prop2'])"
         )
         gql_query = (
             "SELECT prop1, prop2 FROM SomeKind WHERE prop3 > :1 and "
@@ -2160,4 +2384,7 @@ class TestGQL:
         positional = [5]
         keywords = {"param1": "xxx"}
         query = query_module.gql(gql_query, *positional, **keywords)
-        assert query.__repr__() == rep
+        compat_rep = "'xxx'"
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
+            compat_rep = "u'xxx'"
+        assert query.__repr__() == rep.format(compat_rep)

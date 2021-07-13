@@ -12,18 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import functools
+import operator
 import time
 
 KIND = "SomeKind"
 OTHER_KIND = "OtherKind"
-OTHER_NAMESPACE = "other-namespace"
 
 
-def eventually(f, predicate, timeout=60, interval=2):
+def eventually(f, predicate, timeout=120, interval=2):
     """Runs `f` in a loop, hoping for eventual success.
 
     Some things we're trying to test in Datastore are eventually
-    consistent—we'll write something to the Datastore and can read back out
+    consistent-we'll write something to the Datastore and can read back out
     data, eventually. This is particularly true for metadata, where we can
     write an entity to Datastore and it takes some amount of time for metadata
     about the entity's "kind" to update to match the new data just written,
@@ -62,3 +63,23 @@ def eventually(f, predicate, timeout=60, interval=2):
         time.sleep(interval)
 
     assert predicate(value)
+
+
+def length_equals(n):
+    """Returns predicate that returns True if passed a sequence of length `n`.
+
+    For use with `eventually`.
+    """
+
+    def predicate(sequence):
+        return len(sequence) == n
+
+    return predicate
+
+
+def equals(n):
+    """Returns predicate that returns True if passed `n`.
+
+    For use with `eventually`.
+    """
+    return functools.partial(operator.eq, n)

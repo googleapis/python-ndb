@@ -18,15 +18,20 @@ Assumes ``nox >= 2018.9.14`` is installed.
 """
 
 import os
+import pathlib
 import shutil
 
 import nox
 
-LOCAL_DEPS = ("google-cloud-core", "google-api-core")
+LOCAL_DEPS = ("google-api-core", "google-cloud-core")
 NOX_DIR = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_INTERPRETER = "3.7"
-PYPY = "pypy3"
-ALL_INTERPRETERS = ("3.6", "3.7", PYPY)
+DEFAULT_INTERPRETER = "3.8"
+ALL_INTERPRETERS = ("2.7", "3.6", "3.7", "3.8", "3.9")
+PY3_INTERPRETERS = ("3.6", "3.7", "3.8", "3.9")
+MAJOR_INTERPRETERS = ("2.7", "3.8")
+CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
+
+BLACK_VERSION = "black==20.8b1"
 
 
 def get_path(*names):
@@ -35,9 +40,15 @@ def get_path(*names):
 
 @nox.session(py=ALL_INTERPRETERS)
 def unit(session):
+    constraints_path = str(
+        CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
+    )
     # Install all dependencies.
     session.install("pytest", "pytest-cov")
-    session.install(".")
+    session.install("mock")
+    session.install("-e", ".", "-c", constraints_path)
+    # This variable is used to skip coverage by Python version
+    session.env["PY_VERSION"] = session.python[0]
     # Run py.test against the unit tests.
     run_args = ["pytest"]
     if session.posargs:
@@ -46,16 +57,17 @@ def unit(session):
         run_args.extend(
             [
                 "--cov=google.cloud.ndb",
-                "--cov=tests.unit",
+                "--cov=unit",
                 "--cov-config",
                 get_path(".coveragerc"),
-                "--cov-report=",
+                "--cov-report=term-missing",
             ]
         )
     run_args.append(get_path("tests", "unit"))
     session.run(*run_args)
 
-    if not session.posargs:
+    # Do not run cover session for Python 2, or it will fail
+    if not session.posargs and session.python[0] != "2":
         session.notify("cover")
 
 
@@ -63,6 +75,8 @@ def unit(session):
 def cover(session):
     # Install all dependencies.
     session.install("coverage")
+    # THis variable is used to skip coverage by Python version
+    session.env["PY_VERSION"] = session.python[0]
     # Run coverage report.
     session.run("coverage", "report", "--fail-under=100", "--show-missing")
     # Erase cached coverage data.
@@ -76,10 +90,9 @@ def run_black(session, use_check=False):
 
     args.extend(
         [
-            "--line-length=79",
             get_path("docs"),
             get_path("noxfile.py"),
-            get_path("src"),
+            get_path("google"),
             get_path("tests"),
         ]
     )
@@ -93,7 +106,7 @@ def lint(session):
     Returns a failure if the linters find linting errors or sufficiently
     serious code quality issues.
     """
-    session.install("flake8", "black")
+    session.install("flake8", BLACK_VERSION)
     run_black(session, use_check=True)
     session.run("flake8", "google", "tests")
 
@@ -101,7 +114,7 @@ def lint(session):
 @nox.session(py=DEFAULT_INTERPRETER)
 def blacken(session):
     # Install all dependencies.
-    session.install("black")
+    session.install(BLACK_VERSION)
     # Run ``black``.
     run_black(session)
 
@@ -111,9 +124,7 @@ def docs(session):
     """Build the docs for this library."""
 
     session.install("-e", ".")
-    session.install(
-        "sphinx", "alabaster", "recommonmark", "sphinxcontrib.spelling"
-    )
+    session.install("sphinx", "alabaster", "recommonmark", "sphinxcontrib.spelling")
 
     shutil.rmtree(os.path.join("docs", "_build"), ignore_errors=True)
     session.run(
@@ -150,9 +161,12 @@ def doctest(session):
     session.run(*run_args)
 
 
-@nox.session(py=DEFAULT_INTERPRETER)
+@nox.session(py=MAJOR_INTERPRETERS)
 def system(session):
     """Run the system test suite."""
+    constraints_path = str(
+        CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
+    )
     system_test_path = get_path("tests", "system.py")
     system_test_folder_path = os.path.join("tests", "system")
 
@@ -172,15 +186,14 @@ def system(session):
     # Install all test dependencies, then install this package into the
     # virtualenv's dist-packages.
     session.install("pytest")
+    session.install("mock")
+    session.install("google-cloud-testutils")
     for local_dep in LOCAL_DEPS:
         session.install(local_dep)
-    session.install("-e", get_path("test_utils", "test_utils"))
-    session.install("-e", ".")
+    session.install("-e", ".", "-c", constraints_path)
 
     # Run py.test against the system tests.
     if system_test_exists:
         session.run("py.test", "--quiet", system_test_path, *session.posargs)
     if system_test_folder_exists:
-        session.run(
-            "py.test", "--quiet", system_test_folder_path, *session.posargs
-        )
+        session.run("py.test", "--quiet", system_test_folder_path, *session.posargs)

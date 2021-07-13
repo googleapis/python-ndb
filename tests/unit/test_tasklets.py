@@ -12,20 +12,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from unittest import mock
+try:
+    from unittest import mock
+except ImportError:  # pragma: NO PY3 COVER
+    import mock
 
 import pytest
 
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _eventloop
+from google.cloud.ndb import exceptions
 from google.cloud.ndb import _remote
 from google.cloud.ndb import tasklets
 
-import tests.unit.utils
+from . import utils
 
 
 def test___all__():
-    tests.unit.utils.verify___all__(tasklets)
+    utils.verify___all__(tasklets)
 
 
 def test_add_flow_exception():
@@ -99,7 +103,7 @@ class TestFuture:
         future.set_exception(error)
         assert future.exception() is error
         assert future.get_exception() is error
-        assert future.get_traceback() is error.__traceback__
+        assert future.get_traceback() is getattr(error, "__traceback__", None)
         with pytest.raises(Exception):
             future.result()
 
@@ -112,7 +116,7 @@ class TestFuture:
         future.set_exception(error)
         assert future.exception() is error
         assert future.get_exception() is error
-        assert future.get_traceback() is error.__traceback__
+        assert future.get_traceback() is getattr(error, "__traceback__", None)
         callback.assert_called_once_with(future)
 
     @staticmethod
@@ -127,10 +131,10 @@ class TestFuture:
     @mock.patch("google.cloud.ndb.tasklets._eventloop")
     def test_wait(_eventloop):
         def side_effects(future):
-            yield
-            yield
+            yield True
+            yield True
             future.set_result(42)
-            yield
+            yield True
 
         future = tasklets.Future()
         _eventloop.run1.side_effect = side_effects(future)
@@ -140,12 +144,20 @@ class TestFuture:
 
     @staticmethod
     @mock.patch("google.cloud.ndb.tasklets._eventloop")
+    def test_wait_loop_exhausted(_eventloop):
+        future = tasklets.Future()
+        _eventloop.run1.return_value = False
+        with pytest.raises(RuntimeError):
+            future.wait()
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb.tasklets._eventloop")
     def test_check_success(_eventloop):
         def side_effects(future):
-            yield
-            yield
+            yield True
+            yield True
             future.set_result(42)
-            yield
+            yield True
 
         future = tasklets.Future()
         _eventloop.run1.side_effect = side_effects(future)
@@ -159,10 +171,10 @@ class TestFuture:
         error = Exception("Spurious error")
 
         def side_effects(future):
-            yield
-            yield
+            yield True
+            yield True
             future.set_exception(error)
-            yield
+            yield True
 
         future = tasklets.Future()
         _eventloop.run1.side_effect = side_effects(future)
@@ -175,10 +187,10 @@ class TestFuture:
     @mock.patch("google.cloud.ndb.tasklets._eventloop")
     def test_result_block_for_result(_eventloop):
         def side_effects(future):
-            yield
-            yield
+            yield True
+            yield True
             future.set_result(42)
-            yield
+            yield True
 
         future = tasklets.Future()
         _eventloop.run1.side_effect = side_effects(future)
@@ -186,10 +198,38 @@ class TestFuture:
         assert _eventloop.run1.call_count == 3
 
     @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_cancel():
-        future = tasklets.Future()
-        with pytest.raises(NotImplementedError):
-            future.cancel()
+        # Integration test. Actually test that a cancel propagates properly.
+        rpc = tasklets.Future("Fake RPC")
+        wrapped_rpc = _remote.RemoteCall(rpc, "Wrapped Fake RPC")
+
+        @tasklets.tasklet
+        def inner_tasklet():
+            yield wrapped_rpc
+
+        @tasklets.tasklet
+        def outer_tasklet():
+            yield inner_tasklet()
+
+        future = outer_tasklet()
+        assert not future.cancelled()
+        future.cancel()
+        assert rpc.cancelled()
+
+        with pytest.raises(exceptions.Cancelled):
+            future.result()
+
+        assert future.cancelled()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_cancel_already_done():
+        future = tasklets.Future("testing")
+        future.set_result(42)
+        future.cancel()  # noop
+        assert not future.cancelled()
+        assert future.result() == 42
 
     @staticmethod
     def test_cancelled():
@@ -209,6 +249,14 @@ class TestFuture:
         future = tasklets.Future.wait_any(futures)
         assert future is futures[1]
         assert future.result() == 42
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_wait_any_loop_exhausted():
+        futures = [tasklets.Future() for _ in range(3)]
+
+        with pytest.raises(RuntimeError):
+            tasklets.Future.wait_any(futures)
 
     @staticmethod
     def test_wait_any_no_futures():
@@ -255,15 +303,13 @@ class Test_TaskletFuture:
     @staticmethod
     def test___repr__():
         future = tasklets._TaskletFuture(None, None, info="Female")
-        assert repr(future) == "_TaskletFuture('Female') <{}>".format(
-            id(future)
-        )
+        assert repr(future) == "_TaskletFuture('Female') <{}>".format(id(future))
 
     @staticmethod
     def test__advance_tasklet_return(in_context):
         def generator_function():
             yield
-            return 42
+            raise tasklets.Return(42)
 
         generator = generator_function()
         next(generator)  # skip ahead to return
@@ -299,7 +345,7 @@ class Test_TaskletFuture:
     def test__advance_tasklet_dependency_returns(in_context):
         def generator_function(dependency):
             some_value = yield dependency
-            return some_value + 42
+            raise tasklets.Return(some_value + 42)
 
         dependency = tasklets.Future()
         generator = generator_function(dependency)
@@ -324,10 +370,30 @@ class Test_TaskletFuture:
             future.result()
 
     @staticmethod
+    def test__advance_tasklet_dependency_raises_with_try_except(in_context):
+        def generator_function(dependency, error_handler):
+            try:
+                yield dependency
+            except Exception:
+                result = yield error_handler
+                raise tasklets.Return(result)
+
+        error = Exception("Spurious error.")
+        dependency = tasklets.Future()
+        error_handler = tasklets.Future()
+        generator = generator_function(dependency, error_handler)
+        future = tasklets._TaskletFuture(generator, in_context)
+        future._advance_tasklet()
+        dependency.set_exception(error)
+        assert future.running()
+        error_handler.set_result("hi mom!")
+        assert future.result() == "hi mom!"
+
+    @staticmethod
     def test__advance_tasklet_yields_rpc(in_context):
         def generator_function(dependency):
             value = yield dependency
-            return value + 3
+            raise tasklets.Return(value + 3)
 
         dependency = mock.Mock(spec=_remote.RemoteCall)
         dependency.exception.return_value = None
@@ -345,7 +411,7 @@ class Test_TaskletFuture:
     def test__advance_tasklet_parallel_yield(in_context):
         def generator_function(dependencies):
             one, two = yield dependencies
-            return one + two
+            raise tasklets.Return(one + two)
 
         dependencies = (tasklets.Future(), tasklets.Future())
         generator = generator_function(dependencies)
@@ -355,6 +421,31 @@ class Test_TaskletFuture:
         dependencies[1].set_result(3)
         assert future.result() == 11
         assert future.context is in_context
+
+    @staticmethod
+    def test_cancel_not_waiting(in_context):
+        dependency = tasklets.Future()
+        future = tasklets._TaskletFuture(None, in_context)
+        future.cancel()
+
+        assert not dependency.cancelled()
+        with pytest.raises(exceptions.Cancelled):
+            future.result()
+
+    @staticmethod
+    def test_cancel_waiting_on_dependency(in_context):
+        def generator_function(dependency):
+            yield dependency
+
+        dependency = tasklets.Future()
+        generator = generator_function(dependency)
+        future = tasklets._TaskletFuture(generator, in_context)
+        future._advance_tasklet()
+        future.cancel()
+
+        assert dependency.cancelled()
+        with pytest.raises(exceptions.Cancelled):
+            future.result()
 
 
 class Test_MultiFuture:
@@ -386,6 +477,30 @@ class Test_MultiFuture:
         with pytest.raises(Exception):
             future.result()
 
+    @staticmethod
+    def test_cancel():
+        dependencies = (tasklets.Future(), tasklets.Future())
+        future = tasklets._MultiFuture(dependencies)
+        future.cancel()
+        assert dependencies[0].cancelled()
+        assert dependencies[1].cancelled()
+        with pytest.raises(exceptions.Cancelled):
+            future.result()
+
+    @staticmethod
+    def test_no_dependencies():
+        future = tasklets._MultiFuture(())
+        assert future.result() == ()
+
+    @staticmethod
+    def test_nested():
+        dependencies = [tasklets.Future() for _ in range(3)]
+        future = tasklets._MultiFuture((dependencies[0], dependencies[1:]))
+        for i, dependency in enumerate(dependencies):
+            dependency.set_result(i)
+
+        assert future.result() == (0, (1, 2))
+
 
 class Test__get_return_value:
     @staticmethod
@@ -411,13 +526,30 @@ class Test_tasklet:
         @tasklets.tasklet
         def generator(dependency):
             value = yield dependency
-            return value + 3
+            raise tasklets.Return(value + 3)
 
         dependency = tasklets.Future()
         future = generator(dependency)
         assert isinstance(future, tasklets._TaskletFuture)
         dependency.set_result(8)
         assert future.result() == 11
+
+    # Can't make this work with 2.7, because the return with argument inside
+    # generator error crashes the pytest collection process, even with skip
+    # @staticmethod
+    # @pytest.mark.skipif(sys.version_info[0] == 2, reason="requires python3")
+    # @pytest.mark.usefixtures("in_context")
+    # def test_generator_using_return():
+    #     @tasklets.tasklet
+    #     def generator(dependency):
+    #         value = yield dependency
+    #         return value + 3
+
+    #     dependency = tasklets.Future()
+    #     future = generator(dependency)
+    #     assert isinstance(future, tasklets._TaskletFuture)
+    #     dependency.set_result(8)
+    #     assert future.result() == 11
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -447,7 +579,7 @@ class Test_tasklet:
         def some_task(transaction, future):
             assert context_module.get_context().transaction == transaction
             yield future
-            return context_module.get_context().transaction
+            raise tasklets.Return(context_module.get_context().transaction)
 
         future_foo = tasklets.Future("foo")
         with in_context.new(transaction="foo").use():
@@ -578,7 +710,8 @@ class TestReducingFuture:
 
 
 def test_Return():
-    assert issubclass(tasklets.Return, StopIteration)
+    assert not issubclass(tasklets.Return, StopIteration)
+    assert issubclass(tasklets.Return, Exception)
 
 
 class TestSerialQueueFuture:
@@ -600,12 +733,24 @@ def test_synctasklet():
         future = tasklets.Future(value)
         future.set_result(value)
         x = yield future
-        return x + 3
+        raise tasklets.Return(x + 3)
 
     result = generator_function(8)
     assert result == 11
 
 
+@pytest.mark.usefixtures("in_context")
 def test_toplevel():
-    with pytest.raises(NotImplementedError):
-        tasklets.toplevel()
+    @tasklets.toplevel
+    def generator_function(value):
+        future = tasklets.Future(value)
+        future.set_result(value)
+        x = yield future
+        raise tasklets.Return(x + 3)
+
+    idle = mock.Mock(__name__="idle", return_value=None)
+    _eventloop.add_idle(idle)
+
+    result = generator_function(8)
+    assert result == 11
+    idle.assert_called_once_with()

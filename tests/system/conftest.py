@@ -1,4 +1,5 @@
 import itertools
+import logging
 import os
 import uuid
 
@@ -8,7 +9,23 @@ import requests
 from google.cloud import datastore
 from google.cloud import ndb
 
-from . import KIND, OTHER_KIND, OTHER_NAMESPACE
+from google.cloud.ndb import global_cache as global_cache_module
+
+from . import KIND, OTHER_KIND
+
+log = logging.getLogger(__name__)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def preclean():
+    """Clean out default namespace in test database."""
+    ds_client = _make_ds_client(None)
+    for kind in (KIND, OTHER_KIND):
+        query = ds_client.query(kind=kind)
+        query.keys_only()
+        for page in query.fetch().pages:
+            keys = [entity.key for entity in page]
+            ds_client.delete_multi(keys)
 
 
 def _make_ds_client(namespace):
@@ -21,20 +38,12 @@ def _make_ds_client(namespace):
     return client
 
 
-def all_entities(client):
+def all_entities(client, other_namespace):
     return itertools.chain(
         client.query(kind=KIND).fetch(),
         client.query(kind=OTHER_KIND).fetch(),
-        client.query(namespace=OTHER_NAMESPACE).fetch(),
+        client.query(namespace=other_namespace).fetch(),
     )
-
-
-@pytest.fixture(scope="module", autouse=True)
-def initial_clean():
-    # Make sure database is in clean state at beginning of test run
-    client = _make_ds_client(None)
-    for entity in all_entities(client):
-        client.delete(entity.key)
 
 
 @pytest.fixture(scope="session")
@@ -53,27 +62,23 @@ def ds_client(namespace):
 
 
 @pytest.fixture
-def with_ds_client(ds_client, to_delete, deleted_keys):
-    # Make sure we're leaving database as clean as we found it after each test
-    results = [
-        entity
-        for entity in all_entities(ds_client)
-        if entity.key not in deleted_keys
-    ]
-    assert not results
-
+def with_ds_client(ds_client, to_delete, deleted_keys, other_namespace):
     yield ds_client
 
-    if to_delete:
-        ds_client.delete_multi(to_delete)
-        deleted_keys.update(to_delete)
+    # Clean up after ourselves
+    while to_delete:
+        batch = to_delete[:500]
+        ds_client.delete_multi(batch)
+        deleted_keys.update(batch)
+        to_delete = to_delete[500:]
 
     not_deleted = [
         entity
-        for entity in all_entities(ds_client)
+        for entity in all_entities(ds_client, other_namespace)
         if entity.key not in deleted_keys
     ]
-    assert not not_deleted
+    if not_deleted:
+        log.warning("CLEAN UP: Entities not deleted from test: {}".format(not_deleted))
 
 
 @pytest.fixture
@@ -92,9 +97,26 @@ def ds_entity(with_ds_client, dispose_of):
 
 
 @pytest.fixture
+def ds_entity_with_meanings(with_ds_client, dispose_of):
+    def make_entity(*key_args, **entity_kwargs):
+        meanings = key_args[0]
+        key = with_ds_client.key(*key_args[1:])
+        assert with_ds_client.get(key) is None
+        entity = datastore.Entity(key=key, exclude_from_indexes=("blob",))
+        entity._meanings = meanings
+        entity.update(entity_kwargs)
+        with_ds_client.put(entity)
+        dispose_of(key)
+
+        return entity
+
+    yield make_entity
+
+
+@pytest.fixture
 def dispose_of(with_ds_client, to_delete):
-    def delete_entity(ds_key):
-        to_delete.append(ds_key)
+    def delete_entity(*ds_keys):
+        to_delete.extend(ds_keys)
 
     return delete_entity
 
@@ -105,7 +127,33 @@ def namespace():
 
 
 @pytest.fixture
+def other_namespace():
+    return str(uuid.uuid4())
+
+
+@pytest.fixture
 def client_context(namespace):
-    client = ndb.Client(namespace=namespace)
-    with client.context(cache_policy=False) as the_context:
-        yield the_context
+    client = ndb.Client()
+    context_manager = client.context(
+        cache_policy=False,
+        legacy_data=False,
+        namespace=namespace,
+    )
+    with context_manager as context:
+        yield context
+
+
+@pytest.fixture
+def redis_context(client_context):
+    global_cache = global_cache_module.RedisCache.from_environment()
+    with client_context.new(global_cache=global_cache).use() as context:
+        context.set_global_cache_policy(None)  # Use default
+        yield context
+
+
+@pytest.fixture
+def memcache_context(client_context):
+    global_cache = global_cache_module.MemcacheCache.from_environment()
+    with client_context.new(global_cache=global_cache).use() as context:
+        context.set_global_cache_policy(None)  # Use default
+        yield context

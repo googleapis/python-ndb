@@ -25,10 +25,6 @@ project = "ndb"
 copyright = "2018, Google"
 author = "Google APIs"
 
-# The full version, including alpha/beta/rc tags.
-release = google.cloud.ndb.__version__
-# The short X.Y version.
-version = ".".join(release.split(".")[:2])
 
 # -- General configuration ---------------------------------------------------
 
@@ -44,6 +40,7 @@ nitpick_ignore = [
     ("py:meth", "_datastore_query.Cursor.urlsafe"),
     ("py:class", "google.cloud.ndb.context._Context"),
     ("py:class", "google.cloud.ndb.metadata._BaseMetadata"),
+    ("py:class", "google.cloud.ndb.model._NotEqualMixin"),
     ("py:class", "google.cloud.ndb._options.ReadOptions"),
     ("py:class", "QueryIterator"),
     ("py:class", ".."),
@@ -55,6 +52,8 @@ nitpick_ignore = [
     ("py:class", "Optional"),
     ("py:class", "Tuple"),
     ("py:class", "Union"),
+    ("py:class", "redis.Redis"),
+    ("py:class", "pymemcache.Client"),
 ]
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -160,9 +159,7 @@ latex_elements = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
-latex_documents = [
-    (master_doc, "ndb.tex", "ndb Documentation", "Google LLC", "manual")
-]
+latex_documents = [(master_doc, "ndb.tex", "ndb Documentation", "Google LLC", "manual")]
 
 
 # -- Options for manual page output ------------------------------------------
@@ -217,7 +214,15 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/", None),
     "google-auth": ("https://google-auth.readthedocs.io/en/latest/", None),
     "google-cloud-datastore": (
-        "https://googleapis.github.io/google-cloud-python/latest/",
+        "https://googleapis.dev/python/datastore/latest/",
+        None,
+    ),
+    "google-api-core": (
+        "https://googleapis.dev/python/google-api-core/latest",
+        None,
+    ),
+    "google-cloud-core": (
+        "https://googleapis.dev/python/google-cloud-core/latest",
         None,
     ),
     "grpc": ("https://grpc.io/grpc/python/", None),

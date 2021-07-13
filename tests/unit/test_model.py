@@ -14,9 +14,15 @@
 
 import datetime
 import pickle
+import pytz
+import six
 import types
-import unittest.mock
 import zlib
+
+try:
+    from unittest import mock
+except ImportError:  # pragma: NO PY3 COVER
+    import mock
 
 from google.cloud import datastore
 from google.cloud.datastore import entity as entity_module
@@ -31,10 +37,27 @@ from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import model
 from google.cloud.ndb import _options
+from google.cloud.ndb import polymodel
 from google.cloud.ndb import query as query_module
 from google.cloud.ndb import tasklets
+from google.cloud.ndb import utils as ndb_utils
+from google.cloud.ndb import _legacy_entity_pb
 
-from tests.unit import utils
+from . import utils
+
+
+class timezone(datetime.tzinfo):
+    def __init__(self, offset):
+        self.offset = datetime.timedelta(hours=offset)
+
+    def utcoffset(self, dt):
+        return self.offset
+
+    def dst(self, dt):
+        return datetime.timedelta(0)
+
+    def __eq__(self, other):
+        return self.offset == other.offset
 
 
 def test___all__():
@@ -79,7 +102,7 @@ class TestIndexProperty:
     def test___eq__():
         index_prop1 = model.IndexProperty(name="d", direction="asc")
         index_prop2 = model.IndexProperty(name="d", direction="desc")
-        index_prop3 = unittest.mock.sentinel.index_prop
+        index_prop3 = mock.sentinel.index_prop
         assert index_prop1 == index_prop1
         assert not index_prop1 == index_prop2
         assert not index_prop1 == index_prop3
@@ -88,10 +111,12 @@ class TestIndexProperty:
     def test___ne__():
         index_prop1 = model.IndexProperty(name="d", direction="asc")
         index_prop2 = model.IndexProperty(name="d", direction="desc")
-        index_prop3 = unittest.mock.sentinel.index_prop
+        index_prop3 = mock.sentinel.index_prop
+        index_prop4 = model.IndexProperty(name="d", direction="asc")
         assert not index_prop1 != index_prop1
         assert index_prop1 != index_prop2
         assert index_prop1 != index_prop3
+        assert not index_prop1 != index_prop4
 
     @staticmethod
     def test___hash__():
@@ -106,9 +131,7 @@ class TestIndex:
     @staticmethod
     def test_constructor():
         index_prop = model.IndexProperty(name="a", direction="asc")
-        index = model.Index(
-            kind="IndK", properties=(index_prop,), ancestor=False
-        )
+        index = model.Index(kind="IndK", properties=(index_prop,), ancestor=False)
         assert index._kind == "IndK"
         assert index._properties == (index_prop,)
         assert not index._ancestor
@@ -135,9 +158,7 @@ class TestIndex:
     @staticmethod
     def test___repr__():
         index_prop = model.IndexProperty(name="a", direction="asc")
-        index = model.Index(
-            kind="IndK", properties=[index_prop], ancestor=False
-        )
+        index = model.Index(kind="IndK", properties=[index_prop], ancestor=False)
         expected = "Index(kind='IndK', properties=[{!r}], ancestor=False)"
         expected = expected.format(index_prop)
         assert repr(index) == expected
@@ -149,7 +170,7 @@ class TestIndex:
         index2 = model.Index(kind="d", properties=(), ancestor=False)
         index3 = model.Index(kind="d", properties=index_props, ancestor=True)
         index4 = model.Index(kind="e", properties=index_props, ancestor=False)
-        index5 = unittest.mock.sentinel.index
+        index5 = mock.sentinel.index
         assert index1 == index1
         assert not index1 == index2
         assert not index1 == index3
@@ -163,12 +184,14 @@ class TestIndex:
         index2 = model.Index(kind="d", properties=(), ancestor=False)
         index3 = model.Index(kind="d", properties=index_props, ancestor=True)
         index4 = model.Index(kind="e", properties=index_props, ancestor=False)
-        index5 = unittest.mock.sentinel.index
+        index5 = mock.sentinel.index
+        index6 = model.Index(kind="d", properties=index_props, ancestor=False)
         assert not index1 != index1
         assert index1 != index2
         assert index1 != index3
         assert index1 != index4
         assert index1 != index5
+        assert not index1 != index6
 
     @staticmethod
     def test___hash__():
@@ -182,20 +205,16 @@ class TestIndex:
 
 class TestIndexState:
 
-    INDEX = unittest.mock.sentinel.index
+    INDEX = mock.sentinel.index
 
     def test_constructor(self):
-        index_state = model.IndexState(
-            definition=self.INDEX, state="error", id=42
-        )
+        index_state = model.IndexState(definition=self.INDEX, state="error", id=42)
         assert index_state._definition is self.INDEX
         assert index_state._state == "error"
         assert index_state._id == 42
 
     def test_definition(self):
-        index_state = model.IndexState(
-            definition=self.INDEX, state="serving", id=1
-        )
+        index_state = model.IndexState(definition=self.INDEX, state="serving", id=1)
         assert index_state.definition is self.INDEX
 
     @staticmethod
@@ -211,12 +230,8 @@ class TestIndexState:
     @staticmethod
     def test___repr__():
         index_prop = model.IndexProperty(name="a", direction="asc")
-        index = model.Index(
-            kind="IndK", properties=[index_prop], ancestor=False
-        )
-        index_state = model.IndexState(
-            definition=index, state="building", id=1337
-        )
+        index = model.Index(kind="IndK", properties=[index_prop], ancestor=False)
+        index_state = model.IndexState(definition=index, state="building", id=1337)
         expected = (
             "IndexState(definition=Index(kind='IndK', properties=["
             "IndexProperty(name='a', direction='asc')], ancestor=False), "
@@ -225,19 +240,13 @@ class TestIndexState:
         assert repr(index_state) == expected
 
     def test___eq__(self):
-        index_state1 = model.IndexState(
-            definition=self.INDEX, state="error", id=20
-        )
+        index_state1 = model.IndexState(definition=self.INDEX, state="error", id=20)
         index_state2 = model.IndexState(
-            definition=unittest.mock.sentinel.not_index, state="error", id=20
+            definition=mock.sentinel.not_index, state="error", id=20
         )
-        index_state3 = model.IndexState(
-            definition=self.INDEX, state="serving", id=20
-        )
-        index_state4 = model.IndexState(
-            definition=self.INDEX, state="error", id=80
-        )
-        index_state5 = unittest.mock.sentinel.index_state
+        index_state3 = model.IndexState(definition=self.INDEX, state="serving", id=20)
+        index_state4 = model.IndexState(definition=self.INDEX, state="error", id=80)
+        index_state5 = mock.sentinel.index_state
         assert index_state1 == index_state1
         assert not index_state1 == index_state2
         assert not index_state1 == index_state3
@@ -245,32 +254,24 @@ class TestIndexState:
         assert not index_state1 == index_state5
 
     def test___ne__(self):
-        index_state1 = model.IndexState(
-            definition=self.INDEX, state="error", id=20
-        )
+        index_state1 = model.IndexState(definition=self.INDEX, state="error", id=20)
         index_state2 = model.IndexState(
-            definition=unittest.mock.sentinel.not_index, state="error", id=20
+            definition=mock.sentinel.not_index, state="error", id=20
         )
-        index_state3 = model.IndexState(
-            definition=self.INDEX, state="serving", id=20
-        )
-        index_state4 = model.IndexState(
-            definition=self.INDEX, state="error", id=80
-        )
-        index_state5 = unittest.mock.sentinel.index_state
+        index_state3 = model.IndexState(definition=self.INDEX, state="serving", id=20)
+        index_state4 = model.IndexState(definition=self.INDEX, state="error", id=80)
+        index_state5 = mock.sentinel.index_state
+        index_state6 = model.IndexState(definition=self.INDEX, state="error", id=20)
         assert not index_state1 != index_state1
         assert index_state1 != index_state2
         assert index_state1 != index_state3
         assert index_state1 != index_state4
         assert index_state1 != index_state5
+        assert not index_state1 != index_state6
 
     def test___hash__(self):
-        index_state1 = model.IndexState(
-            definition=self.INDEX, state="error", id=88
-        )
-        index_state2 = model.IndexState(
-            definition=self.INDEX, state="error", id=88
-        )
+        index_state1 = model.IndexState(definition=self.INDEX, state="error", id=88)
+        index_state2 = model.IndexState(definition=self.INDEX, state="error", id=88)
         assert index_state1 is not index_state2
         assert hash(index_state1) == hash(index_state2)
         assert hash(index_state1) == hash((self.INDEX, "error", 88))
@@ -315,14 +316,14 @@ class Test_BaseValue:
 
     @staticmethod
     def test___repr__():
-        wrapped = model._BaseValue(b"abc")
-        assert repr(wrapped) == "_BaseValue(b'abc')"
+        wrapped = model._BaseValue("abc")
+        assert repr(wrapped) == "_BaseValue('abc')"
 
     @staticmethod
     def test___eq__():
         wrapped1 = model._BaseValue("one val")
         wrapped2 = model._BaseValue(25.5)
-        wrapped3 = unittest.mock.sentinel.base_value
+        wrapped3 = mock.sentinel.base_value
         assert wrapped1 == wrapped1
         assert not wrapped1 == wrapped2
         assert not wrapped1 == wrapped3
@@ -331,10 +332,12 @@ class Test_BaseValue:
     def test___ne__():
         wrapped1 = model._BaseValue("one val")
         wrapped2 = model._BaseValue(25.5)
-        wrapped3 = unittest.mock.sentinel.base_value
+        wrapped3 = mock.sentinel.base_value
+        wrapped4 = model._BaseValue("one val")
         assert not wrapped1 != wrapped1
         assert wrapped1 != wrapped2
         assert wrapped1 != wrapped3
+        assert not wrapped1 != wrapped4
 
     @staticmethod
     def test___hash__():
@@ -404,9 +407,7 @@ class TestProperty:
     @staticmethod
     def test_constructor_invalid_validator():
         with pytest.raises(TypeError):
-            model.Property(
-                name="a", validator=unittest.mock.sentinel.validator
-            )
+            model.Property(name="a", validator=mock.sentinel.validator)
 
     def test_repr(self):
         prop = model.Property(
@@ -423,9 +424,7 @@ class TestProperty:
         expected = (
             "Property('val', indexed=False, required=True, "
             "default='zorp', choices={}, validator={}, "
-            "verbose_name='VALUE FOR READING')".format(
-                prop._choices, prop._validator
-            )
+            "verbose_name='VALUE FOR READING')".format(prop._choices, prop._validator)
         )
         assert repr(prop) == expected
 
@@ -435,7 +434,8 @@ class TestProperty:
             _foo_type = None
             _bar = "eleventy"
 
-            def __init__(self, *, foo_type, bar):
+            @ndb_utils.positional(1)
+            def __init__(self, foo_type, bar):
                 self._foo_type = foo_type
                 self._bar = bar
 
@@ -445,7 +445,7 @@ class TestProperty:
     @staticmethod
     def test__datastore_type():
         prop = model.Property("foo")
-        value = unittest.mock.sentinel.value
+        value = mock.sentinel.value
         assert prop._datastore_type(value) is value
 
     @staticmethod
@@ -588,7 +588,7 @@ class TestProperty:
 
     @staticmethod
     def test__do_validate():
-        validator = unittest.mock.Mock(spec=())
+        validator = mock.Mock(spec=())
         value = 18
         choices = (1, 2, validator.return_value)
 
@@ -610,7 +610,7 @@ class TestProperty:
 
     @staticmethod
     def test__do_validate_validator_none():
-        validator = unittest.mock.Mock(spec=(), return_value=None)
+        validator = mock.Mock(spec=(), return_value=None)
         value = 18
 
         prop = model.Property(name="foo", validator=validator)
@@ -659,14 +659,14 @@ class TestProperty:
 
     @staticmethod
     def test__store_value():
-        entity = unittest.mock.Mock(_values={}, spec=("_values",))
+        entity = mock.Mock(_values={}, spec=("_values",))
         prop = model.Property(name="foo")
-        prop._store_value(entity, unittest.mock.sentinel.value)
-        assert entity._values == {prop._name: unittest.mock.sentinel.value}
+        prop._store_value(entity, mock.sentinel.value)
+        assert entity._values == {prop._name: mock.sentinel.value}
 
     @staticmethod
     def test__set_value():
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=None, _values={}, spec=("_projection", "_values")
         )
         prop = model.Property(name="foo", repeated=False)
@@ -675,7 +675,7 @@ class TestProperty:
 
     @staticmethod
     def test__set_value_none():
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=None, _values={}, spec=("_projection", "_values")
         )
         prop = model.Property(name="foo", repeated=False)
@@ -686,7 +686,7 @@ class TestProperty:
 
     @staticmethod
     def test__set_value_repeated():
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=None, _values={}, spec=("_projection", "_values")
         )
         prop = model.Property(name="foo", repeated=True)
@@ -695,7 +695,7 @@ class TestProperty:
 
     @staticmethod
     def test__set_value_repeated_bad_container():
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=None, _values={}, spec=("_projection", "_values")
         )
         prop = model.Property(name="foo", repeated=True)
@@ -706,9 +706,7 @@ class TestProperty:
 
     @staticmethod
     def test__set_value_projection():
-        entity = unittest.mock.Mock(
-            _projection=("a", "b"), spec=("_projection",)
-        )
+        entity = mock.Mock(_projection=("a", "b"), spec=("_projection",))
         prop = model.Property(name="foo", repeated=True)
         with pytest.raises(model.ReadonlyPropertyError):
             prop._set_value(entity, None)
@@ -719,8 +717,8 @@ class TestProperty:
     def test__has_value():
         prop = model.Property(name="foo")
         values = {prop._name: 88}
-        entity1 = unittest.mock.Mock(_values=values, spec=("_values",))
-        entity2 = unittest.mock.Mock(_values={}, spec=("_values",))
+        entity1 = mock.Mock(_values=values, spec=("_values",))
+        entity2 = mock.Mock(_values={}, spec=("_values",))
 
         assert prop._has_value(entity1)
         assert not prop._has_value(entity2)
@@ -729,8 +727,8 @@ class TestProperty:
     def test__retrieve_value():
         prop = model.Property(name="foo")
         values = {prop._name: b"\x00\x01"}
-        entity1 = unittest.mock.Mock(_values=values, spec=("_values",))
-        entity2 = unittest.mock.Mock(_values={}, spec=("_values",))
+        entity1 = mock.Mock(_values=values, spec=("_values",))
+        entity2 = mock.Mock(_values={}, spec=("_values",))
 
         assert prop._retrieve_value(entity1) == b"\x00\x01"
         assert prop._retrieve_value(entity2) is None
@@ -741,7 +739,7 @@ class TestProperty:
         prop = model.Property(name="prop")
         value = b"\x00\x01"
         values = {prop._name: value}
-        entity = unittest.mock.Mock(_values=values, spec=("_values",))
+        entity = mock.Mock(_values=values, spec=("_values",))
         assert value is prop._get_user_value(entity)
         # Cache is untouched.
         assert model.Property._FIND_METHODS_CACHE == {}
@@ -754,7 +752,7 @@ class TestProperty:
 
         prop = SimpleProperty(name="prop")
         values = {prop._name: model._BaseValue(9.5)}
-        entity = unittest.mock.Mock(_values=values, spec=("_values",))
+        entity = mock.Mock(_values=values, spec=("_values",))
         assert prop._get_user_value(entity) == 19.0
 
     @staticmethod
@@ -765,7 +763,7 @@ class TestProperty:
 
         prop = SimpleProperty(name="prop")
         values = {prop._name: 20}
-        entity = unittest.mock.Mock(_values=values, spec=("_values",))
+        entity = mock.Mock(_values=values, spec=("_values",))
         assert prop._get_base_value(entity) == model._BaseValue(21)
 
     @staticmethod
@@ -773,7 +771,7 @@ class TestProperty:
         prop = model.Property(name="prop")
         value = model._BaseValue(b"\x00\x01")
         values = {prop._name: value}
-        entity = unittest.mock.Mock(_values=values, spec=("_values",))
+        entity = mock.Mock(_values=values, spec=("_values",))
         assert value is prop._get_base_value(entity)
         # Cache is untouched.
         assert model.Property._FIND_METHODS_CACHE == {}
@@ -786,13 +784,13 @@ class TestProperty:
 
         prop = SimpleProperty(name="prop", repeated=False)
         values = {prop._name: 20}
-        entity = unittest.mock.Mock(_values=values, spec=("_values",))
+        entity = mock.Mock(_values=values, spec=("_values",))
         assert prop._get_base_value_unwrapped_as_list(entity) == [31]
 
     @staticmethod
     def test__get_base_value_unwrapped_as_list_empty():
         prop = model.Property(name="prop", repeated=False)
-        entity = unittest.mock.Mock(_values={}, spec=("_values",))
+        entity = mock.Mock(_values={}, spec=("_values",))
         assert prop._get_base_value_unwrapped_as_list(entity) == [None]
         # Cache is untouched.
         assert model.Property._FIND_METHODS_CACHE == {}
@@ -805,7 +803,7 @@ class TestProperty:
 
         prop = SimpleProperty(name="prop", repeated=True)
         values = {prop._name: [20, 30, 40]}
-        entity = unittest.mock.Mock(_values=values, spec=("_values",))
+        entity = mock.Mock(_values=values, spec=("_values",))
         expected = [2.0, 3.0, 4.0]
         assert prop._get_base_value_unwrapped_as_list(entity) == expected
 
@@ -975,18 +973,17 @@ class TestProperty:
         assert model.Property._FIND_METHODS_CACHE == {}
 
         methods = SomeProperty._find_methods("IN", "find_me")
-        assert methods == [
-            SomeProperty.IN,
-            SomeProperty.find_me,
-            model.Property.IN,
-        ]
+        expected = [SomeProperty.IN, SomeProperty.find_me, model.Property.IN]
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
+            expected = [
+                SomeProperty.IN.__func__,
+                SomeProperty.find_me.__func__,
+                model.Property.IN.__func__,
+            ]
+        assert methods == expected
         # Check cache
-        key = "{}.{}".format(
-            SomeProperty.__module__, SomeProperty.__qualname__
-        )
-        assert model.Property._FIND_METHODS_CACHE == {
-            key: {("IN", "find_me"): methods}
-        }
+        key = "{}.{}".format(SomeProperty.__module__, SomeProperty.__name__)
+        assert model.Property._FIND_METHODS_CACHE == {key: {("IN", "find_me"): methods}}
 
     def test__find_methods_reverse(self):
         SomeProperty = self._property_subtype()
@@ -994,15 +991,16 @@ class TestProperty:
         assert model.Property._FIND_METHODS_CACHE == {}
 
         methods = SomeProperty._find_methods("IN", "find_me", reverse=True)
-        assert methods == [
-            model.Property.IN,
-            SomeProperty.find_me,
-            SomeProperty.IN,
-        ]
+        expected = [model.Property.IN, SomeProperty.find_me, SomeProperty.IN]
+        if six.PY2:  # pragma: NO PY3 COVER  # pragma: NO BRANCH
+            expected = [
+                model.Property.IN.__func__,
+                SomeProperty.find_me.__func__,
+                SomeProperty.IN.__func__,
+            ]
+        assert methods == expected
         # Check cache
-        key = "{}.{}".format(
-            SomeProperty.__module__, SomeProperty.__qualname__
-        )
+        key = "{}.{}".format(SomeProperty.__module__, SomeProperty.__name__)
         assert model.Property._FIND_METHODS_CACHE == {
             key: {("IN", "find_me"): list(reversed(methods))}
         }
@@ -1010,25 +1008,17 @@ class TestProperty:
     def test__find_methods_cached(self):
         SomeProperty = self._property_subtype()
         # Set cache
-        methods = unittest.mock.sentinel.methods
-        key = "{}.{}".format(
-            SomeProperty.__module__, SomeProperty.__qualname__
-        )
-        model.Property._FIND_METHODS_CACHE = {
-            key: {("IN", "find_me"): methods}
-        }
+        methods = mock.sentinel.methods
+        key = "{}.{}".format(SomeProperty.__module__, SomeProperty.__name__)
+        model.Property._FIND_METHODS_CACHE = {key: {("IN", "find_me"): methods}}
         assert SomeProperty._find_methods("IN", "find_me") is methods
 
     def test__find_methods_cached_reverse(self):
         SomeProperty = self._property_subtype()
         # Set cache
         methods = ["a", "b"]
-        key = "{}.{}".format(
-            SomeProperty.__module__, SomeProperty.__qualname__
-        )
-        model.Property._FIND_METHODS_CACHE = {
-            key: {("IN", "find_me"): methods}
-        }
+        key = "{}.{}".format(SomeProperty.__module__, SomeProperty.__name__)
+        model.Property._FIND_METHODS_CACHE = {key: {("IN", "find_me"): methods}}
         assert SomeProperty._find_methods("IN", "find_me", reverse=True) == [
             "b",
             "a",
@@ -1036,15 +1026,15 @@ class TestProperty:
 
     @staticmethod
     def test__apply_list():
-        method1 = unittest.mock.Mock(spec=())
-        method2 = unittest.mock.Mock(spec=(), return_value=None)
-        method3 = unittest.mock.Mock(spec=())
+        method1 = mock.Mock(spec=())
+        method2 = mock.Mock(spec=(), return_value=None)
+        method3 = mock.Mock(spec=())
 
         prop = model.Property(name="benji")
         to_call = prop._apply_list([method1, method2, method3])
         assert isinstance(to_call, types.FunctionType)
 
-        value = unittest.mock.sentinel.value
+        value = mock.sentinel.value
         result = to_call(value)
         assert result is method3.return_value
 
@@ -1057,10 +1047,8 @@ class TestProperty:
     def test__apply_to_values():
         value = "foo"
         prop = model.Property(name="bar", repeated=False)
-        entity = unittest.mock.Mock(
-            _values={prop._name: value}, spec=("_values",)
-        )
-        function = unittest.mock.Mock(spec=(), return_value="foo2")
+        entity = mock.Mock(_values={prop._name: value}, spec=("_values",))
+        function = mock.Mock(spec=(), return_value="foo2")
 
         result = prop._apply_to_values(entity, function)
         assert result == function.return_value
@@ -1071,8 +1059,8 @@ class TestProperty:
     @staticmethod
     def test__apply_to_values_when_none():
         prop = model.Property(name="bar", repeated=False, default=None)
-        entity = unittest.mock.Mock(_values={}, spec=("_values",))
-        function = unittest.mock.Mock(spec=())
+        entity = mock.Mock(_values={}, spec=("_values",))
+        function = mock.Mock(spec=())
 
         result = prop._apply_to_values(entity, function)
         assert result is None
@@ -1084,10 +1072,8 @@ class TestProperty:
     def test__apply_to_values_transformed_none():
         value = 7.5
         prop = model.Property(name="bar", repeated=False)
-        entity = unittest.mock.Mock(
-            _values={prop._name: value}, spec=("_values",)
-        )
-        function = unittest.mock.Mock(spec=(), return_value=None)
+        entity = mock.Mock(_values={prop._name: value}, spec=("_values",))
+        function = mock.Mock(spec=(), return_value=None)
 
         result = prop._apply_to_values(entity, function)
         assert result == value
@@ -1097,12 +1083,10 @@ class TestProperty:
 
     @staticmethod
     def test__apply_to_values_transformed_unchanged():
-        value = unittest.mock.sentinel.value
+        value = mock.sentinel.value
         prop = model.Property(name="bar", repeated=False)
-        entity = unittest.mock.Mock(
-            _values={prop._name: value}, spec=("_values",)
-        )
-        function = unittest.mock.Mock(spec=(), return_value=value)
+        entity = mock.Mock(_values={prop._name: value}, spec=("_values",))
+        function = mock.Mock(spec=(), return_value=value)
 
         result = prop._apply_to_values(entity, function)
         assert result == value
@@ -1114,10 +1098,8 @@ class TestProperty:
     def test__apply_to_values_repeated():
         value = [1, 2, 3]
         prop = model.Property(name="bar", repeated=True)
-        entity = unittest.mock.Mock(
-            _values={prop._name: value}, spec=("_values",)
-        )
-        function = unittest.mock.Mock(spec=(), return_value=42)
+        entity = mock.Mock(_values={prop._name: value}, spec=("_values",))
+        function = mock.Mock(spec=(), return_value=42)
 
         result = prop._apply_to_values(entity, function)
         assert result == [
@@ -1129,18 +1111,14 @@ class TestProperty:
         assert entity._values == {prop._name: result}
         # Check mocks.
         assert function.call_count == 3
-        calls = [
-            unittest.mock.call(1),
-            unittest.mock.call(2),
-            unittest.mock.call(3),
-        ]
+        calls = [mock.call(1), mock.call(2), mock.call(3)]
         function.assert_has_calls(calls)
 
     @staticmethod
     def test__apply_to_values_repeated_when_none():
         prop = model.Property(name="bar", repeated=True, default=None)
-        entity = unittest.mock.Mock(_values={}, spec=("_values",))
-        function = unittest.mock.Mock(spec=())
+        entity = mock.Mock(_values={}, spec=("_values",))
+        function = mock.Mock(spec=())
 
         result = prop._apply_to_values(entity, function)
         assert result == []
@@ -1153,7 +1131,7 @@ class TestProperty:
         prop = model.Property(name="prop")
         value = b"\x00\x01"
         values = {prop._name: value}
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=None, _values=values, spec=("_projection", "_values")
         )
         assert value is prop._get_value(entity)
@@ -1165,7 +1143,7 @@ class TestProperty:
         prop = model.Property(name="prop")
         value = 92.5
         values = {prop._name: value}
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=(prop._name,),
             _values=values,
             spec=("_projection", "_values"),
@@ -1177,9 +1155,7 @@ class TestProperty:
     @staticmethod
     def test__get_value_projected_absent():
         prop = model.Property(name="prop")
-        entity = unittest.mock.Mock(
-            _projection=("nope",), spec=("_projection",)
-        )
+        entity = mock.Mock(_projection=("nope",), spec=("_projection",))
         with pytest.raises(model.UnprojectedPropertyError):
             prop._get_value(entity)
         # Cache is untouched.
@@ -1190,7 +1166,7 @@ class TestProperty:
         prop = model.Property(name="prop")
         value = b"\x00\x01"
         values = {prop._name: value}
-        entity = unittest.mock.Mock(_values=values, spec=("_values",))
+        entity = mock.Mock(_values=values, spec=("_values",))
         prop._delete_value(entity)
         assert values == {}
 
@@ -1198,14 +1174,14 @@ class TestProperty:
     def test__delete_value_no_op():
         prop = model.Property(name="prop")
         values = {}
-        entity = unittest.mock.Mock(_values=values, spec=("_values",))
+        entity = mock.Mock(_values=values, spec=("_values",))
         prop._delete_value(entity)
         assert values == {}
 
     @staticmethod
     def test__is_initialized_not_required():
         prop = model.Property(name="prop", required=False)
-        entity = unittest.mock.sentinel.entity
+        entity = mock.sentinel.entity
         assert prop._is_initialized(entity)
         # Cache is untouched.
         assert model.Property._FIND_METHODS_CACHE == {}
@@ -1214,7 +1190,7 @@ class TestProperty:
     def test__is_initialized_default_fallback():
         prop = model.Property(name="prop", required=True, default=11111)
         values = {}
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=None, _values=values, spec=("_projection", "_values")
         )
         assert prop._is_initialized(entity)
@@ -1225,7 +1201,7 @@ class TestProperty:
     def test__is_initialized_set_to_none():
         prop = model.Property(name="prop", required=True)
         values = {prop._name: None}
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=None, _values=values, spec=("_projection", "_values")
         )
         assert not prop._is_initialized(entity)
@@ -1234,7 +1210,7 @@ class TestProperty:
 
     @staticmethod
     def test_instance_descriptors():
-        class Model:
+        class Model(object):
             prop = model.Property(name="prop", required=True)
 
             def __init__(self):
@@ -1300,12 +1276,54 @@ class TestProperty:
         prop = model.Property(name="prop")
         value = b"\x00\x01"
         values = {prop._name: value}
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=None, _values=values, spec=("_projection", "_values")
         )
         assert value is prop._get_for_dict(entity)
         # Cache is untouched.
         assert model.Property._FIND_METHODS_CACHE == {}
+
+    @staticmethod
+    def test__to_datastore():
+        class SomeKind(model.Model):
+            prop = model.Property()
+
+        entity = SomeKind(prop="foo")
+        data = {}
+        assert SomeKind.prop._to_datastore(entity, data) == ("prop",)
+        assert data == {"prop": "foo"}
+
+    @staticmethod
+    def test__to_datastore_prop_is_repeated():
+        class SomeKind(model.Model):
+            prop = model.Property(repeated=True)
+
+        entity = SomeKind(prop=["foo", "bar"])
+        data = {}
+        assert SomeKind.prop._to_datastore(entity, data) == ("prop",)
+        assert data == {"prop": ["foo", "bar"]}
+
+    @staticmethod
+    def test__to_datastore_w_prefix():
+        class SomeKind(model.Model):
+            prop = model.Property()
+
+        entity = SomeKind(prop="foo")
+        data = {}
+        assert SomeKind.prop._to_datastore(entity, data, prefix="pre.") == ("pre.prop",)
+        assert data == {"pre.prop": "foo"}
+
+    @staticmethod
+    def test__to_datastore_w_prefix_ancestor_repeated():
+        class SomeKind(model.Model):
+            prop = model.Property()
+
+        entity = SomeKind(prop="foo")
+        data = {}
+        assert SomeKind.prop._to_datastore(
+            entity, data, prefix="pre.", repeated=True
+        ) == ("pre.prop",)
+        assert data == {"pre.prop": ["foo"]}
 
 
 class Test__validate_key:
@@ -1325,7 +1343,7 @@ class Test__validate_key:
     @pytest.mark.usefixtures("in_context")
     def test_unchecked_model_type():
         value = model.Key("This", 1)
-        entity = object.__new__(model.Model)
+        entity = model.Model()
 
         result = model._validate_key(value, entity=entity)
         assert result is value
@@ -1334,7 +1352,7 @@ class Test__validate_key:
     @pytest.mark.usefixtures("in_context")
     def test_unchecked_expando_type():
         value = model.Key("This", 1)
-        entity = object.__new__(model.Expando)
+        entity = model.Expando()
 
         result = model._validate_key(value, entity=entity)
         assert result is value
@@ -1346,12 +1364,12 @@ class Test__validate_key:
             pass
 
         value = model.Key(Mine, "yours")
-        entity = unittest.mock.Mock(spec=Mine)
-        entity._class_name.return_value = "Mine"
+        entity = mock.Mock(spec=Mine)
+        entity._get_kind.return_value = "Mine"
 
         result = model._validate_key(value, entity=entity)
         assert result is value
-        entity._class_name.assert_called_once_with()
+        entity._get_kind.assert_called_once_with()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1360,14 +1378,14 @@ class Test__validate_key:
             pass
 
         value = model.Key(Mine, "yours")
-        entity = unittest.mock.Mock(spec=Mine)
-        entity._class_name.return_value = "NotMine"
+        entity = mock.Mock(spec=Mine)
+        entity._get_kind.return_value = "NotMine"
 
         with pytest.raises(model.KindError):
             model._validate_key(value, entity=entity)
 
-        calls = [unittest.mock.call(), unittest.mock.call()]
-        entity._class_name.assert_has_calls(calls)
+        calls = [mock.call(), mock.call()]
+        entity._get_kind.assert_has_calls(calls)
 
 
 class TestModelKey:
@@ -1407,7 +1425,7 @@ class TestModelKey:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test__set_value():
-        entity = object.__new__(model.Model)
+        entity = model.Model()
         value = key_module.Key("Map", 8898)
 
         model.ModelKey._set_value(entity, value)
@@ -1415,7 +1433,7 @@ class TestModelKey:
 
     @staticmethod
     def test__set_value_none():
-        entity = unittest.mock.Mock(spec=("_entity_key",))
+        entity = mock.Mock(spec=("_entity_key",))
 
         assert entity._entity_key is not None
         model.ModelKey._set_value(entity, None)
@@ -1423,14 +1441,14 @@ class TestModelKey:
 
     @staticmethod
     def test__get_value():
-        entity = unittest.mock.Mock(spec=("_entity_key",))
+        entity = mock.Mock(spec=("_entity_key",))
 
         result = model.ModelKey._get_value(entity)
         assert result is entity._entity_key
 
     @staticmethod
     def test__delete_value():
-        entity = unittest.mock.Mock(spec=("_entity_key",))
+        entity = mock.Mock(spec=("_entity_key",))
 
         assert entity._entity_key is not None
         model.ModelKey._delete_value(entity)
@@ -1462,6 +1480,16 @@ class TestBooleanProperty:
         with pytest.raises(NotImplementedError):
             prop._db_get_value(None, None)
 
+    @staticmethod
+    def test__from_base_type_bool():
+        prop = model.BooleanProperty(name="certify")
+        assert prop._from_base_type(True) is None
+
+    @staticmethod
+    def test__from_base_type_int():
+        prop = model.BooleanProperty(name="certify")
+        assert prop._from_base_type(1) is True
+
 
 class TestIntegerProperty:
     @staticmethod
@@ -1469,6 +1497,13 @@ class TestIntegerProperty:
         prop = model.IntegerProperty(name="count")
         value = 829038402384
         assert prop._validate(value) is value
+
+    @staticmethod
+    @pytest.mark.skipif(six.PY3, reason="Test for Python 2 only.")
+    def test__validate_long():  # pragma: NO PY3 COVER
+        prop = model.IntegerProperty(name="count")
+        value = long(829038402384)  # noqa F821
+        assert prop._validate(value) is not value
 
     @staticmethod
     def test__validate_bool():
@@ -1555,7 +1590,7 @@ class Test_CompressedValue:
         compressed_value1 = model._CompressedValue(z_val1)
         z_val2 = zlib.compress(b"12345678901234567890abcde\x00")
         compressed_value2 = model._CompressedValue(z_val2)
-        compressed_value3 = unittest.mock.sentinel.compressed_value
+        compressed_value3 = mock.sentinel.compressed_value
         assert compressed_value1 == compressed_value1
         assert not compressed_value1 == compressed_value2
         assert not compressed_value1 == compressed_value3
@@ -1566,10 +1601,12 @@ class Test_CompressedValue:
         compressed_value1 = model._CompressedValue(z_val1)
         z_val2 = zlib.compress(b"12345678901234567890abcde\x00")
         compressed_value2 = model._CompressedValue(z_val2)
-        compressed_value3 = unittest.mock.sentinel.compressed_value
+        compressed_value3 = mock.sentinel.compressed_value
+        compressed_value4 = model._CompressedValue(z_val1)
         assert not compressed_value1 != compressed_value1
         assert compressed_value1 != compressed_value2
         assert compressed_value1 != compressed_value3
+        assert not compressed_value1 != compressed_value4
 
     @staticmethod
     def test___hash__():
@@ -1619,8 +1656,8 @@ class TestBlobProperty:
     @staticmethod
     def test__value_to_repr():
         prop = model.BlobProperty(name="blob")
-        as_repr = prop._value_to_repr(b"abc")
-        assert as_repr == "b'abc'"
+        as_repr = prop._value_to_repr("abc")
+        assert as_repr == "'abc'"
 
     @staticmethod
     def test__value_to_repr_truncated():
@@ -1638,7 +1675,7 @@ class TestBlobProperty:
     @staticmethod
     def test__validate_wrong_type():
         prop = model.BlobProperty(name="blob")
-        values = ("non-bytes", 48, {"a": "c"})
+        values = (48, {"a": "c"})
         for value in values:
             with pytest.raises(exceptions.BadValueError):
                 prop._validate(value)
@@ -1677,6 +1714,23 @@ class TestBlobProperty:
         assert converted == original
 
     @staticmethod
+    def test__from_base_type_no_compressed_value_uncompressed():
+        prop = model.BlobProperty(name="blob", compressed=True)
+        original = b"abc" * 10
+        converted = prop._from_base_type(original)
+
+        assert converted == original
+
+    @staticmethod
+    def test__from_base_type_no_compressed_value_compressed():
+        prop = model.BlobProperty(name="blob", compressed=True)
+        original = b"abc" * 10
+        z_val = zlib.compress(original)
+        converted = prop._from_base_type(z_val)
+
+        assert converted == original
+
+    @staticmethod
     def test__from_base_type_no_convert():
         prop = model.BlobProperty(name="blob")
         converted = prop._from_base_type(b"abc")
@@ -1706,6 +1760,273 @@ class TestBlobProperty:
         with pytest.raises(NotImplementedError):
             prop._db_get_value(None, None)
 
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__to_datastore_compressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True)
+
+        uncompressed_value = b"abc" * 1000
+        compressed_value = zlib.compress(uncompressed_value)
+        entity = ThisKind(foo=uncompressed_value)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert "foo" in ds_entity._meanings
+        assert ds_entity._meanings["foo"][0] == model._MEANING_COMPRESSED
+        assert ds_entity._meanings["foo"][1] == compressed_value
+
+    @staticmethod
+    def test__to_datastore_legacy_compressed_with_prefix(in_context):
+        """Regression test for #602
+
+        https://github.com/googleapis/python-ndb/issues/602
+        """
+
+        class ThisKind(model.Model):
+            bar = model.BlobProperty(compressed=True)
+
+        class ParentKind(model.Model):
+            foo = model.StructuredProperty(ThisKind)
+
+        with in_context.new(legacy_data=True).use():
+            uncompressed_value = b"abc" * 1000
+            compressed_value = zlib.compress(uncompressed_value)
+            entity = ParentKind(foo=ThisKind(bar=uncompressed_value))
+            ds_entity = model._entity_to_ds_entity(entity)
+            assert "foo.bar" in ds_entity._meanings
+            assert ds_entity._meanings["foo.bar"][0] == model._MEANING_COMPRESSED
+            assert ds_entity._meanings["foo.bar"][1] == compressed_value
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__to_datastore_compressed_repeated():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True, repeated=True)
+
+        uncompressed_value_one = b"abc" * 1000
+        compressed_value_one = zlib.compress(uncompressed_value_one)
+        uncompressed_value_two = b"xyz" * 1000
+        compressed_value_two = zlib.compress(uncompressed_value_two)
+        entity = ThisKind(foo=[uncompressed_value_one, uncompressed_value_two])
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert "foo" in ds_entity._meanings
+        assert ds_entity._meanings["foo"][0] == model._MEANING_COMPRESSED
+        assert ds_entity._meanings["foo"][1] == [
+            compressed_value_one,
+            compressed_value_two,
+        ]
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__to_datastore_compressed_uninitialized():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True)
+
+        entity = ThisKind()
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert "foo" not in ds_entity._meanings
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__to_datastore_uncompressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=False)
+
+        uncompressed_value = b"abc"
+        entity = ThisKind(foo=uncompressed_value)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert "foo" not in ds_entity._meanings
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_compressed_to_uncompressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=False)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value = b"abc" * 1000
+        compressed_value = zlib.compress(uncompressed_value)
+        datastore_entity.update({"foo": compressed_value})
+        meanings = {"foo": (model._MEANING_COMPRESSED, compressed_value)}
+        datastore_entity._meanings = meanings
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        assert entity.foo == uncompressed_value
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == uncompressed_value
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_compressed_to_compressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value = b"abc" * 1000
+        compressed_value = zlib.compress(uncompressed_value)
+        datastore_entity.update({"foo": compressed_value})
+        meanings = {"foo": (model._MEANING_COMPRESSED, compressed_value)}
+        datastore_entity._meanings = meanings
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == compressed_value
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_compressed_repeated_to_compressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True, repeated=True)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value_one = b"abc" * 1000
+        compressed_value_one = zlib.compress(uncompressed_value_one)
+        uncompressed_value_two = b"xyz" * 1000
+        compressed_value_two = zlib.compress(uncompressed_value_two)
+        datastore_entity.update({"foo": [compressed_value_one, compressed_value_two]})
+        meanings = {
+            "foo": (
+                model._MEANING_COMPRESSED,
+                [compressed_value_one, compressed_value_two],
+            )
+        }
+        datastore_entity._meanings = meanings
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == [compressed_value_one, compressed_value_two]
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_uncompressed_to_uncompressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=False)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value = b"abc" * 1000
+        datastore_entity.update({"foo": uncompressed_value})
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        assert entity.foo == uncompressed_value
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == uncompressed_value
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_uncompressed_to_compressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value = b"abc" * 1000
+        compressed_value = zlib.compress(uncompressed_value)
+        datastore_entity.update({"foo": uncompressed_value})
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == compressed_value
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_uncompressed_repeated_to_compressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=True, repeated=True)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value_one = b"abc" * 1000
+        compressed_value_one = zlib.compress(uncompressed_value_one)
+        uncompressed_value_two = b"xyz" * 1000
+        compressed_value_two = zlib.compress(uncompressed_value_two)
+        datastore_entity.update(
+            {"foo": [uncompressed_value_one, uncompressed_value_two]}
+        )
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == [compressed_value_one, compressed_value_two]
+
+
+class TestCompressedTextProperty:
+    @staticmethod
+    def test_constructor_defaults():
+        prop = model.CompressedTextProperty()
+        assert not prop._indexed
+        assert prop._compressed
+
+    @staticmethod
+    def test_constructor_explicit():
+        prop = model.CompressedTextProperty(name="text", indexed=False)
+        assert prop._name == "text"
+        assert not prop._indexed
+
+    @staticmethod
+    def test_constructor_not_allowed():
+        with pytest.raises(NotImplementedError):
+            model.CompressedTextProperty(indexed=True)
+
+    @staticmethod
+    def test_repr():
+        prop = model.CompressedTextProperty(name="text")
+        expected = "CompressedTextProperty('text')"
+        assert repr(prop) == expected
+
+    @staticmethod
+    def test__validate():
+        prop = model.CompressedTextProperty(name="text")
+        assert prop._validate(u"abc") is None
+
+    @staticmethod
+    def test__validate_bad_bytes():
+        prop = model.CompressedTextProperty(name="text")
+        value = b"\x80abc"
+        with pytest.raises(exceptions.BadValueError):
+            prop._validate(value)
+
+    @staticmethod
+    def test__validate_bad_type():
+        prop = model.CompressedTextProperty(name="text")
+        with pytest.raises(exceptions.BadValueError):
+            prop._validate(None)
+
+    @staticmethod
+    def test__to_base_type():
+        prop = model.CompressedTextProperty(name="text")
+        assert prop._to_base_type(b"abc") is None
+
+    @staticmethod
+    def test__to_base_type_converted():
+        prop = model.CompressedTextProperty(name="text")
+        value = b"\xe2\x98\x83"
+        assert prop._to_base_type(u"\N{snowman}") == value
+
+    @staticmethod
+    def test__from_base_type():
+        prop = model.CompressedTextProperty(name="text")
+        assert prop._from_base_type(u"abc") is None
+
+    @staticmethod
+    def test__from_base_type_converted():
+        prop = model.CompressedTextProperty(name="text")
+        value = b"\xe2\x98\x83"
+        assert prop._from_base_type(value) == u"\N{snowman}"
+
+    @staticmethod
+    def test__from_base_type_cannot_convert():
+        prop = model.CompressedTextProperty(name="text")
+        value = b"\x80abc"
+        assert prop._from_base_type(value) is None
+
+    @staticmethod
+    def test__db_set_uncompressed_meaning():
+        prop = model.CompressedTextProperty(name="text")
+        with pytest.raises(NotImplementedError):
+            prop._db_set_uncompressed_meaning(None)
+
 
 class TestTextProperty:
     @staticmethod
@@ -1723,6 +2044,11 @@ class TestTextProperty:
     def test_constructor_not_allowed():
         with pytest.raises(NotImplementedError):
             model.TextProperty(indexed=True)
+
+    @staticmethod
+    def test_constructor_compressed():
+        prop = model.TextProperty(compressed=True)
+        assert isinstance(prop, model.CompressedTextProperty)
 
     @staticmethod
     def test_repr():
@@ -1751,24 +2077,24 @@ class TestTextProperty:
     @staticmethod
     def test__to_base_type():
         prop = model.TextProperty(name="text")
-        assert prop._to_base_type("abc") is None
+        assert prop._to_base_type(u"abc") is None
 
     @staticmethod
     def test__to_base_type_converted():
         prop = model.TextProperty(name="text")
-        value = "\N{snowman}"
+        value = u"\N{snowman}"
         assert prop._to_base_type(b"\xe2\x98\x83") == value
 
     @staticmethod
     def test__from_base_type():
         prop = model.TextProperty(name="text")
-        assert prop._from_base_type("abc") is None
+        assert prop._from_base_type(u"abc") is None
 
     @staticmethod
     def test__from_base_type_converted():
         prop = model.TextProperty(name="text")
         value = b"\xe2\x98\x83"
-        assert prop._from_base_type(value) == "\N{snowman}"
+        assert prop._from_base_type(value) == u"\N{snowman}"
 
     @staticmethod
     def test__from_base_type_cannot_convert():
@@ -1852,6 +2178,19 @@ class TestPickleProperty:
         prop = model.PickleProperty(name="pkl")
         assert prop._from_base_type(self.PICKLED) == self.UNPICKLED
 
+    @pytest.mark.usefixtures("in_context")
+    def test__legacy_from_base_type(self):
+        # GAE NDB stores pickled properties as bytes and with GAE NDB structures.
+        # Validate we can unpickle to a Cloud NDB structure.
+        # See https://github.com/googleapis/python-ndb/issues/587
+        # TODO: This test fails as code will raise "_pickle.UnpicklingError: state is not a dictionary"
+        gae_ndb_stored_value = b"\x80\x02cunit.models\nA\nq\x01)\x81q\x02URj#j\x0fs~crwilcox-testr\x05\x0b\x12\x01A\x0c\xa2\x01\x08UnitTestr\x11\x1a\tsome_prop \x00*\x02\x08\x01r\x15\x1a\x06source \x00*\t\x1a\x07gae 2.7\x82\x01\x00b."
+        prop = model.PickleProperty(repeated=True)
+        val = prop._from_base_type(gae_ndb_stored_value)
+        expected = {"some_prop": 1, "source": "gae 2.7"}
+        actual = val.to_dict()
+        assert expected == actual
+
 
 class TestJsonProperty:
     @staticmethod
@@ -1906,7 +2245,7 @@ class TestJsonProperty:
     @staticmethod
     def test__to_base_type():
         prop = model.JsonProperty(name="json-val")
-        value = [14, [15, 16], {"seventeen": 18}, "\N{snowman}"]
+        value = [14, [15, 16], {"seventeen": 18}, u"\N{snowman}"]
         expected = b'[14,[15,16],{"seventeen":18},"\\u2603"]'
         assert prop._to_base_type(value) == expected
 
@@ -1914,14 +2253,15 @@ class TestJsonProperty:
     def test__from_base_type():
         prop = model.JsonProperty(name="json-val")
         value = b'[14,true,{"a":null,"b":"\\u2603"}]'
-        expected = [14, True, {"a": None, "b": "\N{snowman}"}]
+        expected = [14, True, {"a": None, "b": u"\N{snowman}"}]
         assert prop._from_base_type(value) == expected
 
     @staticmethod
-    def test__from_base_type_invalid():
+    def test__from_base_type_str():
         prop = model.JsonProperty(name="json-val")
-        with pytest.raises(AttributeError):
-            prop._from_base_type("{}")
+        value = u'[14,true,{"a":null,"b":"\\u2603"}]'
+        expected = [14, True, {"a": None, "b": u"\N{snowman}"}]
+        assert prop._from_base_type(value) == expected
 
 
 class TestUser:
@@ -1953,9 +2293,7 @@ class TestUser:
 
     @staticmethod
     def test_nickname_mismatch_domain():
-        user_value = model.User(
-            email="foo@example.org", _auth_domain="example.com"
-        )
+        user_value = model.User(email="foo@example.org", _auth_domain="example.com")
         assert user_value.nickname() == "foo@example.org"
 
     def test_email(self):
@@ -1972,108 +2310,6 @@ class TestUser:
     def test_auth_domain(self):
         user_value = self._make_default()
         assert user_value.auth_domain() == "example.com"
-
-    @staticmethod
-    def _add_to_entity_helper(user_value):
-        entity = entity_module.Entity()
-        name = "u"
-
-        user_value.add_to_entity(entity, name)
-        assert list(entity.keys()) == [name]
-        user_entity = entity[name]
-        assert entity._meanings == {
-            name: (model._MEANING_PREDEFINED_ENTITY_USER, user_entity)
-        }
-        assert user_entity["email"] == user_value._email
-        assert user_entity["auth_domain"] == user_value._auth_domain
-        return user_entity
-
-    def test_add_to_entity(self):
-        user_value = self._make_default()
-        user_entity = self._add_to_entity_helper(user_value)
-        assert sorted(user_entity.keys()) == ["auth_domain", "email"]
-        assert user_entity.exclude_from_indexes == set(
-            ["auth_domain", "email"]
-        )
-
-    def test_add_to_entity_with_user_id(self):
-        user_value = model.User(
-            email="foo@example.com",
-            _auth_domain="example.com",
-            _user_id="197382",
-        )
-        user_entity = self._add_to_entity_helper(user_value)
-        assert sorted(user_entity.keys()) == [
-            "auth_domain",
-            "email",
-            "user_id",
-        ]
-        assert user_entity["user_id"] == user_value._user_id
-        assert user_entity.exclude_from_indexes == set(
-            ["auth_domain", "email", "user_id"]
-        )
-
-    @staticmethod
-    def _prepare_entity(name, email, auth_domain):
-        entity = entity_module.Entity()
-        user_entity = entity_module.Entity()
-
-        entity[name] = user_entity
-        entity._meanings[name] = (
-            model._MEANING_PREDEFINED_ENTITY_USER,
-            user_entity,
-        )
-        user_entity.exclude_from_indexes.update(["auth_domain", "email"])
-        user_entity["auth_domain"] = auth_domain
-        user_entity["email"] = email
-
-        return entity
-
-    def test_read_from_entity(self):
-        name = "you_sir"
-        email = "foo@example.com"
-        auth_domain = "example.com"
-        entity = self._prepare_entity(name, email, auth_domain)
-
-        user_value = model.User.read_from_entity(entity, name)
-        assert user_value._auth_domain == auth_domain
-        assert user_value._email == email
-        assert user_value._user_id is None
-
-    def test_read_from_entity_bad_meaning(self):
-        name = "you_sir"
-        email = "foo@example.com"
-        auth_domain = "example.com"
-        entity = self._prepare_entity(name, email, auth_domain)
-
-        # Wrong meaning.
-        entity._meanings[name] = ("not-20", entity[name])
-        with pytest.raises(ValueError):
-            model.User.read_from_entity(entity, name)
-
-        # Wrong assocated value.
-        entity._meanings[name] = (model._MEANING_PREDEFINED_ENTITY_USER, None)
-        with pytest.raises(ValueError):
-            model.User.read_from_entity(entity, name)
-
-        # No meaning.
-        entity._meanings.clear()
-        with pytest.raises(ValueError):
-            model.User.read_from_entity(entity, name)
-
-    def test_read_from_entity_with_user_id(self):
-        name = "you_sir"
-        email = "foo@example.com"
-        auth_domain = "example.com"
-        entity = self._prepare_entity(name, email, auth_domain)
-        entity[name].exclude_from_indexes.add("user_id")
-        user_id = "80131394"
-        entity[name]["user_id"] = user_id
-
-        user_value = model.User.read_from_entity(entity, name)
-        assert user_value._auth_domain == auth_domain
-        assert user_value._email == email
-        assert user_value._user_id == user_id
 
     def test___str__(self):
         user_value = self._make_default()
@@ -2098,13 +2334,9 @@ class TestUser:
 
     def test___eq__(self):
         user_value1 = self._make_default()
-        user_value2 = model.User(
-            email="foo@example.org", _auth_domain="example.com"
-        )
-        user_value3 = model.User(
-            email="foo@example.com", _auth_domain="example.org"
-        )
-        user_value4 = unittest.mock.sentinel.blob_key
+        user_value2 = model.User(email="foo@example.org", _auth_domain="example.com")
+        user_value3 = model.User(email="foo@example.com", _auth_domain="example.org")
+        user_value4 = mock.sentinel.blob_key
         assert user_value1 == user_value1
         assert not user_value1 == user_value2
         assert not user_value1 == user_value3
@@ -2112,18 +2344,34 @@ class TestUser:
 
     def test___lt__(self):
         user_value1 = self._make_default()
-        user_value2 = model.User(
-            email="foo@example.org", _auth_domain="example.com"
-        )
-        user_value3 = model.User(
-            email="foo@example.com", _auth_domain="example.org"
-        )
-        user_value4 = unittest.mock.sentinel.blob_key
+        user_value2 = model.User(email="foo@example.org", _auth_domain="example.com")
+        user_value3 = model.User(email="foo@example.com", _auth_domain="example.org")
+        user_value4 = mock.sentinel.blob_key
         assert not user_value1 < user_value1
         assert user_value1 < user_value2
         assert user_value1 < user_value3
-        with pytest.raises(TypeError):
-            user_value1 < user_value4
+        if six.PY3:  # pragma: NO PY2 COVER  # pragma: NO BRANCH
+            with pytest.raises(TypeError):
+                user_value1 < user_value4
+
+    @staticmethod
+    def test__from_ds_entity():
+        assert model.User._from_ds_entity(
+            {"email": "foo@example.com", "auth_domain": "gmail.com"}
+        ) == model.User("foo@example.com", "gmail.com")
+
+    @staticmethod
+    def test__from_ds_entity_with_user_id():
+        assert (
+            model.User._from_ds_entity(
+                {
+                    "email": "foo@example.com",
+                    "auth_domain": "gmail.com",
+                    "user_id": "12345",
+                }
+            )
+            == model.User("foo@example.com", "gmail.com", "12345")
+        )
 
 
 class TestUserProperty:
@@ -2146,9 +2394,7 @@ class TestUserProperty:
     @staticmethod
     def test__validate():
         prop = model.UserProperty(name="u")
-        user_value = model.User(
-            email="foo@example.com", _auth_domain="example.com"
-        )
+        user_value = model.User(email="foo@example.com", _auth_domain="example.com")
         assert prop._validate(user_value) is None
 
     @staticmethod
@@ -2174,6 +2420,61 @@ class TestUserProperty:
         with pytest.raises(NotImplementedError):
             prop._db_get_value(None, None)
 
+    @staticmethod
+    def test__to_base_type():
+        prop = model.UserProperty(name="u")
+        entity = prop._to_base_type(
+            model.User(
+                "email",
+                "auth_domain",
+            )
+        )
+        assert entity["email"] == "email"
+        assert "email" in entity.exclude_from_indexes
+        assert entity["auth_domain"] == "auth_domain"
+        assert "auth_domain" in entity.exclude_from_indexes
+        assert "user_id" not in entity
+
+    @staticmethod
+    def test__to_base_type_w_user_id():
+        prop = model.UserProperty(name="u")
+        entity = prop._to_base_type(model.User("email", "auth_domain", "user_id"))
+        assert entity["email"] == "email"
+        assert "email" in entity.exclude_from_indexes
+        assert entity["auth_domain"] == "auth_domain"
+        assert "auth_domain" in entity.exclude_from_indexes
+        assert entity["user_id"] == "user_id"
+        assert "user_id" in entity.exclude_from_indexes
+
+    @staticmethod
+    def test__from_base_type():
+        prop = model.UserProperty(name="u")
+        assert prop._from_base_type(
+            {"email": "email", "auth_domain": "auth_domain"}
+        ) == model.User("email", "auth_domain")
+
+    @staticmethod
+    def test__to_datastore():
+        class SomeKind(model.Model):
+            u = model.UserProperty()
+
+        entity = SomeKind(u=model.User("email", "auth_domain"))
+        data = {}
+        SomeKind.u._to_datastore(entity, data)
+        meaning, ds_entity = data["_meanings"]["u"]
+        assert meaning == model._MEANING_PREDEFINED_ENTITY_USER
+        assert data["u"] == ds_entity
+
+    @staticmethod
+    def test__to_datastore_no_value():
+        class SomeKind(model.Model):
+            u = model.UserProperty()
+
+        entity = SomeKind()
+        data = {}
+        SomeKind.u._to_datastore(entity, data)
+        assert data == {"u": None}
+
 
 class TestKeyProperty:
     @staticmethod
@@ -2187,10 +2488,12 @@ class TestKeyProperty:
         with pytest.raises(TypeError):
             model.KeyProperty("a", None, None)
 
-    @staticmethod
-    def test_constructor_positional_name_twice():
-        with pytest.raises(TypeError):
-            model.KeyProperty("a", "b")
+    # Might need a completely different way to test for this, given Python 2.7
+    # limitations for positional and keyword-only arguments.
+    # @staticmethod
+    # def test_constructor_positional_name_twice():
+    #    with pytest.raises(TypeError):
+    #        model.KeyProperty("a", "b")
 
     @staticmethod
     def test_constructor_positional_kind_twice():
@@ -2203,25 +2506,27 @@ class TestKeyProperty:
     @staticmethod
     def test_constructor_positional_bad_type():
         with pytest.raises(TypeError):
-            model.KeyProperty("a", unittest.mock.sentinel.bad)
+            model.KeyProperty("a", mock.sentinel.bad)
 
     @staticmethod
     def test_constructor_name_both_ways():
         with pytest.raises(TypeError):
             model.KeyProperty("a", name="b")
 
-    @staticmethod
-    def test_constructor_kind_both_ways():
-        class Simple(model.Model):
-            pass
-
-        with pytest.raises(TypeError):
-            model.KeyProperty(Simple, kind="Simple")
+    # Might need a completely different way to test for this, given Python 2.7
+    # limitations for positional and keyword-only arguments.
+    # @staticmethod
+    # def test_constructor_kind_both_ways():
+    #    class Simple(model.Model):
+    #        pass
+    #
+    #    with pytest.raises(TypeError):
+    #        model.KeyProperty(Simple, kind="Simple")
 
     @staticmethod
     def test_constructor_bad_kind():
         with pytest.raises(TypeError):
-            model.KeyProperty(kind=unittest.mock.sentinel.bad)
+            model.KeyProperty(kind=mock.sentinel.bad)
 
     @staticmethod
     def test_constructor_positional():
@@ -2255,10 +2560,11 @@ class TestKeyProperty:
         class Simple(model.Model):
             pass
 
-        prop1 = model.KeyProperty(Simple, name="keyp")
+        # prop1 will get a TypeError due to Python 2.7 compatibility
+        # prop1 = model.KeyProperty(Simple, name="keyp")
         prop2 = model.KeyProperty("keyp", kind=Simple)
         prop3 = model.KeyProperty("keyp", kind="Simple")
-        for prop in (prop1, prop2, prop3):
+        for prop in (prop2, prop3):
             assert prop._name == "keyp"
             assert prop._kind == "Simple"
 
@@ -2370,6 +2676,10 @@ class TestBlobKeyProperty:
 
 class TestDateTimeProperty:
     @staticmethod
+    def _string_validator(prop, value):
+        return datetime.datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+
+    @staticmethod
     def test_constructor_defaults():
         prop = model.DateTimeProperty()
         # Check that none of the constructor defaults were used.
@@ -2382,23 +2692,25 @@ class TestDateTimeProperty:
             name="dt_val",
             auto_now=True,
             auto_now_add=False,
+            tzinfo=timezone(-4),
             indexed=False,
             repeated=False,
             required=True,
             default=now,
-            validator=TestProperty._example_validator,
+            validator=TestDateTimeProperty._string_validator,
             verbose_name="VALUE FOR READING",
             write_empty_list=False,
         )
         assert prop._name == "dt_val"
         assert prop._auto_now
         assert not prop._auto_now_add
+        assert prop._tzinfo == timezone(-4)
         assert not prop._indexed
         assert not prop._repeated
         assert prop._required
         assert prop._default == now
         assert prop._choices is None
-        assert prop._validator is TestProperty._example_validator
+        assert prop._validator is TestDateTimeProperty._string_validator
         assert prop._verbose_name == "VALUE FOR READING"
         assert not prop._write_empty_list
 
@@ -2407,9 +2719,7 @@ class TestDateTimeProperty:
         with pytest.raises(ValueError):
             model.DateTimeProperty(name="dt_val", auto_now=True, repeated=True)
         with pytest.raises(ValueError):
-            model.DateTimeProperty(
-                name="dt_val", auto_now_add=True, repeated=True
-            )
+            model.DateTimeProperty(name="dt_val", auto_now_add=True, repeated=True)
 
         prop = model.DateTimeProperty(name="dt_val", repeated=True)
         assert prop._repeated
@@ -2421,10 +2731,26 @@ class TestDateTimeProperty:
         assert prop._validate(value) is None
 
     @staticmethod
+    def test__do_validate_with_validator():
+        prop = model.DateTimeProperty(
+            name="dt_val", validator=TestDateTimeProperty._string_validator
+        )
+        value = "2020-08-08 12:53:54"
+        # validator must be called first to convert to datetime
+        assert prop._do_validate(value) == datetime.datetime(2020, 8, 8, 12, 53, 54)
+
+    @staticmethod
     def test__validate_invalid():
         prop = model.DateTimeProperty(name="dt_val")
         with pytest.raises(exceptions.BadValueError):
             prop._validate(None)
+
+    @staticmethod
+    def test__validate_with_tz():
+        prop = model.DateTimeProperty(name="dt_val")
+        value = datetime.datetime.now(tz=pytz.utc)
+        with pytest.raises(exceptions.BadValueError):
+            prop._validate(value)
 
     @staticmethod
     def test__now():
@@ -2434,9 +2760,9 @@ class TestDateTimeProperty:
     @staticmethod
     def test__prepare_for_put():
         prop = model.DateTimeProperty(name="dt_val")
-        entity = unittest.mock.Mock(_values={}, spec=("_values",))
+        entity = mock.Mock(_values={}, spec=("_values",))
 
-        with unittest.mock.patch.object(prop, "_now") as _now:
+        with mock.patch.object(prop, "_now") as _now:
             prop._prepare_for_put(entity)
         assert entity._values == {}
         _now.assert_not_called()
@@ -2445,11 +2771,11 @@ class TestDateTimeProperty:
     def test__prepare_for_put_auto_now():
         prop = model.DateTimeProperty(name="dt_val", auto_now=True)
         values1 = {}
-        values2 = {prop._name: unittest.mock.sentinel.dt}
+        values2 = {prop._name: mock.sentinel.dt}
         for values in (values1, values2):
-            entity = unittest.mock.Mock(_values=values, spec=("_values",))
+            entity = mock.Mock(_values=values, spec=("_values",))
 
-            with unittest.mock.patch.object(prop, "_now") as _now:
+            with mock.patch.object(prop, "_now") as _now:
                 prop._prepare_for_put(entity)
             assert entity._values == {prop._name: _now.return_value}
             _now.assert_called_once_with()
@@ -2458,13 +2784,11 @@ class TestDateTimeProperty:
     def test__prepare_for_put_auto_now_add():
         prop = model.DateTimeProperty(name="dt_val", auto_now_add=True)
         values1 = {}
-        values2 = {prop._name: unittest.mock.sentinel.dt}
+        values2 = {prop._name: mock.sentinel.dt}
         for values in (values1, values2):
-            entity = unittest.mock.Mock(
-                _values=values.copy(), spec=("_values",)
-            )
+            entity = mock.Mock(_values=values.copy(), spec=("_values",))
 
-            with unittest.mock.patch.object(prop, "_now") as _now:
+            with mock.patch.object(prop, "_now") as _now:
                 prop._prepare_for_put(entity)
             if values:
                 assert entity._values == values
@@ -2485,6 +2809,54 @@ class TestDateTimeProperty:
         prop = model.DateTimeProperty(name="dt_val")
         with pytest.raises(NotImplementedError):
             prop._db_get_value(None, None)
+
+    @staticmethod
+    def test__from_base_type_no_timezone():
+        prop = model.DateTimeProperty(name="dt_val")
+        value = datetime.datetime.now()
+        assert prop._from_base_type(value) is None
+
+    @staticmethod
+    def test__from_base_type_timezone():
+        prop = model.DateTimeProperty(name="dt_val")
+        value = datetime.datetime(2010, 5, 12, tzinfo=pytz.utc)
+        assert prop._from_base_type(value) == datetime.datetime(2010, 5, 12)
+
+    @staticmethod
+    def test__from_base_type_convert_timezone():
+        prop = model.DateTimeProperty(name="dt_val", tzinfo=timezone(-4))
+        value = datetime.datetime(2010, 5, 12, tzinfo=pytz.utc)
+        assert prop._from_base_type(value) == datetime.datetime(
+            2010, 5, 11, 20, tzinfo=timezone(-4)
+        )
+
+    @staticmethod
+    def test__from_base_type_naive_with_timezone():
+        prop = model.DateTimeProperty(name="dt_val", tzinfo=timezone(-4))
+        value = datetime.datetime(2010, 5, 12)
+        assert prop._from_base_type(value) == datetime.datetime(
+            2010, 5, 11, 20, tzinfo=timezone(-4)
+        )
+
+    @staticmethod
+    def test__from_base_type_int():
+        prop = model.DateTimeProperty(name="dt_val")
+        value = 1273632120000000
+        assert prop._from_base_type(value) == datetime.datetime(2010, 5, 12, 2, 42)
+
+    @staticmethod
+    def test__to_base_type_noop():
+        prop = model.DateTimeProperty(name="dt_val", tzinfo=timezone(-4))
+        value = datetime.datetime(2010, 5, 12)
+        assert prop._to_base_type(value) is None
+
+    @staticmethod
+    def test__to_base_type_convert_to_utc():
+        prop = model.DateTimeProperty(name="dt_val", tzinfo=timezone(-4))
+        value = datetime.datetime(2010, 5, 12, tzinfo=timezone(-4))
+        assert prop._to_base_type(value) == datetime.datetime(
+            2010, 5, 12, 4, tzinfo=pytz.utc
+        )
 
 
 class TestDateProperty:
@@ -2631,7 +3003,7 @@ class TestStructuredProperty:
         class MineToo(model.Model):
             bar = model.StructuredProperty(Mine)
 
-        minetoo = MineToo(projection=("bar.foo",))
+        minetoo = MineToo(projection=("saywhat",))
         with pytest.raises(model.UnprojectedPropertyError):
             MineToo.bar._get_value(minetoo)
 
@@ -2687,6 +3059,16 @@ class TestStructuredProperty:
         assert prop.foo._name == "bar.foo"
 
     @staticmethod
+    def test___getattr__use_codename():
+        class Mine(model.Model):
+            foo = model.StringProperty("notfoo")
+
+        prop = model.StructuredProperty(Mine)
+        prop._name = "bar"
+        assert isinstance(prop.foo, model.StringProperty)
+        assert prop.foo._name == "bar.notfoo"
+
+    @staticmethod
     def test___getattr___bad_prop():
         class Mine(model.Model):
             foo = model.StringProperty()
@@ -2734,9 +3116,7 @@ class TestStructuredProperty:
 
         prop = model.StructuredProperty(Mine)
         prop._name = "bar"
-        assert prop._comparison("=", None) == query_module.FilterNode(
-            "bar", "=", None
-        )
+        assert prop._comparison("=", None) == query_module.FilterNode("bar", "=", None)
 
     @staticmethod
     def test__comparison_repeated():
@@ -2793,9 +3173,21 @@ class TestStructuredProperty:
         prop = model.StructuredProperty(Mine)
         prop._name = "baz"
         mine = Mine(foo="x", bar="y")
-        assert prop._comparison("=", mine) == query_module.AND(
-            query_module.FilterNode("baz.bar", "=", "y"),
-            query_module.FilterNode("baz.foo", "=", "x"),
+        comparison = prop._comparison("=", mine)
+        compared = query_module.AND(
+            query_module.FilterNode("baz.bar", "=", u"y"),
+            query_module.FilterNode("baz.foo", "=", u"x"),
+        )
+        # Python 2 and 3 order nodes differently, sort them and test each one
+        # is in both lists.
+        assert all(  # pragma: NO BRANCH
+            [
+                a == b
+                for a, b in zip(
+                    sorted(comparison._nodes, key=lambda a: a._name),
+                    sorted(compared._nodes, key=lambda a: a._name),
+                )
+            ]
         )
 
     @staticmethod
@@ -2809,17 +3201,24 @@ class TestStructuredProperty:
         prop._name = "bar"
         mine = Mine(foo="x", bar="y")
         conjunction = prop._comparison("=", mine)
-        assert conjunction._nodes[0] == query_module.FilterNode(
-            "bar.bar", "=", "y"
+        # Python 2 and 3 order nodes differently, so we sort them before
+        # making any comparisons.
+        conjunction_nodes = sorted(
+            conjunction._nodes, key=lambda a: getattr(a, "_name", "z")
         )
-        assert conjunction._nodes[1] == query_module.FilterNode(
-            "bar.foo", "=", "x"
+        assert conjunction_nodes[0] == query_module.FilterNode("bar.bar", "=", u"y")
+        assert conjunction_nodes[1] == query_module.FilterNode("bar.foo", "=", u"x")
+        assert conjunction_nodes[2].predicate.name == "bar"
+        assert sorted(conjunction_nodes[2].predicate.match_keys) == [
+            "bar",
+            "foo",
+        ]
+        match_values = sorted(
+            conjunction_nodes[2].predicate.match_values,
+            key=lambda a: a.string_value,
         )
-        assert conjunction._nodes[2].predicate.name == "bar"
-        assert conjunction._nodes[2].predicate.match_keys == ["bar", "foo"]
-        match_values = conjunction._nodes[2].predicate.match_values
-        assert match_values[0].string_value == "y"
-        assert match_values[1].string_value == "x"
+        assert match_values[0].string_value == "x"
+        assert match_values[1].string_value == "y"
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3022,7 +3421,7 @@ class TestStructuredProperty:
         ds_bar = MineToo.bar._to_base_type(minetoo.bar)
         assert isinstance(ds_bar, entity_module.Entity)
         assert ds_bar["foo"] == "bar"
-        assert ds_bar.kind == "Mine"
+        assert ds_bar.key is None
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3052,6 +3451,117 @@ class TestStructuredProperty:
         prop = model.StructuredProperty(Simple, name="ent")
         value = object()
         assert prop._from_base_type(value) is value
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__to_datastore_non_legacy():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind)
+
+        entity = SomeKind(foo=SubKind(bar="baz"))
+        data = {}
+        assert SomeKind.foo._to_datastore(entity, data) == ("foo",)
+        assert len(data) == 1
+        assert dict(data["foo"]) == {"bar": "baz"}
+
+    @staticmethod
+    def test__to_datastore_legacy(in_context):
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind)
+
+        with in_context.new(legacy_data=True).use():
+            entity = SomeKind(foo=SubKind(bar="baz"))
+            data = {}
+            assert SomeKind.foo._to_datastore(entity, data) == {"foo.bar"}
+            assert data == {"foo.bar": "baz"}
+
+    @staticmethod
+    def test__to_datastore_legacy_subentity_is_None(in_context):
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind)
+
+        with in_context.new(legacy_data=True).use():
+            entity = SomeKind()
+            data = {}
+            assert SomeKind.foo._to_datastore(entity, data) == {"foo"}
+            assert data == {"foo": None}
+
+    @staticmethod
+    def test__to_datastore_legacy_subentity_is_unindexed(in_context):
+        class SubKind(model.Model):
+            bar = model.BlobProperty(indexed=False)
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind)
+
+        with in_context.new(legacy_data=True).use():
+            entity = SomeKind(foo=SubKind())
+            data = {"_exclude_from_indexes": []}
+            assert SomeKind.foo._to_datastore(entity, data) == {"foo.bar"}
+            assert data.pop("_exclude_from_indexes") == ["foo.bar"]
+            assert data == {"foo.bar": None}
+
+    @staticmethod
+    def test__to_datastore_legacy_repeated(in_context):
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind, repeated=True)
+
+        with in_context.new(legacy_data=True).use():
+            entity = SomeKind(foo=[SubKind(bar="baz"), SubKind(bar="boz")])
+            data = {}
+            assert SomeKind.foo._to_datastore(entity, data) == {"foo.bar"}
+            assert data == {"foo.bar": ["baz", "boz"]}
+
+    @staticmethod
+    def test__prepare_for_put():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind)
+
+        entity = SomeKind(foo=SubKind())
+        entity.foo._prepare_for_put = mock.Mock()
+        SomeKind.foo._prepare_for_put(entity)
+        entity.foo._prepare_for_put.assert_called_once_with()
+
+    @staticmethod
+    def test__prepare_for_put_repeated():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind, repeated=True)
+
+        entity = SomeKind(foo=[SubKind(), SubKind()])
+        entity.foo[0]._prepare_for_put = mock.Mock()
+        entity.foo[1]._prepare_for_put = mock.Mock()
+        SomeKind.foo._prepare_for_put(entity)
+        entity.foo[0]._prepare_for_put.assert_called_once_with()
+        entity.foo[1]._prepare_for_put.assert_called_once_with()
+
+    @staticmethod
+    def test__prepare_for_put_repeated_None():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(SubKind)
+
+        entity = SomeKind()
+        SomeKind.foo._prepare_for_put(entity)  # noop
 
 
 class TestLocalStructuredProperty:
@@ -3091,7 +3601,7 @@ class TestLocalStructuredProperty:
 
         prop = model.LocalStructuredProperty(Simple, name="ent")
         value = {}
-        assert prop._validate(value) is None
+        assert isinstance(prop._validate(value), Simple)
 
     @staticmethod
     def test__validate_dict_invalid():
@@ -3155,6 +3665,210 @@ class TestLocalStructuredProperty:
         expected = Simple()
         assert prop._from_base_type(entity) == expected
 
+    @staticmethod
+    def test__prepare_for_put():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.LocalStructuredProperty(SubKind)
+
+        entity = SomeKind(foo=SubKind())
+        entity.foo._prepare_for_put = mock.Mock()
+        SomeKind.foo._prepare_for_put(entity)
+        entity.foo._prepare_for_put.assert_called_once_with()
+
+    @staticmethod
+    def test__prepare_for_put_repeated():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.LocalStructuredProperty(SubKind, repeated=True)
+
+        entity = SomeKind(foo=[SubKind(), SubKind()])
+        entity.foo[0]._prepare_for_put = mock.Mock()
+        entity.foo[1]._prepare_for_put = mock.Mock()
+        SomeKind.foo._prepare_for_put(entity)
+        entity.foo[0]._prepare_for_put.assert_called_once_with()
+        entity.foo[1]._prepare_for_put.assert_called_once_with()
+
+    @staticmethod
+    def test__prepare_for_put_repeated_None():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.LocalStructuredProperty(SubKind)
+
+        entity = SomeKind()
+        SomeKind.foo._prepare_for_put(entity)  # noop
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_repeated_local_structured_property():
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.LocalStructuredProperty(SubKind, repeated=True, indexed=False)
+
+        entity = SomeKind(foo=[SubKind(bar="baz")])
+        data = {"_exclude_from_indexes": []}
+        protobuf = model._entity_to_protobuf(entity.foo[0], set_key=False)
+        protobuf = protobuf.SerializePartialToString()
+        assert SomeKind.foo._to_datastore(entity, data, repeated=True) == ("foo",)
+        assert data.pop("_exclude_from_indexes") == ["foo"]
+        assert data == {"foo": [[protobuf]]}
+
+    @staticmethod
+    def test_legacy_repeated_local_structured_property(in_context):
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.LocalStructuredProperty(SubKind, repeated=True, indexed=False)
+
+        with in_context.new(legacy_data=True).use():
+            entity = SomeKind(foo=[SubKind(bar="baz")])
+            data = {"_exclude_from_indexes": []}
+            ds_entity = model._entity_to_ds_entity(entity.foo[0], set_key=False)
+            assert SomeKind.foo._to_datastore(entity, data, repeated=True) == ("foo",)
+            assert data.pop("_exclude_from_indexes") == ["foo"]
+            assert data == {"foo": [ds_entity]}
+
+    @staticmethod
+    def test_legacy_non_repeated_local_structured_property(in_context):
+        class SubKind(model.Model):
+            bar = model.Property()
+
+        class SomeKind(model.Model):
+            foo = model.LocalStructuredProperty(SubKind)
+
+        with in_context.new(legacy_data=True).use():
+            entity = SomeKind(foo=SubKind(bar="baz"))
+            data = {"_exclude_from_indexes": []}
+            assert SomeKind.foo._to_datastore(entity, data) == ("foo",)
+            assert data.pop("_exclude_from_indexes") == ["foo"]
+            ds_entity = model._entity_to_ds_entity(entity.foo, set_key=False)
+            assert data == {"foo": ds_entity}
+
+    @staticmethod
+    def test_legacy_repeated_compressed_local_structured_property():
+        class SubKind(model.Model):
+            bar = model.TextProperty()
+
+        prop = model.LocalStructuredProperty(SubKind, repeated=True, compressed=True)
+        entity = SubKind(bar="baz")
+        ds_entity = model._entity_to_ds_entity(entity, set_key=False)
+        assert prop._call_from_base_type(ds_entity) == entity
+
+    @staticmethod
+    def test_legacy_compressed_entity_local_structured_property():
+        class SubKind(model.Model):
+            foo = model.StringProperty()
+            bar = model.StringProperty()
+            baz = model.StringProperty()
+
+        prop = model.LocalStructuredProperty(SubKind, repeated=True, compressed=True)
+        entity = SubKind(foo="so", bar="much", baz="code")
+        compressed = b"".join(
+            [
+                b"x\x9c+\xe2\x95bN\xcb\xcfW`\xd0b\x91b*\xce",
+                b"/\xe2\x97bNJ,\x02r\xd9\xa4XrK\x933 \x02U\x10",
+                b"\x81\xe4\xfc\x94T\x00\x08\xe1\n\xff",
+            ]
+        )
+
+        assert prop._call_from_base_type(compressed) == entity
+
+    @staticmethod
+    def test__get_for_dict():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.LocalStructuredProperty(Mine)
+
+        mine = Mine(foo="Foo")
+        minetoo = MineToo()
+        minetoo.bar = mine
+        assert MineToo.bar._get_for_dict(minetoo) == {"foo": "Foo"}
+
+    @staticmethod
+    def test__get_for_dict_repeated():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.LocalStructuredProperty(Mine, repeated=True)
+
+        mine = Mine(foo="Foo")
+        minetoo = MineToo()
+        minetoo.bar = [mine, mine]
+        assert MineToo.bar._get_for_dict(minetoo) == [
+            {"foo": "Foo"},
+            {"foo": "Foo"},
+        ]
+
+    @staticmethod
+    def test__get_for_dict_no_value():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        class MineToo(model.Model):
+            bar = model.LocalStructuredProperty(Mine)
+
+        minetoo = MineToo()
+        minetoo.bar = None
+        assert MineToo.bar._get_for_dict(minetoo) is None
+
+    @staticmethod
+    def test_legacy_optional_local_structured_property(in_context):
+        class SubKind(model.Model):
+            foo = model.Property()
+
+        class ContainerB(model.Model):
+            child_b = model.LocalStructuredProperty(SubKind)
+
+        class ContainerA(model.Model):
+            child_a = model.LocalStructuredProperty(ContainerB)
+
+        with in_context.new(legacy_data=True).use():
+            entity = ContainerA(child_a=ContainerB())
+            data = {"_exclude_from_indexes": []}
+            assert ContainerA.child_a._to_datastore(entity, data) == ("child_a",)
+            assert data.pop("_exclude_from_indexes") == ["child_a"]
+            assert data["child_a"]["child_b"] is None
+
+    @staticmethod
+    def test_local_structured_property_with_polymodel(in_context):
+        class Base(polymodel.PolyModel):
+            pass
+
+        class SubKind(Base):
+            foo = model.StringProperty()
+
+        class Container(model.Model):
+            child = model.LocalStructuredProperty(Base)
+
+        entity = Container(child=SubKind(foo="bar"))
+        value = b"".join(
+            [
+                b"\x1a \n\x05class\x12\x17J\x15\n\x07\x8a\x01\x04Base\n\n",
+                b"\x8a\x01\x07SubKind\x1a\r\n\x03foo\x12\x06\x8a\x01\x03bar",
+            ]
+        )
+
+        child = entity._properties["child"]._from_base_type(value)
+        assert child.foo == "bar"
+
+        pb = entity_pb2.Entity()
+        pb.MergeFromString(value)
+        value = helpers.entity_from_protobuf(pb)
+        child = model._entity_from_ds_entity(value, model_class=Base)
+        assert child._values["foo"].b_val == "bar"
+
 
 class TestGenericProperty:
     @staticmethod
@@ -3170,9 +3884,7 @@ class TestGenericProperty:
     @staticmethod
     def test_constructor_compressed_and_indexed():
         with pytest.raises(NotImplementedError):
-            model.GenericProperty(
-                name="generic", compressed=True, indexed=True
-            )
+            model.GenericProperty(name="generic", compressed=True, indexed=True)
 
     @staticmethod
     def test__db_get_value():
@@ -3257,6 +3969,19 @@ class TestComputedProperty:
         assert prop._func == lower_name
 
     @staticmethod
+    def test_repr():
+        """Regression test for #256
+
+        https://github.com/googleapis/python-ndb/issues/256
+        """
+
+        def lower_name(self):
+            return self.lower()  # pragma: NO COVER
+
+        prop = model.ComputedProperty(lower_name)
+        assert "lower_name" in repr(prop)
+
+    @staticmethod
     def test__set_value():
         prop = model.ComputedProperty(lambda self: self)  # pragma: NO COVER
         with pytest.raises(model.ComputedPropertyError):
@@ -3271,9 +3996,7 @@ class TestComputedProperty:
     @staticmethod
     def test__get_value():
         prop = model.ComputedProperty(lambda self: 42)
-        entity = unittest.mock.Mock(
-            _projection=None, _values={}, spec=("_projection")
-        )
+        entity = mock.Mock(_projection=None, _values={}, spec=("_projection"))
         assert prop._get_value(entity) == 42
 
     @staticmethod
@@ -3281,7 +4004,7 @@ class TestComputedProperty:
         prop = model.ComputedProperty(
             lambda self: 42, name="computed"
         )  # pragma: NO COVER
-        entity = unittest.mock.Mock(
+        entity = mock.Mock(
             _projection=["computed"],
             _values={"computed": 84},
             spec=("_projection", "_values"),
@@ -3291,9 +4014,7 @@ class TestComputedProperty:
     @staticmethod
     def test__get_value_empty_projection():
         prop = model.ComputedProperty(lambda self: 42)
-        entity = unittest.mock.Mock(
-            _projection=None, _values={}, spec=("_projection")
-        )
+        entity = mock.Mock(_projection=None, _values={}, spec=("_projection"))
         prop._prepare_for_put(entity)
         assert entity._values == {prop._name: 42}
 
@@ -3311,8 +4032,7 @@ class TestMetaModel:
             second = model.StringProperty()
 
         expected = (
-            "Mine<first=IntegerProperty('first'), "
-            "second=StringProperty('second')>"
+            "Mine<first=IntegerProperty('first'), " "second=StringProperty('second')>"
         )
         assert repr(Mine) == expected
 
@@ -3341,7 +4061,7 @@ class TestMetaModel:
 
     @staticmethod
     def test_non_property_attribute():
-        model_attr = unittest.mock.Mock(spec=model.ModelAttribute)
+        model_attr = mock.Mock(spec=model.ModelAttribute)
 
         class Mine(model.Model):
             baz = model_attr
@@ -3374,10 +4094,44 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test_constructor_namespace_no_key_parts():
+        entity = model.Model(namespace="myspace")
+        key = key_module.Key("Model", None, namespace="myspace")
+        assert entity.__dict__ == {"_entity_key": key, "_values": {}}
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_constructor_app():
+        entity = model.Model(app="thisproject")
+        key = key_module.Key("Model", None, project="thisproject")
+        assert entity.__dict__ == {"_values": {}, "_entity_key": key}
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_constructor_project():
+        entity = model.Model(project="thisproject")
+        key = key_module.Key("Model", None, project="thisproject")
+        assert entity.__dict__ == {"_values": {}, "_entity_key": key}
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_constructor_app_and_project():
+        with pytest.raises(exceptions.BadArgumentError):
+            model.Model(app="foo", project="bar")
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_constructor_key_and_key_parts():
         key = key_module.Key("Foo", "bar")
         with pytest.raises(exceptions.BadArgumentError):
             model.Model(key=key, id=124)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_constructor_key_and_key_parts_with_namespace():
+        key = key_module.Key("Foo", "bar")
+        with pytest.raises(exceptions.BadArgumentError):
+            model.Model(key=key, namespace="myspace")
 
     @staticmethod
     def test_constructor_user_property_collision():
@@ -3394,13 +4148,55 @@ class TestModel:
             author = model.StringProperty()
             publisher = model.StringProperty()
 
-        entity = Book(
-            pages=287, author="Tim Robert", projection=("pages", "author")
-        )
+        entity = Book(pages=287, author="Tim Robert", projection=("pages", "author"))
         assert entity.__dict__ == {
             "_values": {"pages": 287, "author": "Tim Robert"},
             "_projection": ("pages", "author"),
         }
+
+    @staticmethod
+    def test_constructor_with_structured_property_projection():
+        class Author(model.Model):
+            first_name = model.StringProperty()
+            last_name = model.StringProperty()
+
+        class Book(model.Model):
+            pages = model.IntegerProperty()
+            author = model.StructuredProperty(Author)
+            publisher = model.StringProperty()
+
+        entity = Book(
+            pages=287,
+            author=Author(first_name="Tim", last_name="Robert"),
+            projection=("author.first_name", "author.last_name"),
+        )
+        assert entity._projection == ("author.first_name", "author.last_name")
+        assert entity.author._projection == ("first_name", "last_name")
+
+    @staticmethod
+    def test_constructor_with_repeated_structured_property_projection():
+        class Author(model.Model):
+            first_name = model.StringProperty()
+            last_name = model.StringProperty()
+
+        class Book(model.Model):
+            pages = model.IntegerProperty()
+            authors = model.StructuredProperty(Author, repeated=True)
+            publisher = model.StringProperty()
+
+        entity = Book(
+            pages=287,
+            authors=[
+                Author(first_name="Tim", last_name="Robert"),
+                Author(first_name="Jim", last_name="Bobert"),
+            ],
+            projection=("authors.first_name", "authors.last_name"),
+        )
+        assert entity._projection == (
+            "authors.first_name",
+            "authors.last_name",
+        )
+        assert entity.authors[0]._projection == ("first_name", "last_name")
 
     @staticmethod
     def test_constructor_non_existent_property():
@@ -3442,9 +4238,7 @@ class TestModel:
     @pytest.mark.usefixtures("in_context")
     def test_repr_with_property_named_key():
         ManyFields = ManyFieldsFactory()
-        entity = ManyFields(
-            self=909, id="hi", key=[88.5, 0.0], value=None, _id=78
-        )
+        entity = ManyFields(self=909, id="hi", key=[88.5, 0.0], value=None, _id=78)
         expected = (
             "ManyFields(_key=Key('ManyFields', 78), id='hi', key=[88.5, 0.0], "
             "self=909, value=None)"
@@ -3457,8 +4251,7 @@ class TestModel:
         ManyFields = ManyFieldsFactory()
         entity = ManyFields(self=909, id="hi", value=None, _id=78)
         expected = (
-            "ManyFields(_key=Key('ManyFields', 78), id='hi', "
-            "self=909, value=None)"
+            "ManyFields(_key=Key('ManyFields', 78), id='hi', " "self=909, value=None)"
         )
         assert repr(entity) == expected
 
@@ -3530,9 +4323,7 @@ class TestModel:
     def test___eq__wrong_projection():
         ManyFields = ManyFieldsFactory()
         entity1 = ManyFields(self=90, projection=("self",))
-        entity2 = ManyFields(
-            value="a", unused=0.0, projection=("value", "unused")
-        )
+        entity2 = ManyFields(value="a", unused=0.0, projection=("value", "unused"))
         assert not entity1 == entity2
 
     @staticmethod
@@ -3553,6 +4344,92 @@ class TestModel:
         assert not entity1 == entity2
 
     @staticmethod
+    def test__eq__expando_w_different_number_of_properties():
+        class SomeKind(model.Expando):
+            foo = model.IntegerProperty()
+
+        entity1 = SomeKind(foo=1)
+        entity2 = SomeKind(foo=1, bar=2)
+
+        assert not entity1 == entity2
+
+    @staticmethod
+    def test__eq__expando_w_different_properties():
+        class SomeKind(model.Expando):
+            foo = model.IntegerProperty()
+
+        entity1 = SomeKind(foo=1, bar=2)
+        entity2 = SomeKind(foo=1, baz=3)
+
+        assert not entity1 == entity2
+
+    @staticmethod
+    def test__eq__expando():
+        class SomeKind(model.Expando):
+            foo = model.IntegerProperty()
+
+        entity1 = SomeKind(foo=1, bar=2)
+        entity2 = SomeKind(foo=1, bar=2)
+
+        assert entity1 == entity2
+
+    @staticmethod
+    def test__eq__structured_property():
+        class OtherKind(model.Model):
+            bar = model.IntegerProperty()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(OtherKind)
+            hi = model.StringProperty()
+
+        entity1 = SomeKind(hi="mom", foo=OtherKind(bar=42))
+        entity2 = SomeKind(hi="mom", foo=OtherKind(bar=42))
+
+        assert entity1 == entity2
+
+    @staticmethod
+    def test__eq__structured_property_differs():
+        class OtherKind(model.Model):
+            bar = model.IntegerProperty()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(OtherKind)
+            hi = model.StringProperty()
+
+        entity1 = SomeKind(hi="mom", foo=OtherKind(bar=42))
+        entity2 = SomeKind(hi="mom", foo=OtherKind(bar=43))
+
+        assert not entity1 == entity2
+
+    @staticmethod
+    def test__eq__repeated_structured_property():
+        class OtherKind(model.Model):
+            bar = model.IntegerProperty()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(OtherKind, repeated=True)
+            hi = model.StringProperty()
+
+        entity1 = SomeKind(hi="mom", foo=[OtherKind(bar=42)])
+        entity2 = SomeKind(hi="mom", foo=[OtherKind(bar=42)])
+
+        assert entity1 == entity2
+
+    @staticmethod
+    def test__eq__repeated_structured_property_differs():
+        class OtherKind(model.Model):
+            bar = model.IntegerProperty()
+
+        class SomeKind(model.Model):
+            foo = model.StructuredProperty(OtherKind, repeated=True)
+            hi = model.StringProperty()
+
+        entity1 = SomeKind(hi="mom", foo=[OtherKind(bar=42)])
+        entity2 = SomeKind(hi="mom", foo=[OtherKind(bar=42), OtherKind(bar=43)])
+
+        assert not entity1 == entity2
+
+    @staticmethod
     def test___ne__():
         class Simple(model.Model):
             pass
@@ -3563,11 +4440,13 @@ class TestModel:
         entity3 = ManyFields(self=-9, id="bye")
         entity4 = ManyFields(self=-9, id="bye", projection=("self", "id"))
         entity5 = None
+        entity6 = ManyFields(self=-9, id="hi")
         assert not entity1 != entity1
         assert entity1 != entity2
         assert entity1 != entity3
         assert entity1 != entity4
         assert entity1 != entity5
+        assert not entity1 != entity6
 
     @staticmethod
     def test___lt__():
@@ -3599,90 +4478,130 @@ class TestModel:
 
     @staticmethod
     def test__validate_key():
-        value = unittest.mock.sentinel.value
+        value = mock.sentinel.value
         assert model.Model._validate_key(value) is value
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test__put_no_key(_datastore_api):
         entity = model.Model()
         _datastore_api.put.return_value = future = tasklets.Future()
         future.set_result(None)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put() == entity.key
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options()
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test__put_w_key_no_cache(_datastore_api, in_context):
         entity = model.Model()
         _datastore_api.put.return_value = future = tasklets.Future()
 
         key = key_module.Key("SomeKind", 123)
-        future.set_result(key._key.to_protobuf())
+        future.set_result(key._key)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put(use_cache=False) == key
         assert not in_context.cache
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options(use_cache=False)
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options(use_cache=False)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test__put_w_key_with_cache(_datastore_api, in_context):
         entity = model.Model()
         _datastore_api.put.return_value = future = tasklets.Future()
 
         key = key_module.Key("SomeKind", 123)
-        future.set_result(key._key.to_protobuf())
+        future.set_result(key._key)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put(use_cache=True) == key
         assert in_context.cache[key] == entity
         assert in_context.cache.get_and_validate(key) == entity
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options(use_cache=True)
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options(use_cache=True)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test__put_w_key(_datastore_api):
         entity = model.Model()
         _datastore_api.put.return_value = future = tasklets.Future()
 
         key = key_module.Key("SomeKind", 123)
-        future.set_result(key._key.to_protobuf())
+        future.set_result(key._key)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put() == key
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options()
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test__put_async(_datastore_api):
         entity = model.Model()
         _datastore_api.put.return_value = future = tasklets.Future()
 
         key = key_module.Key("SomeKind", 123)
-        future.set_result(key._key.to_protobuf())
+        future.set_result(key._key)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         tasklet_future = entity._put_async()
         assert tasklet_future.result() == key
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options()
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options()
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -3691,7 +4610,7 @@ class TestModel:
             foo = model.DateTimeProperty()
 
         entity = Simple(foo=datetime.datetime.now())
-        with unittest.mock.patch.object(
+        with mock.patch.object(
             entity._properties["foo"], "_prepare_for_put"
         ) as patched:
             entity._prepare_for_put()
@@ -3699,7 +4618,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test__put_w_hooks(_datastore_api):
         class Simple(model.Model):
             def __init__(self):
@@ -3718,11 +4637,19 @@ class TestModel:
         _datastore_api.put.return_value = future = tasklets.Future()
         future.set_result(None)
 
-        entity_pb = model._entity_to_protobuf(entity)
+        ds_entity = model._entity_to_ds_entity(entity)
         assert entity._put() == entity.key
-        _datastore_api.put.assert_called_once_with(
-            entity_pb, _options.Options()
-        )
+
+        # Can't do a simple "assert_called_once_with" here because entities'
+        # keys will fail test for equality because Datastore's Key.__eq__
+        # method returns False if either key is partial, regardless of whether
+        # they're effectively equal or not. Have to do this more complicated
+        # unpacking instead.
+        assert _datastore_api.put.call_count == 1
+        call_ds_entity, call_options = _datastore_api.put.call_args[0]
+        assert call_ds_entity.key.path == ds_entity.key.path
+        assert call_ds_entity.items() == ds_entity.items()
+        assert call_options == _options.Options()
 
         assert entity.pre_put_calls == [((), {})]
         assert entity.post_put_calls == [((), {})]
@@ -3813,20 +4740,42 @@ class TestModel:
             XModel.query(distinct=True, group_by=("x",))
 
     @staticmethod
+    def test_query_projection_of_unindexed_attribute():
+        class XModel(model.Model):
+            x = model.IntegerProperty(indexed=False)
+
+        with pytest.raises(model.InvalidPropertyError):
+            XModel.query(projection=["x"])
+
+    @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_gql():
         class Simple(model.Model):
             x = model.IntegerProperty()
 
-        entity = Simple()
-        query = entity.gql("WHERE x=1")
+        query = Simple.gql("WHERE x=1")
         assert isinstance(query, query_module.Query)
         assert query.kind == "Simple"
         assert query.filters == query_module.FilterNode("x", "=", 1)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    def test_gql_binding():
+        class Simple(model.Model):
+            x = model.IntegerProperty()
+            y = model.StringProperty()
+
+        query = Simple.gql("WHERE x=:1 and y=:foo", 2, foo="bar")
+        assert isinstance(query, query_module.Query)
+        assert query.kind == "Simple"
+        assert query.filters == query_module.AND(
+            query_module.FilterNode("x", "=", 2),
+            query_module.FilterNode("y", "=", "bar"),
+        )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_allocate_ids(_datastore_api):
         completed = [
             entity_pb2.Key(
@@ -3859,7 +4808,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_allocate_ids_w_hooks(_datastore_api):
         completed = [
             entity_pb2.Key(
@@ -3886,9 +4835,7 @@ class TestModel:
                 cls, size, max, parent, future, *args, **kwargs
             ):
                 assert isinstance(future, tasklets.Future)
-                cls.post_allocate_id_calls.append(
-                    ((size, max, parent) + args, kwargs)
-                )
+                cls.post_allocate_id_calls.append(((size, max, parent) + args, kwargs))
 
         keys = Simple.allocate_ids(2)
         assert keys == (
@@ -3927,7 +4874,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._datastore_api")
+    @mock.patch("google.cloud.ndb._datastore_api")
     def test_allocate_ids_async(_datastore_api):
         completed = [
             entity_pb2.Key(
@@ -3961,7 +4908,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
+    @mock.patch("google.cloud.ndb.model.key_module")
     def test_get_by_id(key_module):
         entity = object()
         key = key_module.Key.return_value
@@ -3976,7 +4923,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
+    @mock.patch("google.cloud.ndb.model.key_module")
     def test_get_by_id_w_parent_project_namespace(key_module):
         entity = object()
         key = key_module.Key.return_value
@@ -3986,8 +4933,7 @@ class TestModel:
             pass
 
         assert (
-            Simple.get_by_id(1, parent="foo", project="baz", namespace="bar")
-            is entity
+            Simple.get_by_id(1, parent="foo", project="baz", namespace="bar") is entity
         )
 
         key_module.Key.assert_called_once_with(
@@ -3998,7 +4944,24 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
+    @mock.patch("google.cloud.ndb.model.key_module")
+    def test_get_by_id_w_default_namespace(key_module):
+        entity = object()
+        key = key_module.Key.return_value
+        key.get_async.return_value = utils.future_result(entity)
+
+        class Simple(model.Model):
+            pass
+
+        assert Simple.get_by_id(1, namespace="") is entity
+
+        key_module.Key.assert_called_once_with("Simple", 1, namespace="", parent=None)
+
+        key.get_async.assert_called_once_with(_options=_options.ReadOptions())
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb.model.key_module")
     def test_get_by_id_w_app(key_module):
         entity = object()
         key = key_module.Key.return_value
@@ -4009,9 +4972,7 @@ class TestModel:
 
         assert Simple.get_by_id(1, app="baz") is entity
 
-        key_module.Key.assert_called_once_with(
-            "Simple", 1, parent=None, app="baz"
-        )
+        key_module.Key.assert_called_once_with("Simple", 1, parent=None, app="baz")
 
         key.get_async.assert_called_once_with(_options=_options.ReadOptions())
 
@@ -4026,7 +4987,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
+    @mock.patch("google.cloud.ndb.model.key_module")
     def test_get_by_id_async(key_module):
         entity = object()
         key = key_module.Key.return_value
@@ -4044,7 +5005,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
+    @mock.patch("google.cloud.ndb.model.key_module")
     def test_get_or_insert_get(key_module):
         entity = object()
         key = key_module.Key.return_value
@@ -4061,7 +5022,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
+    @mock.patch("google.cloud.ndb.model.key_module")
     def test_get_or_insert_get_w_app(key_module):
         entity = object()
         key = key_module.Key.return_value
@@ -4080,7 +5041,7 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
+    @mock.patch("google.cloud.ndb.model.key_module")
     def test_get_or_insert_get_w_namespace(key_module):
         entity = object()
         key = key_module.Key.return_value
@@ -4093,6 +5054,25 @@ class TestModel:
 
         key_module.Key.assert_called_once_with(
             "Simple", "one", parent=None, namespace="himom"
+        )
+
+        key.get_async.assert_called_once_with(_options=_options.ReadOptions())
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb.model.key_module")
+    def test_get_or_insert_get_w_default_namespace(key_module):
+        entity = object()
+        key = key_module.Key.return_value
+        key.get_async.return_value = utils.future_result(entity)
+
+        class Simple(model.Model):
+            foo = model.IntegerProperty()
+
+        assert Simple.get_or_insert("one", foo=0, namespace="") is entity
+
+        key_module.Key.assert_called_once_with(
+            "Simple", "one", parent=None, namespace=""
         )
 
         key.get_async.assert_called_once_with(_options=_options.ReadOptions())
@@ -4126,58 +5106,42 @@ class TestModel:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._transaction")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
-    def test_get_or_insert_insert_in_transaction(
-        patched_key_module, _transaction
-    ):
+    @mock.patch("google.cloud.ndb.model._transaction")
+    @mock.patch("google.cloud.ndb.model.key_module")
+    def test_get_or_insert_insert_in_transaction(patched_key_module, _transaction):
         class MockKey(key_module.Key):
-            get_async = unittest.mock.Mock(
-                return_value=utils.future_result(None)
-            )
+            get_async = mock.Mock(return_value=utils.future_result(None))
 
         patched_key_module.Key = MockKey
 
         class Simple(model.Model):
             foo = model.IntegerProperty()
 
-            put_async = unittest.mock.Mock(
-                return_value=utils.future_result(None)
-            )
+            put_async = mock.Mock(return_value=utils.future_result(None))
 
         _transaction.in_transaction.return_value = True
 
         entity = Simple.get_or_insert("one", foo=42)
         assert entity.foo == 42
         assert entity._key == MockKey("Simple", "one")
-        assert entity.put_async.called_once_with(
-            _options=_options.ReadOptions()
-        )
+        assert entity.put_async.called_once_with(_options=_options.ReadOptions())
 
-        entity._key.get_async.assert_called_once_with(
-            _options=_options.ReadOptions()
-        )
+        entity._key.get_async.assert_called_once_with(_options=_options.ReadOptions())
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model._transaction")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
-    def test_get_or_insert_insert_not_in_transaction(
-        patched_key_module, _transaction
-    ):
+    @mock.patch("google.cloud.ndb.model._transaction")
+    @mock.patch("google.cloud.ndb.model.key_module")
+    def test_get_or_insert_insert_not_in_transaction(patched_key_module, _transaction):
         class MockKey(key_module.Key):
-            get_async = unittest.mock.Mock(
-                return_value=utils.future_result(None)
-            )
+            get_async = mock.Mock(return_value=utils.future_result(None))
 
         patched_key_module.Key = MockKey
 
         class Simple(model.Model):
             foo = model.IntegerProperty()
 
-            put_async = unittest.mock.Mock(
-                return_value=utils.future_result(None)
-            )
+            put_async = mock.Mock(return_value=utils.future_result(None))
 
         _transaction.in_transaction.return_value = False
         _transaction.transaction_async = lambda f: f()
@@ -4185,17 +5149,13 @@ class TestModel:
         entity = Simple.get_or_insert("one", foo=42)
         assert entity.foo == 42
         assert entity._key == MockKey("Simple", "one")
-        assert entity.put_async.called_once_with(
-            _options=_options.ReadOptions()
-        )
+        assert entity.put_async.called_once_with(_options=_options.ReadOptions())
 
-        entity._key.get_async.assert_called_once_with(
-            _options=_options.ReadOptions()
-        )
+        entity._key.get_async.assert_called_once_with(_options=_options.ReadOptions())
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    @unittest.mock.patch("google.cloud.ndb.model.key_module")
+    @mock.patch("google.cloud.ndb.model.key_module")
     def test_get_or_insert_async(key_module):
         entity = object()
         key = key_module.Key.return_value
@@ -4284,6 +5244,15 @@ class TestModel:
 
         entity = Simple(foo=3, bar="baz", projection=("foo",))
         assert entity.to_dict() == {"foo": 3}
+
+    @staticmethod
+    def test__code_name_from_stored_name():
+        class Simple(model.Model):
+            foo = model.StringProperty()
+            bar = model.StringProperty(name="notbar")
+
+        assert Simple._code_name_from_stored_name("foo") == "foo"
+        assert Simple._code_name_from_stored_name("notbar") == "bar"
 
 
 class Test_entity_from_protobuf:
@@ -4422,7 +5391,7 @@ class Test_entity_from_protobuf:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_legacy_repeated_structured_property():
+    def test_repeated_structured_property():
         class OtherKind(model.Model):
             foo = model.IntegerProperty()
             bar = model.StringProperty()
@@ -4448,6 +5417,133 @@ class Test_entity_from_protobuf:
         assert entity.baz[1].foo == 144
         assert entity.baz[1].bar == "hellodad"
         assert entity.copacetic is True
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_legacy_repeated_structured_property_projection():
+        class OtherKind(model.Model):
+            foo = model.IntegerProperty()
+            bar = model.StringProperty()
+
+        class ThisKind(model.Model):
+            baz = model.StructuredProperty(OtherKind, repeated=True)
+            copacetic = model.BooleanProperty()
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        datastore_entity.update({"baz.foo": 42, "baz.bar": "himom", "copacetic": True})
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        assert isinstance(entity, ThisKind)
+        assert entity.baz[0].foo == 42
+        assert entity.baz[0].bar == "himom"
+        assert entity.copacetic is True
+
+
+class Test_entity_from_ds_entity:
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_legacy_repeated_structured_property_uneven():
+        class OtherKind(model.Model):
+            foo = model.IntegerProperty()
+            bar = model.StringProperty()
+
+        class ThisKind(model.Model):
+            baz = model.StructuredProperty(OtherKind, repeated=True)
+            copacetic = model.BooleanProperty()
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        datastore_entity.items = mock.Mock(
+            return_value=(
+                # Order counts for coverage
+                ("baz.foo", [42, 144]),
+                ("baz.bar", ["himom", "hellodad", "iminjail"]),
+                ("copacetic", True),
+            )
+        )
+
+        entity = model._entity_from_ds_entity(datastore_entity)
+        assert isinstance(entity, ThisKind)
+        assert entity.baz[0].foo == 42
+        assert entity.baz[0].bar == "himom"
+        assert entity.baz[1].foo == 144
+        assert entity.baz[1].bar == "hellodad"
+        assert entity.baz[2].foo is None
+        assert entity.baz[2].bar == "iminjail"
+        assert entity.copacetic is True
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_legacy_repeated_structured_property_with_name():
+        class OtherKind(model.Model):
+            foo = model.IntegerProperty()
+            bar = model.StringProperty()
+
+        class ThisKind(model.Model):
+            baz = model.StructuredProperty(OtherKind, "b", repeated=True)
+            copacetic = model.BooleanProperty()
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        datastore_entity.items = mock.Mock(
+            return_value=(
+                # Order counts for coverage
+                ("b.foo", [42, 144]),
+                ("b.bar", ["himom", "hellodad", "iminjail"]),
+                ("copacetic", True),
+            )
+        )
+
+        entity = model._entity_from_ds_entity(datastore_entity)
+        assert isinstance(entity, ThisKind)
+        assert entity.baz[0].foo == 42
+        assert entity.baz[0].bar == "himom"
+        assert entity.baz[1].foo == 144
+        assert entity.baz[1].bar == "hellodad"
+        assert entity.baz[2].foo is None
+        assert entity.baz[2].bar == "iminjail"
+        assert entity.copacetic is True
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_polymodel():
+        class Animal(polymodel.PolyModel):
+            foo = model.IntegerProperty()
+
+        class Cat(Animal):
+            bar = model.StringProperty()
+
+        key = datastore.Key("Animal", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        datastore_entity.update(
+            {"foo": 42, "bar": "himom!", "class": ["Animal", "Cat"]}
+        )
+
+        entity = model._entity_from_ds_entity(datastore_entity)
+        assert isinstance(entity, Cat)
+        assert entity.foo == 42
+        assert entity.bar == "himom!"
+        assert entity.class_ == ["Animal", "Cat"]
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_polymodel_projection():
+        class Animal(polymodel.PolyModel):
+            foo = model.IntegerProperty()
+
+        class Cat(Animal):
+            bar = model.StringProperty()
+
+        key = datastore.Key("Animal", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        datastore_entity.update({"foo": 42, "bar": "himom!", "class": "Cat"})
+
+        entity = model._entity_from_ds_entity(datastore_entity)
+        assert isinstance(entity, Cat)
+        assert entity.foo == 42
+        assert entity.bar == "himom!"
+        assert entity.class_ == ["Cat"]
 
 
 class Test_entity_to_protobuf:
@@ -4562,6 +5658,8 @@ class TestExpando:
 
         expansive = Expansive(foo="x", bar="y", baz="z")
         assert expansive._properties == {"foo": "x", "bar": "y", "baz": "z"}
+        # Make sure we didn't change properties for the class
+        assert Expansive._properties == {"foo": "foo"}
 
     @staticmethod
     def test___getattr__():
@@ -4603,6 +5701,24 @@ class TestExpando:
 
         expansive = Expansive(foo="x", bar={"bar": "y", "baz": "z"})
         assert expansive.bar.baz == "z"
+
+    @staticmethod
+    def test___setattr__with_dotted_name():
+        """Regression test for issue #673
+
+        https://github.com/googleapis/python-ndb/issues/673
+        """
+
+        class Expansive(model.Expando):
+            foo = model.StringProperty()
+
+        expansive = Expansive(foo="x")
+        setattr(expansive, "a.b", "one")
+        assert expansive.a.b == "one"
+
+        setattr(expansive, "a.c", "two")
+        assert expansive.a.b == "one"
+        assert expansive.a.c == "two"
 
     @staticmethod
     def test___delattr__():
@@ -4647,9 +5763,275 @@ class TestExpando:
             del expansive.baz
 
 
+class Test__legacy_db_get_value:
+    @staticmethod
+    def test_str_blobkey():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.BLOBKEY)
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"foo")
+        assert prop._legacy_db_get_value(v, p) == model.BlobKey(b"foo")
+
+    @staticmethod
+    def test_str_blob():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.BLOB)
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"foo")
+        assert prop._legacy_db_get_value(v, p) == b"foo"
+
+    @staticmethod
+    def test_str_blob_compressed():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.BLOB)
+        p.set_meaning_uri("ZLIB")
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"foo")
+        assert prop._legacy_db_get_value(v, p) == b"foo"
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_str_entity_proto():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.ENTITY_PROTO)
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"\x6a\x03\x6a\x01\x42")
+        assert isinstance(prop._legacy_db_get_value(v, p), model.Expando)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_str_entity_proto_no_key():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.ENTITY_PROTO)
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"\x72\x0a\x0b\x12\x01\x44\x18\x01\x22\x01\x45\x0c")
+        assert isinstance(prop._legacy_db_get_value(v, p), model.Expando)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_str_entity_proto_bad():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.ENTITY_PROTO)
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"\x6a\x0c\x72\x0a\x0b\x12\x01\x44\x18\x01\x22\x01\x45\x0c")
+        with pytest.raises(ValueError):
+            prop._legacy_db_get_value(v, p)
+
+    @staticmethod
+    def test_str_bytestr_meaning():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.BYTESTRING)
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"foo")
+        assert prop._legacy_db_get_value(v, p) == b"foo"
+
+    @staticmethod
+    @pytest.mark.skipif(six.PY2, reason="Test for Python 3 only.")
+    def test_str_utf8():  # pragma: NO PY2 COVER
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        v.has_stringvalue_ = 1
+        v.stringvalue_ = bytes("fo\xc3", encoding="utf-8")
+        assert prop._legacy_db_get_value(v, p) == "fo\xc3"
+
+    @staticmethod
+    @pytest.mark.skipif(six.PY3, reason="Test for Python 2 only.")
+    def test_str_utf8_py2():  # pragma: NO PY3 COVER
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        v.has_stringvalue_ = 1
+        v.stringvalue_ = r"fo\xc3"
+        assert prop._legacy_db_get_value(v, p) == r"fo\xc3"
+
+    @staticmethod
+    def test_str_decode_error():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_stringvalue(b"\xe9")
+        assert prop._legacy_db_get_value(v, p) == b"\xe9"
+
+    @staticmethod
+    def test_int_gd_when():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.GD_WHEN)
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_int64value(42)
+        d = datetime.datetime(1970, 1, 1, 0, 0, 0, 42)
+        assert prop._legacy_db_get_value(v, p) == d
+
+    @staticmethod
+    def test_boolean():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_booleanvalue(True)
+        assert prop._legacy_db_get_value(v, p) is True
+
+    @staticmethod
+    def test_double():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_doublevalue(3.1415)
+        assert prop._legacy_db_get_value(v, p) == 3.1415
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_reference():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        r = _legacy_entity_pb.PropertyValue_ReferenceValue()
+        e = _legacy_entity_pb.PropertyValue_ReferenceValuePathElement()
+        e.set_type("a")
+        e.set_id("b")
+        r.pathelement_ = [e]
+        r.set_app("c")
+        v.mutable_referencevalue()
+        v.referencevalue_ = r
+        key = key_module.Key("a", "b", app="c", namespace="")
+        assert prop._legacy_db_get_value(v, p) == key
+
+    @staticmethod
+    def test_point():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        r = _legacy_entity_pb.PropertyValue_PointValue()
+        r.set_x(10)
+        r.set_y(20)
+        v.mutable_pointvalue()
+        v.pointvalue_ = r
+        assert prop._legacy_db_get_value(v, p) == model.GeoPt(10, 20)
+
+    @staticmethod
+    def test_user():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        u = _legacy_entity_pb.PropertyValue_UserValue()
+        user = model.User(email="aol@aol.com", _auth_domain="aol.com", _user_id="loa")
+        u.set_email(b"aol@aol.com")
+        u.set_auth_domain(b"aol.com")
+        u.set_obfuscated_gaiaid(b"loa")
+        v.mutable_uservalue()
+        v.uservalue_ = u
+        assert prop._legacy_db_get_value(v, p) == user
+
+    @staticmethod
+    def test_missing():
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        assert prop._legacy_db_get_value(v, p) is None
+
+
+class Test__legacy_deserialize:
+    @staticmethod
+    def test_empty_list():
+        m = model.Model()
+        prop = model.Property()
+        p = _legacy_entity_pb.Property()
+        p.set_meaning(_legacy_entity_pb.Property.EMPTY_LIST)
+        assert prop._legacy_deserialize(m, p) is None
+
+    @staticmethod
+    def test_repeated():
+        m = model.Model()
+        prop = model.Property(repeated=True)
+        p = _legacy_entity_pb.Property()
+        assert prop._legacy_deserialize(m, p) is None
+
+    @staticmethod
+    def test_repeated_with_value():
+        m = model.Model()
+        prop = model.Property(repeated=True)
+        prop._store_value(m, [41])
+        p = _legacy_entity_pb.Property()
+        v = _legacy_entity_pb.PropertyValue()
+        v.set_int64value(42)
+        assert prop._legacy_deserialize(m, p) is None
+
+
+class Test__get_property_for:
+    @staticmethod
+    def test_depth_bigger_than_parts():
+        m = model.Model()
+        p = _legacy_entity_pb.Property()
+        p.set_name(b"foo")
+        assert m._get_property_for(p, depth=5) is None
+
+    @staticmethod
+    def test_none():
+        m = model.Model()
+        p = _legacy_entity_pb.Property()
+        p.set_name(b"foo")
+        assert m._get_property_for(p)._name == "foo"
+
+
+class Test__from_pb:
+    @staticmethod
+    def test_not_entity_proto_raises_error():
+        m = model.Model()
+        with pytest.raises(TypeError):
+            m._from_pb("not a pb")
+
+    @staticmethod
+    def test_with_key():
+        m = model.Model()
+        pb = _legacy_entity_pb.EntityProto()
+        key = key_module.Key("a", "b", app="c", namespace="")
+        ent = m._from_pb(pb, key=key)
+        assert ent.key == key
+
+    @staticmethod
+    def test_with_index_meaning():
+        m = model.Model()
+        pb = _legacy_entity_pb.EntityProto()
+        p = _legacy_entity_pb.Property()
+        p.set_name(b"foo")
+        p.set_meaning(_legacy_entity_pb.Property.INDEX_VALUE)
+        pb.property_ = [p]
+        ent = m._from_pb(pb)
+        assert "foo" in ent._projection
+
+
+class Test__fake_property:
+    @staticmethod
+    def test_with_clone_properties():
+        def clone():
+            pass
+
+        m = model.Model()
+        m._clone_properties = clone
+        p = _legacy_entity_pb.Property()
+        p.set_name(b"foo")
+        fake = m._fake_property(p, "next")
+        assert fake._name == "next"
+
+    @staticmethod
+    def test_with_same_name():
+        m = model.Model()
+        p = _legacy_entity_pb.Property()
+        p.set_name(b"next")
+        fake = m._fake_property(p, "next")
+        assert fake._name == "next"
+
+
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.key.Key")
-@unittest.mock.patch("google.cloud.ndb.tasklets.Future")
+@mock.patch("google.cloud.ndb.key.Key")
+@mock.patch("google.cloud.ndb.tasklets.Future")
 def test_get_multi(Key, Future):
     model1 = model.Model()
     future1 = tasklets.Future()
@@ -4663,7 +6045,7 @@ def test_get_multi(Key, Future):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.key.Key")
+@mock.patch("google.cloud.ndb.key.Key")
 def test_get_multi_async(Key):
     future1 = tasklets.Future()
 
@@ -4675,7 +6057,7 @@ def test_get_multi_async(Key):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.model.Model")
+@mock.patch("google.cloud.ndb.model.Model")
 def test_put_multi_async(Model):
     future1 = tasklets.Future()
 
@@ -4687,8 +6069,8 @@ def test_put_multi_async(Model):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.model.Model")
-@unittest.mock.patch("google.cloud.ndb.tasklets.Future")
+@mock.patch("google.cloud.ndb.model.Model")
+@mock.patch("google.cloud.ndb.tasklets.Future")
 def test_put_multi(Model, Future):
     key1 = key_module.Key("a", "b", app="c")
     future1 = tasklets.Future()
@@ -4702,7 +6084,7 @@ def test_put_multi(Model, Future):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.key.Key")
+@mock.patch("google.cloud.ndb.key.Key")
 def test_delete_multi_async(Key):
     future1 = tasklets.Future()
 
@@ -4714,8 +6096,8 @@ def test_delete_multi_async(Key):
 
 
 @pytest.mark.usefixtures("in_context")
-@unittest.mock.patch("google.cloud.ndb.key.Key")
-@unittest.mock.patch("google.cloud.ndb.tasklets.Future")
+@mock.patch("google.cloud.ndb.key.Key")
+@mock.patch("google.cloud.ndb.tasklets.Future")
 def test_delete_multi(Key, Future):
     future1 = tasklets.Future()
     future1.result.return_value = None
@@ -4735,6 +6117,32 @@ def test_get_indexes_async():
 def test_get_indexes():
     with pytest.raises(NotImplementedError):
         model.get_indexes()
+
+
+@pytest.mark.usefixtures("in_context")
+def test_serialization():
+
+    # This is needed because pickle can't serialize local objects
+    global SomeKind, OtherKind
+
+    class OtherKind(model.Model):
+        foo = model.IntegerProperty()
+
+        @classmethod
+        def _get_kind(cls):
+            return "OtherKind"
+
+    class SomeKind(model.Model):
+        other = model.StructuredProperty(OtherKind)
+
+        @classmethod
+        def _get_kind(cls):
+            return "SomeKind"
+
+    entity = SomeKind(other=OtherKind(foo=1, namespace="Test"), namespace="Test")
+    assert entity.other.key is None or entity.other.key.id() is None
+    entity = pickle.loads(pickle.dumps(entity))
+    assert entity.other.foo == 1
 
 
 def ManyFieldsFactory():

@@ -15,7 +15,10 @@
 import contextlib
 import pytest
 
-from unittest import mock
+try:
+    from unittest import mock
+except ImportError:  # pragma: NO PY3 COVER
+    import mock
 
 from google.auth import credentials
 from google.cloud import environment_vars
@@ -23,6 +26,7 @@ from google.cloud.datastore import _http
 
 from google.cloud.ndb import client as client_module
 from google.cloud.ndb import context as context_module
+from google.cloud.ndb import _eventloop
 
 
 @contextlib.contextmanager
@@ -95,10 +99,47 @@ class TestClient:
             client._http
 
     @staticmethod
-    def test__context():
+    def test_context():
         with patch_credentials("testing"):
             client = client_module.Client()
 
         with client.context():
             context = context_module.get_context()
             assert context.client is client
+
+    @staticmethod
+    def test_context_double_jeopardy():
+        with patch_credentials("testing"):
+            client = client_module.Client()
+
+        with client.context():
+            with pytest.raises(RuntimeError):
+                client.context().__enter__()
+
+    @staticmethod
+    def test_context_unfinished_business():
+        """Regression test for #213.
+
+        Make sure the eventloop is exhausted inside the context.
+
+        https://github.com/googleapis/python-ndb/issues/213
+        """
+        with patch_credentials("testing"):
+            client = client_module.Client()
+
+        def finish_up():
+            context = context_module.get_context()
+            assert context.client is client
+
+        with client.context():
+            _eventloop.call_soon(finish_up)
+
+    @staticmethod
+    def test_client_info():
+        with patch_credentials("testing"):
+            client = client_module.Client()
+        agent = client.client_info.to_user_agent()
+        assert "google-cloud-ndb" in agent
+        version = agent.split("/")[1]
+        assert version[0].isdigit()
+        assert "." in version

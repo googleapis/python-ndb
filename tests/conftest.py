@@ -20,14 +20,22 @@ modules.
 
 import os
 
-from unittest import mock
-
 from google.cloud import environment_vars
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _eventloop
+from google.cloud.ndb import global_cache as global_cache_module
 from google.cloud.ndb import model
+from google.cloud.ndb import utils
 
 import pytest
+
+# In Python 2.7, mock is not part of unittest
+try:
+    from unittest import mock
+except ImportError:
+    import mock
+
+utils.DEBUG = True
 
 
 class TestingEventLoop(_eventloop.EventLoop):
@@ -51,6 +59,7 @@ def reset_state(environ):
     yield
     model.Property._FIND_METHODS_CACHE.clear()
     model.Model._kind_map.clear()
+    global_cache_module._InProcessGlobalCache.cache.clear()
 
 
 @pytest.fixture
@@ -81,10 +90,16 @@ def initialize_environment(request, environ):
 @pytest.fixture
 def context():
     client = mock.Mock(
-        project="testing", namespace=None, spec=("project", "namespace")
+        project="testing",
+        namespace=None,
+        spec=("project", "namespace"),
+        stub=mock.Mock(spec=()),
     )
     context = context_module.Context(
-        client, stub=mock.Mock(spec=()), eventloop=TestingEventLoop()
+        client,
+        eventloop=TestingEventLoop(),
+        datastore_policy=True,
+        legacy_data=False,
     )
     return context
 
@@ -94,4 +109,34 @@ def in_context(context):
     assert not context_module._state.context
     with context.use():
         yield context
+    assert not context_module._state.context
+
+
+@pytest.fixture
+def namespace():
+    return "UnitTest"
+
+
+@pytest.fixture
+def client_context(namespace):
+    from google.cloud import ndb
+
+    client = ndb.Client()
+    context_manager = client.context(
+        cache_policy=False,
+        legacy_data=False,
+        namespace=namespace,
+    )
+    with context_manager as context:
+        yield context
+
+
+@pytest.fixture
+def global_cache(context):
+    assert not context_module._state.context
+
+    cache = global_cache_module._InProcessGlobalCache()
+    with context.new(global_cache=cache).use():
+        yield cache
+
     assert not context_module._state.context

@@ -16,6 +16,7 @@ import pytest
 
 from google.cloud.ndb import _datastore_api
 from google.cloud.ndb import _options
+from google.cloud.ndb import utils
 
 
 class MyOptions(_options.Options):
@@ -40,13 +41,23 @@ class TestOptions:
 
     @staticmethod
     def test_constructor_w_use_memcache():
-        with pytest.raises(NotImplementedError):
-            MyOptions(use_memcache=20)
+        options = MyOptions(use_memcache=True)
+        assert options.use_global_cache is True
+
+    @staticmethod
+    def test_constructor_w_use_global_cache():
+        options = MyOptions(use_global_cache=True)
+        assert options.use_global_cache is True
+
+    @staticmethod
+    def test_constructor_w_use_memcache_and_global_cache():
+        with pytest.raises(TypeError):
+            MyOptions(use_global_cache=True, use_memcache=False)
 
     @staticmethod
     def test_constructor_w_use_datastore():
-        with pytest.raises(NotImplementedError):
-            MyOptions(use_datastore=20)
+        options = MyOptions(use_datastore=False)
+        assert options.use_datastore is False
 
     @staticmethod
     def test_constructor_w_use_cache():
@@ -55,8 +66,18 @@ class TestOptions:
 
     @staticmethod
     def test_constructor_w_memcache_timeout():
-        with pytest.raises(NotImplementedError):
-            MyOptions(memcache_timeout=20)
+        options = MyOptions(memcache_timeout=20)
+        assert options.global_cache_timeout == 20
+
+    @staticmethod
+    def test_constructor_w_global_cache_timeout():
+        options = MyOptions(global_cache_timeout=20)
+        assert options.global_cache_timeout == 20
+
+    @staticmethod
+    def test_constructor_w_memcache_and_global_cache_timeout():
+        with pytest.raises(TypeError):
+            MyOptions(memcache_timeout=20, global_cache_timeout=20)
 
     @staticmethod
     def test_constructor_w_max_memcache_items():
@@ -118,15 +139,14 @@ class TestOptions:
     @staticmethod
     def test_items():
         options = MyOptions(retries=8, bar="app")
-        items = [
-            (key, value) for key, value in options.items() if value is not None
-        ]
+        items = [(key, value) for key, value in options.items() if value is not None]
         assert items == [("bar", "app"), ("retries", 8)]
 
     @staticmethod
     def test_options():
         @MyOptions.options
-        def hi(mom, foo=None, retries=None, *, timeout=None, _options=None):
+        @utils.positional(4)
+        def hi(mom, foo=None, retries=None, timeout=None, _options=None):
             return mom, _options
 
         assert hi("mom", "bar", 23, timeout=42) == (
@@ -136,6 +156,7 @@ class TestOptions:
 
     @staticmethod
     def test_options_bad_signature():
+        @utils.positional(2)
         def hi(foo, mom):
             pass
 
@@ -147,7 +168,8 @@ class TestOptions:
     @staticmethod
     def test_options_delegated():
         @MyOptions.options
-        def hi(mom, foo=None, retries=None, *, timeout=None, _options=None):
+        @utils.positional(4)
+        def hi(mom, foo=None, retries=None, timeout=None, _options=None):
             return mom, _options
 
         options = MyOptions(foo="bar", retries=23, timeout=42)
@@ -160,12 +182,8 @@ class TestOptions:
 class TestReadOptions:
     @staticmethod
     def test_constructor_w_read_policy():
-        options = _options.ReadOptions(
-            read_policy=_datastore_api.EVENTUAL_CONSISTENCY
-        )
-        assert options == _options.ReadOptions(
-            read_consistency=_datastore_api.EVENTUAL
-        )
+        options = _options.ReadOptions(read_policy=_datastore_api.EVENTUAL_CONSISTENCY)
+        assert options == _options.ReadOptions(read_consistency=_datastore_api.EVENTUAL)
 
     @staticmethod
     def test_constructor_w_read_policy_and_read_consistency():

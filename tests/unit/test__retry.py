@@ -14,14 +14,24 @@
 
 import itertools
 
-from unittest import mock
+try:
+    from unittest import mock
+except ImportError:  # pragma: NO PY3 COVER
+    import mock
 
-import grpc
 import pytest
 
 from google.api_core import exceptions as core_exceptions
 from google.cloud.ndb import _retry
 from google.cloud.ndb import tasklets
+
+from . import utils
+
+
+def mock_sleep(seconds):
+    future = tasklets.Future()
+    future.set_result(None)
+    return future
 
 
 class Test_retry:
@@ -36,13 +46,45 @@ class Test_retry:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test_nested_retry():
+        def callback():
+            def nested_callback():
+                return "bar"
+
+            nested = _retry.retry_async(nested_callback)
+            assert nested().result() == "bar"
+
+            return "foo"
+
+        retry = _retry.retry_async(callback)
+        assert retry().result() == "foo"
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb.tasklets.sleep", mock_sleep)
+    @pytest.mark.usefixtures("in_context")
+    def test_nested_retry_with_exception():
+        error = Exception("Fail")
+
+        def callback():
+            def nested_callback():
+                raise error
+
+            nested = _retry.retry_async(nested_callback, retries=1)
+            return nested()
+
+        with pytest.raises(core_exceptions.RetryError):
+            retry = _retry.retry_async(callback, retries=1)
+            retry().result()
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_success_callback_is_tasklet():
         tasklet_future = tasklets.Future()
 
         @tasklets.tasklet
         def callback():
             result = yield tasklet_future
-            return result
+            raise tasklets.Return(result)
 
         retry = _retry.retry_async(callback)
         tasklet_future.set_result("foo")
@@ -74,6 +116,40 @@ class Test_retry:
         retry = _retry.retry_async(callback)
         sleep_future.set_result(None)
         assert retry().result() == "foo"
+
+        sleep.assert_called_once_with(0)
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    @mock.patch("google.cloud.ndb.tasklets.sleep")
+    @mock.patch("google.cloud.ndb._retry.core_retry")
+    def test_transient_error_callback_is_tasklet(core_retry, sleep):
+        """Regression test for #519
+
+        https://github.com/googleapis/python-ndb/issues/519
+        """
+        core_retry.exponential_sleep_generator.return_value = itertools.count()
+        core_retry.if_transient_error.return_value = True
+
+        sleep_future = tasklets.Future("sleep")
+        sleep.return_value = sleep_future
+
+        callback = mock.Mock(
+            side_effect=[
+                utils.future_exception(Exception("Spurious error.")),
+                utils.future_result("foo"),
+            ]
+        )
+        retry = _retry.retry_async(callback)
+        future = retry()
+
+        # This is the important check for the bug in #519. We need to make sure
+        # that we're waiting for the sleep future to complete before moving on.
+        assert future.running()
+
+        # Finish sleeping
+        sleep_future.set_result(None)
+        assert future.result() == "foo"
 
         sleep.assert_called_once_with(0)
 
@@ -139,8 +215,8 @@ class Test_is_transient_error:
 
     @staticmethod
     @mock.patch("google.cloud.ndb._retry.core_retry")
-    def test_core_says_no_we_say_no(core_retry):
-        error = object()
+    def test_error_is_not_transient(core_retry):
+        error = Exception("whatever")
         core_retry.if_transient_error.return_value = False
         assert _retry.is_transient_error(error) is False
         core_retry.if_transient_error.assert_called_once_with(error)
@@ -148,9 +224,7 @@ class Test_is_transient_error:
     @staticmethod
     @mock.patch("google.cloud.ndb._retry.core_retry")
     def test_unavailable(core_retry):
-        error = mock.Mock(
-            code=mock.Mock(return_value=grpc.StatusCode.UNAVAILABLE)
-        )
+        error = core_exceptions.ServiceUnavailable("testing")
         core_retry.if_transient_error.return_value = False
         assert _retry.is_transient_error(error) is True
         core_retry.if_transient_error.assert_called_once_with(error)
@@ -158,9 +232,7 @@ class Test_is_transient_error:
     @staticmethod
     @mock.patch("google.cloud.ndb._retry.core_retry")
     def test_internal(core_retry):
-        error = mock.Mock(
-            code=mock.Mock(return_value=grpc.StatusCode.INTERNAL)
-        )
+        error = core_exceptions.InternalServerError("testing")
         core_retry.if_transient_error.return_value = False
         assert _retry.is_transient_error(error) is True
         core_retry.if_transient_error.assert_called_once_with(error)
@@ -168,9 +240,23 @@ class Test_is_transient_error:
     @staticmethod
     @mock.patch("google.cloud.ndb._retry.core_retry")
     def test_unauthenticated(core_retry):
-        error = mock.Mock(
-            code=mock.Mock(return_value=grpc.StatusCode.UNAUTHENTICATED)
-        )
+        error = core_exceptions.Unauthenticated("testing")
         core_retry.if_transient_error.return_value = False
         assert _retry.is_transient_error(error) is False
+        core_retry.if_transient_error.assert_called_once_with(error)
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._retry.core_retry")
+    def test_aborted(core_retry):
+        error = core_exceptions.Aborted("testing")
+        core_retry.if_transient_error.return_value = False
+        assert _retry.is_transient_error(error) is True
+        core_retry.if_transient_error.assert_called_once_with(error)
+
+    @staticmethod
+    @mock.patch("google.cloud.ndb._retry.core_retry")
+    def test_unknown(core_retry):
+        error = core_exceptions.Unknown("testing")
+        core_retry.if_transient_error.return_value = False
+        assert _retry.is_transient_error(error) is True
         core_retry.if_transient_error.assert_called_once_with(error)
