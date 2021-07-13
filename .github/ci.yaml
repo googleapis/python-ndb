@@ -1,0 +1,28 @@
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+name: ci
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['unit-3.6', 'unit-3.7', 'unit-pypy3']
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v1
+        with:
+          python-version: 3.x
+      - run: python3.7 -m pip install --upgrade nox
+      - run: python3.7 -m nox -s ${{ matrix.python }}
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+      - run: python3.7 -m nox -s docs
+      - run: python3.7 -m nox -s doctest
