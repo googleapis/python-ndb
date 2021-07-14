@@ -433,7 +433,7 @@ class RedisCache(GlobalCache):
             try:
                 pipe.multi()
                 if expires:
-                    pipe.setex(key, value, expires)
+                    pipe.setex(key, expires, value)
                 else:
                     pipe.set(key, value)
                 pipe.execute()

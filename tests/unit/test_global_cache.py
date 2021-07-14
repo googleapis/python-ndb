@@ -426,12 +426,12 @@ class TestRedisCache:
         assert result == {"foo": True, "bar": False, "baz": False}
 
         pipe1.multi.assert_called_once_with()
-        pipe1.setex.assert_called_once_with("foo", "moo", 5)
+        pipe1.setex.assert_called_once_with("foo", 5, "moo")
         pipe1.execute.assert_called_once_with()
         pipe1.reset.assert_called_once_with()
 
         pipe2.multi.assert_called_once_with()
-        pipe2.setex.assert_called_once_with("bar", "car", 5)
+        pipe2.setex.assert_called_once_with("bar", 5, "car")
         pipe2.execute.assert_called_once_with()
         pipe2.reset.assert_called_once_with()
 

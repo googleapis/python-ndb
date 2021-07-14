@@ -859,7 +859,7 @@ class Test_global_lock_for_write:
 
         assert _cache.global_lock_for_write(b"key").result() == b".arandomuuid"
         _global_get.assert_called_once_with(b"key")
-        global_set_if_not_exists.assert_called_once_with(b"key", lock_value)
+        global_set_if_not_exists.assert_called_once_with(b"key", lock_value, expires=32)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -902,8 +902,8 @@ class Test_global_lock_for_write:
         )
         _global_compare_and_swap.assert_has_calls(
             [
-                mock.call(b"key", new_lock_value),
-                mock.call(b"key", new_lock_value),
+                mock.call(b"key", new_lock_value, expires=32),
+                mock.call(b"key", new_lock_value, expires=32),
             ]
         )
 
@@ -1000,8 +1000,8 @@ class Test_global_unlock_for_write:
         )
         _global_compare_and_swap.assert_has_calls(
             [
-                mock.call(b"key", new_lock_value),
-                mock.call(b"key", new_lock_value),
+                mock.call(b"key", new_lock_value, expires=32),
+                mock.call(b"key", new_lock_value, expires=32),
             ]
         )
 

@@ -672,10 +672,10 @@ def _update_key(key, new_value):
 
         if old_value:
             yield _global_watch(key, old_value)
-            success = yield _global_compare_and_swap(key, value)
+            success = yield _global_compare_and_swap(key, value, expires=_LOCK_TIME)
 
         else:
-            success = yield global_set_if_not_exists(key, value)
+            success = yield global_set_if_not_exists(key, value, expires=_LOCK_TIME)
 
 
 def is_locked_value(value):
