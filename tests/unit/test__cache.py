@@ -529,7 +529,7 @@ class Test_GlobalCacheSetIfNotExistsBatch:
     @staticmethod
     def test_add_and_idle_and_done_callbacks(in_context):
         cache = mock.Mock(spec=("set_if_not_exists",))
-        cache.set_if_not_exists.return_value = []
+        cache.set_if_not_exists.return_value = {}
 
         batch = _cache._GlobalCacheSetIfNotExistsBatch({})
         future1 = batch.add(b"foo", b"one")
@@ -821,25 +821,24 @@ class Test_GlobalCacheCompareAndSwapBatch:
         assert future2.result() is None
 
 
+@pytest.mark.usefixtures("in_context")
 class Test_global_lock_for_read:
     @staticmethod
-    @pytest.mark.usefixtures("in_context")
     @mock.patch("google.cloud.ndb._cache.global_set_if_not_exists")
     def test_lock_acquired(global_set_if_not_exists):
         global_set_if_not_exists.return_value = _future_result(True)
         assert _cache.global_lock_for_read(b"key").result() == _cache._LOCKED_FOR_READ
 
     @staticmethod
-    @pytest.mark.usefixtures("in_context")
     @mock.patch("google.cloud.ndb._cache.global_set_if_not_exists")
     def test_lock_not_acquired(global_set_if_not_exists):
         global_set_if_not_exists.return_value = _future_result(False)
         assert _cache.global_lock_for_read(b"key").result() is None
 
 
+@pytest.mark.usefixtures("in_context")
 class Test_global_lock_for_write:
     @staticmethod
-    @pytest.mark.usefixtures("in_context")
     @mock.patch("google.cloud.ndb._cache.uuid")
     @mock.patch("google.cloud.ndb._cache.global_set_if_not_exists")
     @mock.patch("google.cloud.ndb._cache._global_get")
@@ -862,7 +861,6 @@ class Test_global_lock_for_write:
         global_set_if_not_exists.assert_called_once_with(b"key", lock_value, expires=32)
 
     @staticmethod
-    @pytest.mark.usefixtures("in_context")
     @mock.patch("google.cloud.ndb._cache.uuid")
     @mock.patch("google.cloud.ndb._cache._global_compare_and_swap")
     @mock.patch("google.cloud.ndb._cache._global_watch")
@@ -908,9 +906,9 @@ class Test_global_lock_for_write:
         )
 
 
+@pytest.mark.usefixtures("in_context")
 class Test_global_unlock_for_write:
     @staticmethod
-    @pytest.mark.usefixtures("in_context")
     @mock.patch("google.cloud.ndb._cache.uuid")
     @mock.patch("google.cloud.ndb._cache._global_delete")
     @mock.patch("google.cloud.ndb._cache._global_get")
@@ -933,7 +931,6 @@ class Test_global_unlock_for_write:
         _global_delete.assert_called_once_with(b"key")
 
     @staticmethod
-    @pytest.mark.usefixtures("in_context")
     @mock.patch("google.cloud.ndb._cache.uuid")
     @mock.patch("google.cloud.ndb._cache._global_delete")
     @mock.patch("google.cloud.ndb._cache._global_get")
@@ -959,7 +956,6 @@ class Test_global_unlock_for_write:
         _global_delete.assert_called_once_with(b"key")
 
     @staticmethod
-    @pytest.mark.usefixtures("in_context")
     @mock.patch("google.cloud.ndb._cache.uuid")
     @mock.patch("google.cloud.ndb._cache._global_compare_and_swap")
     @mock.patch("google.cloud.ndb._cache._global_watch")

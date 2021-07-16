@@ -90,8 +90,11 @@ class Test_transaction_async:
         context_module.get_context().cache["foo"] = "bar"
 
         def callback():
+            # The transaction uses its own in-memory cache, which should be empty in
+            # the transaction context and not include the key set above.
             context = context_module.get_context()
             assert not context.cache
+
             return "I tried, momma."
 
         begin_future = tasklets.Future("begin transaction")
@@ -119,8 +122,11 @@ class Test_transaction_async:
         transaction_complete_callback = mock.Mock()
 
         def callback():
+            # The transaction uses its own in-memory cache, which should be empty in
+            # the transaction context and not include the key set above.
             context = context_module.get_context()
             assert not context.cache
+
             context.call_on_commit(on_commit_callback)
             context.call_on_transaction_complete(transaction_complete_callback)
             return "I tried, momma."
