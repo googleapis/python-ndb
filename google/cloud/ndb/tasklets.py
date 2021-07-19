@@ -56,7 +56,7 @@ loop catches the exception and uses the exception argument as the
 result of the tasklet.  This won't work for Python 2. If you need to
 support Python 2, as the library itself does, you'll need to raise a
 `google.cloud.ndb.tasklets.Return` exception, with the return value as
-the exception argument, as in google.cloud.ndb.tasklets.Return(a +
+the exception argument, as in `google.cloud.ndb.tasklets.Return(a +
 b)`.)
 
 Note that blocking until the Future's result is available using result() is
