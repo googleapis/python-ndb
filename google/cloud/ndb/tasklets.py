@@ -51,8 +51,10 @@ tasklet then has what it needs to compute a result.
 
 The tasklet returns its result by raising a `Result` exception.  This
 is needed because values returned by generators aren't available to
-callers in Python 2.  When support for Python 2 is dropped, then
-tasklets will be able to just return their results.
+callers in Python 2.  Applications-specific tasklets should just
+return their results if their applications use Python 3.  When support
+for Python 2 is dropped from ndb, then built-in tasklets will just
+return their results.
 
 Note that blocking until the Future's result is available using result() is
 somewhat inefficient (though not vastly -- it is not busy-waiting). In most
