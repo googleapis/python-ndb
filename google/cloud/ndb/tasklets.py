@@ -49,7 +49,7 @@ value sent to `a` and then yields `BFuture`.  Again the event loop
 waits for the result of `BFuture` and sends it to the tasklet.  The
 tasklet then has what it needs to compute a result.
 
-The tasklet simply returns it's result. (Behind the scenes, when you
+The tasklet simply returns its result. (Behind the scenes, when you
 return a value from a generator in Python 3, a `StopIteration`
 exception is raised with the return value as its argument. The event
 loop catches the exception and uses the exception argument as the
