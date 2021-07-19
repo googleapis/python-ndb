@@ -25,16 +25,34 @@ Future is returned while the generator is executed by the event loop. Within
 the tasklet, any yield of a Future waits for and returns the Future's result.
 For example::
 
+    from tasklets import tasklet, Return
+
     @tasklet
     def foo():
-        a = yield <some Future>
-        b = yield <another Future>
-        return a + b
+        a = yield <AFuture>
+        b = yield <BFuture>
+        raise Return(a + b)
 
     def main():
         f = foo()
         x = f.result()
         print x
+
+In this example, `foo` needs the results of two futures, `AFuture` and
+`BFuture`, which it gets somehow, for example as results of calls.
+Rather than waiting for their values and blocking, it yields. First,
+the tasklet yields `AFuture`.  The event loop gets `AFuture` and takes
+care of waiting for its result.  When the event loop gets the result
+of `AFuture`, it sends it to the tasklet by calling `send` on the
+iterator returned by calling the tasklet.  The tasklet assigns the
+value sent to `a` and then yields `BFuture`.  Again the event loop
+waits for the result of `BFuture` and sends it to the tasklet.  The
+tasklet then has what it needs to compute a result.
+
+The tasklet returns its result by raising a `Result` exception.  This
+is needed because values returned by generators aren't available to
+callers in Python 2.  When support for Python 2 is dropped, then
+tasklets will be able to just return their results.
 
 Note that blocking until the Future's result is available using result() is
 somewhat inefficient (though not vastly -- it is not busy-waiting). In most
