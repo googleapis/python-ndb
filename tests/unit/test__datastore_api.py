@@ -272,7 +272,9 @@ class Test_lookup_WithGlobalCache:
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._LookupBatch")
-    def test_cache_miss_lock_not_acquired(_LookupBatch, global_cache):
+    def test_cache_miss_followed_by_lock_acquisition_failure(
+        _LookupBatch, global_cache
+    ):
         class SomeKind(model.Model):
             pass
 
