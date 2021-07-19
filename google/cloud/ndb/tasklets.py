@@ -25,13 +25,13 @@ Future is returned while the generator is executed by the event loop. Within
 the tasklet, any yield of a Future waits for and returns the Future's result.
 For example::
 
-    from tasklets import tasklet, Return
+    from from google.cloud.ndb.tasklets import tasklet
 
     @tasklet
     def foo():
         a = yield <AFuture>
         b = yield <BFuture>
-        raise Return(a + b)
+        return a + b
 
     def main():
         f = foo()
@@ -49,12 +49,15 @@ value sent to `a` and then yields `BFuture`.  Again the event loop
 waits for the result of `BFuture` and sends it to the tasklet.  The
 tasklet then has what it needs to compute a result.
 
-The tasklet returns its result by raising a `Result` exception.  This
-is needed because values returned by generators aren't available to
-callers in Python 2.  Applications-specific tasklets should just
-return their results if their applications use Python 3.  When support
-for Python 2 is dropped from ndb, then built-in tasklets will just
-return their results.
+The tasklet simply returns it's result. (Behind the scenes, when you
+return a value from a generator in Python 3, a `StopIteration`
+exception is raised with the return value as its argument. The event
+loop catches the exception and uses the exception argument as the
+result of the tasklet.  This won't work for Python 2. If you need to
+support Python 2, as the library itself does, you'll need to raise a
+`google.cloud.ndb.tasklets.Return` exception, with the return value as
+the exception argument, as in google.cloud.ndb.tasklets.Return(a +
+b)`.)
 
 Note that blocking until the Future's result is available using result() is
 somewhat inefficient (though not vastly -- it is not busy-waiting). In most
