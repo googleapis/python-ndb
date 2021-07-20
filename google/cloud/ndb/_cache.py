@@ -23,7 +23,7 @@ from google.cloud.ndb import _batch
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import tasklets
 
-_LOCKED_FOR_READ = b"0"
+_LOCKED_FOR_READ = b"0-"
 _LOCKED_FOR_WRITE = b"00"
 _LOCK_TIME = 32
 _PREFIX = b"NDB30"
@@ -595,11 +595,10 @@ def global_lock_for_read(key):
         tasklets.Future: Eventual result will be lock value (``bytes``) written to
             Datastore for the given key, or :data:`None` if the lock was not acquired.
     """
-    lock_acquired = yield global_set_if_not_exists(
-        key, _LOCKED_FOR_READ, expires=_LOCK_TIME
-    )
+    lock = _LOCKED_FOR_READ + str(uuid.uuid4()).encode("ascii")
+    lock_acquired = yield global_set_if_not_exists(key, lock, expires=_LOCK_TIME)
     if lock_acquired:
-        raise tasklets.Return(_LOCKED_FOR_READ)
+        raise tasklets.Return(lock)
 
 
 @_handle_transient_errors()
@@ -685,7 +684,7 @@ def is_locked_value(value):
         bool: Whether the value is the special reserved value for key lock.
     """
     if value:
-        return value == _LOCKED_FOR_READ or value.startswith(_LOCKED_FOR_WRITE)
+        return value.startswith(_LOCKED_FOR_READ) or value.startswith(_LOCKED_FOR_WRITE)
 
     return False
 

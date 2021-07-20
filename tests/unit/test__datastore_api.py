@@ -371,7 +371,7 @@ class Test_lookup_WithGlobalCache:
         future = _api.lookup(key._key, _options.ReadOptions())
         assert future.result() is _api._NOT_FOUND
 
-        assert global_cache.get([cache_key]) == [_cache._LOCKED_FOR_READ]
+        assert global_cache.get([cache_key])[0].startswith(_cache._LOCKED_FOR_READ)
         assert len(global_cache._watch_keys) == 0
 
 

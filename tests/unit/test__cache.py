@@ -827,7 +827,11 @@ class Test_global_lock_for_read:
     @mock.patch("google.cloud.ndb._cache.global_set_if_not_exists")
     def test_lock_acquired(global_set_if_not_exists):
         global_set_if_not_exists.return_value = _future_result(True)
-        assert _cache.global_lock_for_read(b"key").result() == _cache._LOCKED_FOR_READ
+        assert (
+            _cache.global_lock_for_read(b"key")
+            .result()
+            .startswith(_cache._LOCKED_FOR_READ)
+        )
 
     @staticmethod
     @mock.patch("google.cloud.ndb._cache.global_set_if_not_exists")
