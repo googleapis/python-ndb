@@ -696,26 +696,29 @@ def _entity_from_protobuf(protobuf):
     return _entity_from_ds_entity(ds_entity)
 
 
-def _properties_of(entity):
-    """Get the model properties for an entity.
+def _properties_of(*entities):
+    """Get the model properties for one or more entities.
 
-    After collecting any properties local to the given entity, will traverse the
-    entity's MRO (class hierarchy) up from the entity's class through all of its
-    ancestors, collecting an ``Property`` instances defined for those classes.
+    After collecting any properties local to the given entities, will traverse the
+    entities' MRO (class hierarchy) up from the entities' class through all of its
+    ancestors, collecting any ``Property`` instances defined for those classes.
 
     Args:
-        entity (model.Model): The entity to get properties for.
+        entities (Tuple[model.Model]): The entities to get properties for. All entities
+            are expected to be of the same class.
 
     Returns:
-        Iterator[Property]: Iterator over the entity's properties.
+        Iterator[Property]: Iterator over the entities' properties.
     """
     seen = set()
 
-    for level in (entity,) + tuple(type(entity).mro()):
+    entity_type = type(entities[0])  # assume all entities are same type
+    for level in entities + tuple(entity_type.mro()):
         if not hasattr(level, "_properties"):
             continue
 
-        for prop in level._properties.values():
+        level_properties = getattr(level, "_properties", {})
+        for prop in level_properties.values():
             if (
                 not isinstance(prop, Property)
                 or isinstance(prop, ModelKey)
@@ -4299,6 +4302,8 @@ class StructuredProperty(Property):
         if not self._repeated:
             values = (values,)
 
+        props = tuple(_properties_of(*values))
+
         for value in values:
             if value is None:
                 keys.extend(
@@ -4308,7 +4313,7 @@ class StructuredProperty(Property):
                 )
                 continue
 
-            for prop in _properties_of(value):
+            for prop in props:
                 keys.extend(
                     prop._to_datastore(
                         value, data, prefix=next_prefix, repeated=next_repeated
@@ -6246,11 +6251,23 @@ class Expando(Model):
         return prop._get_value(self)
 
     def __setattr__(self, name, value):
-        if name.startswith("_") or isinstance(
-            getattr(self.__class__, name, None), (Property, property)
+        if (
+            name.startswith("_")
+            or isinstance(getattr(self.__class__, name, None), (Property, property))
+            or isinstance(self._properties.get(name, None), (Property, property))
         ):
             return super(Expando, self).__setattr__(name, value)
+
+        if "." in name:
+            # Legacy structured property
+            supername, subname = name.split(".", 1)
+            supervalue = getattr(self, supername, None)
+            if isinstance(supervalue, Expando):
+                return setattr(supervalue, subname, value)
+            return setattr(self, supername, {subname: value})
+
         self._clone_properties()
+
         if isinstance(value, Model):
             prop = StructuredProperty(Model, name)
         elif isinstance(value, dict):
