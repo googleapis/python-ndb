@@ -368,7 +368,7 @@ def test_namespace_set_on_client_with_id(dispose_of, other_namespace):
 
 
 def test_query_default_namespace_when_context_namespace_is_other(
-    client_context, dispose_of, namespace, other_namespace
+    client_context, dispose_of, other_namespace
 ):
     """Regression test for #476.
 
