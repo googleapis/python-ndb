@@ -367,7 +367,7 @@ def test_namespace_set_on_client_with_id(dispose_of, other_namespace):
 
 
 def test_query_default_namespace_when_context_namespace_is_other(
-    client_context, dispose_of, other_namespace
+    client_context, dispose_of, namespace, other_namespace
 ):
     """Regression test for #476.
 
@@ -377,6 +377,7 @@ def test_query_default_namespace_when_context_namespace_is_other(
     class SomeKind(ndb.Model):
         foo = ndb.IntegerProperty()
         bar = ndb.StringProperty()
+        discriminator = ndb.StringProperty(default=namespace)
 
     entity1 = SomeKind(foo=1, bar="a", id="x", namespace=other_namespace)
     entity1.put()
@@ -389,7 +390,7 @@ def test_query_default_namespace_when_context_namespace_is_other(
     eventually(SomeKind.query(namespace=other_namespace).fetch, length_equals(1))
 
     with client_context.new(namespace=other_namespace).use():
-        query = SomeKind.query(namespace="")
+        query = SomeKind.query(namespace="").filter(SomeKind.discriminator == namespace)
         results = eventually(query.fetch, length_equals(1))
 
     assert results[0].foo == 2
