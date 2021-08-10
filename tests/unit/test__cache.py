@@ -955,9 +955,7 @@ class Test_global_unlock_for_write:
         assert _cache.global_unlock_for_write(b"key", lock).result() is None
         _global_get.assert_called_once_with(b"key")
         _global_watch.assert_called_once_with(b"key", lock_value)
-        _global_compare_and_swap.assert_called_once_with(
-            b"key", _cache._LOCKED_FOR_WRITE, expires=32
-        )
+        _global_compare_and_swap.assert_called_once_with(b"key", b"", expires=32)
 
     @staticmethod
     @mock.patch("google.cloud.ndb._cache.uuid")
@@ -1034,17 +1032,9 @@ class Test_global_unlock_for_write:
 def test_is_locked_value():
     assert _cache.is_locked_value(_cache._LOCKED_FOR_READ)
     assert _cache.is_locked_value(_cache._LOCKED_FOR_WRITE + b"whatever")
-    assert not _cache.is_locked_value(_cache._LOCKED_FOR_WRITE)
+    assert not _cache.is_locked_value(b"")
     assert not _cache.is_locked_value(b"new db, who dis?")
     assert not _cache.is_locked_value(None)
-
-
-def test_is_entity_value():
-    assert _cache.is_entity_value(b"something")
-    assert not _cache.is_entity_value(_cache._LOCKED_FOR_READ)
-    assert not _cache.is_entity_value(_cache._LOCKED_FOR_WRITE)
-    assert not _cache.is_entity_value(_cache._LOCKED_FOR_WRITE + b"whatever")
-    assert not _cache.is_entity_value(None)
 
 
 def test_global_cache_key():

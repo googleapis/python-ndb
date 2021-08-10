@@ -594,7 +594,7 @@ def global_lock_for_read(key, prev_value):
     Args:
         key (bytes): The key to lock.
         prev_value (bytes): The cache value previously read from the global cache.
-            Should be either :data:`None` or `_LOCKED_FOR_WRITE` if a key was written
+            Should be either :data:`None` or an empty bytes object if a key was written
             recently.
 
     Returns:
@@ -602,7 +602,7 @@ def global_lock_for_read(key, prev_value):
             Datastore for the given key, or :data:`None` if the lock was not acquired.
     """
     lock = _LOCKED_FOR_READ + str(uuid.uuid4()).encode("ascii")
-    if prev_value == _LOCKED_FOR_WRITE:
+    if prev_value is not None:
         yield global_watch(key, prev_value)
         lock_acquired = yield global_compare_and_swap(key, lock, expires=_LOCK_TIME)
     else:
@@ -659,7 +659,12 @@ def global_unlock_for_write(key, lock):
     utils.logging_debug(log, "unlock for write: {}", lock)
 
     def new_value(old_value):
-        return old_value.replace(lock, b"")
+        assert lock in old_value, "attempt to remove lock that isn't present"
+        value = old_value.replace(lock, b"")
+        if value == _LOCKED_FOR_WRITE:
+            value = b""
+
+        return value
 
     cache = _global_cache()
     try:
@@ -680,7 +685,7 @@ def _update_key(key, new_value):
         value = new_value(old_value)
         utils.logging_debug(log, "new value: {}", value)
 
-        if old_value:
+        if old_value is not None:
             utils.logging_debug(log, "compare and swap")
             yield _global_watch(key, old_value)
             success = yield _global_compare_and_swap(key, value, expires=_LOCK_TIME)
@@ -698,27 +703,8 @@ def is_locked_value(value):
     Returns:
         bool: Whether the value is the special reserved value for key lock.
     """
-    if value and value != _LOCKED_FOR_WRITE:
-        return value.startswith(_LOCKED_FOR_READ) or value.startswith(_LOCKED_FOR_WRITE)
-
-    return False
-
-
-def is_entity_value(value):
-    """Check if the given value is a serialized entity.
-
-    If an key was recently locked for writing, it will still have a value of
-    `_LOCKED_FOR_WRITE`, but with no locks. In that case, both :func:`is_locked_value`
-    and :func:`is_entity_value` will both return :data:`False`. Otherwise, they would
-    always have opposite return values for a given cache value.
-
-    Returns:
-        bool: Whether the value is a serialized entity.
-    """
     if value:
-        return not (
-            value.startswith(_LOCKED_FOR_READ) or value.startswith(_LOCKED_FOR_WRITE)
-        )
+        return value.startswith(_LOCKED_FOR_READ) or value.startswith(_LOCKED_FOR_WRITE)
 
     return False
 

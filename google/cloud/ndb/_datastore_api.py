@@ -142,7 +142,7 @@ def lookup(key, options):
         result = yield _cache.global_get(cache_key)
         key_locked = _cache.is_locked_value(result)
         if not key_locked:
-            if _cache.is_entity_value(result):
+            if result:
                 entity_pb = entity_pb2.Entity()
                 entity_pb.MergeFromString(result)
 

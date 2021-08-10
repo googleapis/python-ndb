@@ -714,9 +714,7 @@ class Test_put_WithGlobalCache:
         future = _api.put(model._entity_to_ds_entity(entity), _options.Options())
         assert future.result() is None
 
-        cache_value = global_cache.get([cache_key])[0]
-        assert not _cache.is_locked_value(cache_value)
-        assert not _cache.is_entity_value(cache_value)
+        assert not global_cache.get([cache_key])[0]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
@@ -735,9 +733,7 @@ class Test_put_WithGlobalCache:
         future = _api.put(model._entity_to_ds_entity(entity), _options.Options())
         assert future.result() == key._key
 
-        cache_value = global_cache.get([cache_key])[0]
-        assert not _cache.is_locked_value(cache_value)
-        assert not _cache.is_entity_value(cache_value)
+        assert not global_cache.get([cache_key])[0]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
@@ -765,9 +761,7 @@ class Test_put_WithGlobalCache:
                 callback()
 
             # lock removed by callback
-            cache_value = global_cache.get([cache_key])[0]
-            assert not _cache.is_locked_value(cache_value)
-            assert not _cache.is_entity_value(cache_value)
+            assert not global_cache.get([cache_key])[0]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
@@ -876,9 +870,7 @@ class Test_delete_WithGlobalCache:
         future = _api.delete(key._key, _options.Options())
         assert future.result() is None
 
-        cache_value = global_cache.get([cache_key])[0]
-        assert not _cache.is_locked_value(cache_value)
-        assert not _cache.is_entity_value(cache_value)
+        assert not global_cache.get([cache_key])[0]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")
@@ -902,9 +894,7 @@ class Test_delete_WithGlobalCache:
                 callback()
 
             # lock removed by callback
-            cache_value = global_cache.get([cache_key])[0]
-            assert not _cache.is_locked_value(cache_value)
-            assert not _cache.is_entity_value(cache_value)
+            assert not global_cache.get([cache_key])[0]
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_api._NonTransactionalCommitBatch")

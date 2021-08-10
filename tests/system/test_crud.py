@@ -108,7 +108,8 @@ def test_retrieve_entity_with_global_cache(ds_entity, client_context):
 
         cache_key = _cache.global_cache_key(key._key)
         cache_value = global_cache.get([cache_key])[0]
-        assert _cache.is_entity_value(cache_value)
+        assert cache_value
+        assert not _cache.is_locked_value(cache_value)
 
         patch = mock.patch(
             "google.cloud.ndb._datastore_api._LookupBatch.add",
@@ -141,7 +142,8 @@ def test_retrieve_entity_with_redis_cache(ds_entity, redis_context):
 
     cache_key = _cache.global_cache_key(key._key)
     cache_value = redis_context.global_cache.redis.get(cache_key)
-    assert _cache.is_entity_value(cache_value)
+    assert cache_value
+    assert not _cache.is_locked_value(cache_value)
 
     patch = mock.patch(
         "google.cloud.ndb._datastore_api._LookupBatch.add",
@@ -175,7 +177,8 @@ def test_retrieve_entity_with_memcache(ds_entity, memcache_context):
     cache_key = _cache.global_cache_key(key._key)
     cache_key = global_cache_module.MemcacheCache._key(cache_key)
     cache_value = memcache_context.global_cache.client.get(cache_key)
-    assert _cache.is_entity_value(cache_value)
+    assert cache_value
+    assert not _cache.is_locked_value(cache_value)
 
     patch = mock.patch(
         "google.cloud.ndb._datastore_api._LookupBatch.add",
@@ -584,22 +587,21 @@ def test_insert_entity_with_global_cache(dispose_of, client_context):
         dispose_of(key._key)
         cache_key = _cache.global_cache_key(key._key)
         cache_value = global_cache.get([cache_key])[0]
-        assert not _cache.is_entity_value(cache_value)
-        assert not _cache.is_locked_value(cache_value)
+        assert not cache_value
 
         retrieved = key.get()
         assert retrieved.foo == 42
         assert retrieved.bar == "none"
 
         cache_value = global_cache.get([cache_key])[0]
-        assert _cache.is_entity_value(cache_value)
+        assert cache_value
+        assert not _cache.is_locked_value(cache_value)
 
         entity.foo = 43
         entity.put()
 
         cache_value = global_cache.get([cache_key])[0]
-        assert not _cache.is_entity_value(cache_value)
-        assert not _cache.is_locked_value(cache_value)
+        assert not cache_value
 
 
 @pytest.mark.skipif(not USE_REDIS_CACHE, reason="Redis is not configured")
@@ -613,22 +615,21 @@ def test_insert_entity_with_redis_cache(dispose_of, redis_context):
     dispose_of(key._key)
     cache_key = _cache.global_cache_key(key._key)
     cache_value = redis_context.global_cache.redis.get(cache_key)
-    assert not _cache.is_entity_value(cache_value)
-    assert not _cache.is_locked_value(cache_value)
+    assert not cache_value
 
     retrieved = key.get()
     assert retrieved.foo == 42
     assert retrieved.bar == "none"
 
     cache_value = redis_context.global_cache.redis.get(cache_key)
-    assert _cache.is_entity_value(cache_value)
+    assert cache_value
+    assert not _cache.is_locked_value(cache_value)
 
     entity.foo = 43
     entity.put()
 
     cache_value = redis_context.global_cache.redis.get(cache_key)
-    assert not _cache.is_entity_value(cache_value)
-    assert not _cache.is_locked_value(cache_value)
+    assert not cache_value
 
 
 @pytest.mark.skipif(not USE_MEMCACHE, reason="Memcache is not configured")
@@ -643,22 +644,21 @@ def test_insert_entity_with_memcache(dispose_of, memcache_context):
     cache_key = _cache.global_cache_key(key._key)
     cache_key = global_cache_module.MemcacheCache._key(cache_key)
     cache_value = memcache_context.global_cache.client.get(cache_key)
-    assert not _cache.is_locked_value(cache_value)
-    assert not _cache.is_entity_value(cache_value)
+    assert not cache_value
 
     retrieved = key.get()
     assert retrieved.foo == 42
     assert retrieved.bar == "none"
 
     cache_value = memcache_context.global_cache.client.get(cache_key)
-    assert _cache.is_entity_value(cache_value)
+    assert cache_value
+    assert not _cache.is_locked_value(cache_value)
 
     entity.foo = 43
     entity.put()
 
     cache_value = memcache_context.global_cache.client.get(cache_key)
-    assert not _cache.is_locked_value(cache_value)
-    assert not _cache.is_entity_value(cache_value)
+    assert not cache_value
 
 
 @pytest.mark.usefixtures("client_context")
@@ -791,12 +791,12 @@ def test_delete_entity_with_global_cache(ds_entity, client_context):
     with client_context.new(global_cache=global_cache).use():
         assert key.get().foo == 42
         cache_value = global_cache.get([cache_key])[0]
-        assert _cache.is_entity_value(cache_value)
+        assert cache_value
+        assert not _cache.is_locked_value(cache_value)
 
         assert key.delete() is None
         cache_value = global_cache.get([cache_key])[0]
-        assert not _cache.is_locked_value(cache_value)
-        assert not _cache.is_entity_value(cache_value)
+        assert not cache_value
 
         # This is py27 behavior. Not entirely sold on leaving _LOCKED value for
         # Datastore misses.
@@ -818,12 +818,12 @@ def test_delete_entity_with_redis_cache(ds_entity, redis_context):
 
     assert key.get().foo == 42
     cache_value = redis_context.global_cache.redis.get(cache_key)
-    assert _cache.is_entity_value(cache_value)
+    assert cache_value
+    assert not _cache.is_locked_value(cache_value)
 
     assert key.delete() is None
     cache_value = redis_context.global_cache.redis.get(cache_key)
-    assert not _cache.is_entity_value(cache_value)
-    assert not _cache.is_locked_value(cache_value)
+    assert not cache_value
 
     # This is py27 behavior. Not entirely sold on leaving _LOCKED value for
     # Datastore misses.
@@ -846,12 +846,12 @@ def test_delete_entity_with_memcache(ds_entity, memcache_context):
 
     assert key.get().foo == 42
     cache_value = memcache_context.global_cache.client.get(cache_key)
-    assert _cache.is_entity_value(cache_value)
+    assert cache_value
+    assert not _cache.is_locked_value(cache_value)
 
     assert key.delete() is None
     cache_value = memcache_context.global_cache.client.get(cache_key)
-    assert not _cache.is_entity_value(cache_value)
-    assert not _cache.is_locked_value(cache_value)
+    assert not cache_value
 
     # This is py27 behavior. Not entirely sold on leaving _LOCKED value for
     # Datastore misses.
