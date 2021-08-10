@@ -646,8 +646,7 @@ def global_lock_for_write(key):
 def global_unlock_for_write(key, lock):
     """Remove a lock for key by updating or removing a lock value.
 
-    The lock represented by the ``lock`` argument will be released. If no other locks
-    remain, the key will be deleted.
+    The lock represented by the ``lock`` argument will be released.
 
     Args:
         key (bytes): The key to lock.
