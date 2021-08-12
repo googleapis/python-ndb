@@ -18,7 +18,6 @@ System tests for Create, Update, Delete. (CRUD)
 import datetime
 import os
 import pickle
-import pytz
 import random
 import threading
 import zlib
@@ -1336,10 +1335,10 @@ def test_insert_autonow_property_with_tz(dispose_of):
     """
 
     class SomeKind(ndb.Model):
-        created_at = ndb.DateTimeProperty(auto_now_add=True, tzinfo=pytz.utc)
-        updated_at = ndb.DateTimeProperty(auto_now=True, tzinfo=pytz.utc)
+        created_at = ndb.DateTimeProperty(auto_now_add=True, tzinfo=datetime.timezone.utc)
+        updated_at = ndb.DateTimeProperty(auto_now=True, tzinfo=datetime.timezone.utc)
 
-    now = datetime.datetime.now(pytz.utc)
+    now = datetime.datetime.now(datetime.timezone.utc)
     entity = SomeKind()
     key = entity.put()
     dispose_of(key._key)
@@ -1361,10 +1360,10 @@ def test_insert_datetime_property_with_tz(dispose_of):
     """
 
     class SomeKind(ndb.Model):
-        alarm1 = ndb.DateTimeProperty(tzinfo=pytz.utc)
-        alarm2 = ndb.DateTimeProperty(tzinfo=pytz.utc)
+        alarm1 = ndb.DateTimeProperty(tzinfo=datetime.timezone.utc)
+        alarm2 = ndb.DateTimeProperty(tzinfo=datetime.timezone.utc)
 
-    now = datetime.datetime.now(pytz.utc)
+    now = datetime.datetime.now(datetime.timezone.utc)
     entity = SomeKind(
         alarm1=now,
         alarm2=datetime.datetime.utcnow(),  # naive
