@@ -22,6 +22,7 @@ import operator
 import uuid
 
 import pytest
+import pytz
 
 import test_utils.system
 
@@ -246,13 +247,13 @@ def test_projection_datetime(ds_entity):
     ds_entity(
         KIND,
         entity_id,
-        foo=datetime.datetime(2010, 5, 12, 2, 42, tzinfo=datetime.timezone.utc),
+        foo=datetime.datetime(2010, 5, 12, 2, 42, tzinfo=pytz.UTC),
     )
     entity_id = test_utils.system.unique_resource_id()
     ds_entity(
         KIND,
         entity_id,
-        foo=datetime.datetime(2010, 5, 12, 2, 43, tzinfo=datetime.timezone.utc),
+        foo=datetime.datetime(2010, 5, 12, 2, 43, tzinfo=pytz.UTC),
     )
 
     class SomeKind(ndb.Model):

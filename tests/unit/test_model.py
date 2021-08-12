@@ -14,6 +14,7 @@
 
 import datetime
 import pickle
+import pytz
 import six
 import types
 import zlib
@@ -2747,7 +2748,7 @@ class TestDateTimeProperty:
     @staticmethod
     def test__validate_with_tz():
         prop = model.DateTimeProperty(name="dt_val")
-        value = datetime.datetime.now(tz=datetime.timezone.utc)
+        value = datetime.datetime.now(tz=pytz.utc)
         with pytest.raises(exceptions.BadValueError):
             prop._validate(value)
 
@@ -2818,13 +2819,13 @@ class TestDateTimeProperty:
     @staticmethod
     def test__from_base_type_timezone():
         prop = model.DateTimeProperty(name="dt_val")
-        value = datetime.datetime(2010, 5, 12, tzinfo=datetime.timezone.utc)
+        value = datetime.datetime(2010, 5, 12, tzinfo=pytz.utc)
         assert prop._from_base_type(value) == datetime.datetime(2010, 5, 12)
 
     @staticmethod
     def test__from_base_type_convert_timezone():
         prop = model.DateTimeProperty(name="dt_val", tzinfo=timezone(-4))
-        value = datetime.datetime(2010, 5, 12, tzinfo=datetime.timezone.utc)
+        value = datetime.datetime(2010, 5, 12, tzinfo=pytz.utc)
         assert prop._from_base_type(value) == datetime.datetime(
             2010, 5, 11, 20, tzinfo=timezone(-4)
         )
@@ -2854,7 +2855,7 @@ class TestDateTimeProperty:
         prop = model.DateTimeProperty(name="dt_val", tzinfo=timezone(-4))
         value = datetime.datetime(2010, 5, 12, tzinfo=timezone(-4))
         assert prop._to_base_type(value) == datetime.datetime(
-            2010, 5, 12, 4, tzinfo=datetime.timezone.utc
+            2010, 5, 12, 4, tzinfo=pytz.utc
         )
 
 

@@ -259,6 +259,8 @@ import pickle
 import six
 import zlib
 
+import pytz
+
 from google.cloud.datastore import entity as ds_entity_module
 from google.cloud.datastore import helpers
 from google.cloud.datastore_v1.proto import entity_pb2
@@ -3878,11 +3880,11 @@ class DateTimeProperty(Property):
         if isinstance(value, six.integer_types):
             # Projection query, value is integer nanoseconds
             seconds = value / 1e6
-            value = datetime.datetime.fromtimestamp(seconds, datetime.timezone.utc)
+            value = datetime.datetime.fromtimestamp(seconds, pytz.utc)
 
         if self._tzinfo is not None:
             if value.tzinfo is None:
-                value = value.replace(tzinfo=datetime.timezone.utc)
+                value = value.replace(tzinfo=pytz.utc)
             return value.astimezone(self._tzinfo)
 
         elif value.tzinfo is not None:
@@ -3901,7 +3903,7 @@ class DateTimeProperty(Property):
             TypeError: If ``value`` is not a :class:`~key.Key`.
         """
         if self._tzinfo is not None and value.tzinfo is not None:
-            return value.astimezone(datetime.timezone.utc)
+            return value.astimezone(pytz.utc)
 
 
 class DateProperty(DateTimeProperty):
