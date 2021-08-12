@@ -1335,9 +1335,7 @@ def test_insert_autonow_property_with_tz(dispose_of):
     """
 
     class SomeKind(ndb.Model):
-        created_at = ndb.DateTimeProperty(
-            auto_now_add=True, tzinfo=datetime.timezone.utc
-        )
+        created_at = ndb.DateTimeProperty(auto_now_add=True, tzinfo=datetime.timezone.utc)
         updated_at = ndb.DateTimeProperty(auto_now=True, tzinfo=datetime.timezone.utc)
 
     now = datetime.datetime.now(datetime.timezone.utc)
