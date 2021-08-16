@@ -34,6 +34,14 @@ warnings.filterwarnings("always", module=__name__)
 log = logging.getLogger(__name__)
 
 
+def _syncpoint_692():
+    """A no-op function meant to be patched for testing.
+
+    Should be replaced by `orchestrate.syncpoint` using `mock.patch` during testing to
+    orchestrate concurrent testing scenarios.
+    """
+
+
 class ContextCache(dict):
     """A per-context in-memory entity cache.
 
@@ -684,6 +692,7 @@ def _update_key(key, new_value):
 
         value = new_value(old_value)
         utils.logging_debug(log, "new value: {}", value)
+        _syncpoint_692()
 
         if old_value is not None:
             utils.logging_debug(log, "compare and swap")
