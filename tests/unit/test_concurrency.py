@@ -13,6 +13,9 @@
 # limitations under the License.
 
 import logging
+import os
+
+import pytest
 
 try:
     from unittest import mock
@@ -28,8 +31,25 @@ from . import orchestrate
 log = logging.getLogger(__name__)
 
 
+def cache_factories():
+    yield global_cache_module._InProcessGlobalCache
+
+    def redis_cache():
+        return global_cache_module.RedisCache.from_environment()
+
+    if os.environ.get("REDIS_CACHE_URL"):
+        yield redis_cache
+
+    def memcache_cache():
+        return global_cache_module.MemcacheCache.from_environment()
+
+    if os.environ.get("MEMCACHED_HOSTS"):
+        yield global_cache_module.MemcacheCache.from_environment
+
+
+@pytest.mark.parametrize("cache_factory", cache_factories())
 @mock.patch("google.cloud.ndb._cache._syncpoint_update_key", orchestrate.syncpoint)
-def test_global_cache_concurrent_write_692(context_factory):
+def test_global_cache_concurrent_write_692(cache_factory, context_factory):
     """Regression test for #692
 
     https://github.com/googleapis/python-ndb/issues/692
@@ -47,7 +67,7 @@ def test_global_cache_concurrent_write_692(context_factory):
         assert lock not in cache_value
 
     def run_test():
-        global_cache = global_cache_module._InProcessGlobalCache()
+        global_cache = cache_factory()
         with context_factory(global_cache=global_cache).use():
             lock_unlock_key()
 
