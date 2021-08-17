@@ -28,7 +28,7 @@ from . import orchestrate
 log = logging.getLogger(__name__)
 
 
-@mock.patch("google.cloud.ndb._cache._syncpoint_692", orchestrate.syncpoint)
+@mock.patch("google.cloud.ndb._cache._syncpoint_update_key", orchestrate.syncpoint)
 def test_global_cache_concurrent_write_692(context_factory):
     """Regression test for #692
 
