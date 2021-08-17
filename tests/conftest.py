@@ -101,7 +101,7 @@ def context_factory():
             eventloop=TestingEventLoop(),
             datastore_policy=True,
             legacy_data=False,
-            **kwargs,
+            **kwargs
         )
         return context
 

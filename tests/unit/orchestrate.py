@@ -14,8 +14,12 @@
 
 import itertools
 import math
-import queue
 import threading
+
+try:
+    import queue
+except ImportError:  # pragma: NO PY3 COVER
+    import Queue as queue
 
 
 def orchestrate(*tests):
