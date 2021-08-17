@@ -39,7 +39,12 @@ def test_global_cache_concurrent_write_692(context_factory):
     @tasklets.synctasklet
     def lock_unlock_key():
         lock = yield _cache.global_lock_for_write(key)
+        cache_value = yield _cache.global_get(key)
+        assert lock in cache_value
+
         yield _cache.global_unlock_for_write(key, lock)
+        cache_value = yield _cache.global_get(key)
+        assert lock not in cache_value
 
     def run_test():
         global_cache = global_cache_module._InProcessGlobalCache()
