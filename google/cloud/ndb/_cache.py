@@ -694,7 +694,9 @@ def _update_key(key, new_value):
 
         value = new_value(old_value)
         utils.logging_debug(log, "new value: {}", value)
-        _syncpoint_update_key()
+
+        if __debug__:
+            _syncpoint_update_key()
 
         if old_value is not None:
             utils.logging_debug(log, "compare and swap")
