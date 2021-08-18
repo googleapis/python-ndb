@@ -28,6 +28,7 @@ def main():
         "google-cloud-datastore >= 1.7.0, < 2.0.0dev",
         "pymemcache",
         "redis",
+        "pytz"
     ]
 
     if sys.version_info.major == 3 and sys.version_info.minor < 7:
@@ -35,7 +36,7 @@ def main():
 
     setuptools.setup(
         name="google-cloud-ndb",
-        version = "1.10.0",
+        version = "1.10.1",
         description="NDB library for Google Cloud Datastore",
         long_description=readme,
         long_description_content_type="text/markdown",
