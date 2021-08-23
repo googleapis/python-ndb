@@ -17,11 +17,6 @@ import os
 
 import pytest
 
-try:
-    from unittest import mock
-except ImportError:  # pragma: NO PY3 COVER
-    import mock
-
 from google.cloud.ndb import _cache
 from google.cloud.ndb import global_cache as global_cache_module
 from google.cloud.ndb import tasklets
@@ -31,7 +26,7 @@ from . import orchestrate
 log = logging.getLogger(__name__)
 
 
-def cache_factories():
+def cache_factories():  # pragma: NO COVER
     yield global_cache_module._InProcessGlobalCache
 
     def redis_cache():
@@ -48,7 +43,6 @@ def cache_factories():
 
 
 @pytest.mark.parametrize("cache_factory", cache_factories())
-@mock.patch("google.cloud.ndb._cache._syncpoint_update_key", orchestrate.syncpoint)
 def test_global_cache_concurrent_write_692(cache_factory, context_factory):
     """Regression test for #692
 
@@ -57,7 +51,7 @@ def test_global_cache_concurrent_write_692(cache_factory, context_factory):
     key = b"somekey"
 
     @tasklets.synctasklet
-    def lock_unlock_key():
+    def lock_unlock_key():  # pragma: NO COVER
         lock = yield _cache.global_lock_for_write(key)
         cache_value = yield _cache.global_get(key)
         assert lock in cache_value
@@ -66,9 +60,9 @@ def test_global_cache_concurrent_write_692(cache_factory, context_factory):
         cache_value = yield _cache.global_get(key)
         assert lock not in cache_value
 
-    def run_test():
+    def run_test():  # pragma: NO COVER
         global_cache = cache_factory()
         with context_factory(global_cache=global_cache).use():
             lock_unlock_key()
 
-    orchestrate.orchestrate(run_test, run_test)
+    orchestrate.orchestrate(run_test, run_test, name="update key")

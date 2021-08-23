@@ -674,16 +674,6 @@ def global_unlock_for_write(key, lock):
         pass
 
 
-def _syncpoint_update_key():
-    """A no-op function meant to be patched for testing.
-
-    Should be replaced by `orchestrate.syncpoint` using `mock.patch` during testing to
-    orchestrate concurrent testing scenarios.
-
-    See: `tests.unit.test_concurrency`
-    """
-
-
 @tasklets.tasklet
 def _update_key(key, new_value):
     success = False
@@ -693,10 +683,7 @@ def _update_key(key, new_value):
         utils.logging_debug(log, "old value: {}", old_value)
 
         value = new_value(old_value)
-        utils.logging_debug(log, "new value: {}", value)
-
-        if __debug__:
-            _syncpoint_update_key()
+        utils.logging_debug(log, "new value: {}", value)  # pragma: SYNCPOINT update key
 
         if old_value is not None:
             utils.logging_debug(log, "compare and swap")

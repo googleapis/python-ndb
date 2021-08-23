@@ -13,6 +13,12 @@
 # limitations under the License.
 
 import itertools
+import threading
+
+try:
+    from unittest import mock
+except ImportError:  # pragma: NO PY3 COVER
+    import mock
 
 import pytest
 
@@ -42,15 +48,18 @@ def test__permutations():
 
 class Test_orchestrate:
     @staticmethod
+    def test_bad_keyword_argument():
+        with pytest.raises(TypeError):
+            orchestrate.orchestrate(None, None, what="for?")
+
+    @staticmethod
     def test_no_failures():
         test_calls = []
 
         def make_test(name):
-            def test():
-                test_calls.append(name)
-                orchestrate.syncpoint()
-                test_calls.append(name)
-                orchestrate.syncpoint()
+            def test():  # pragma: NO COVER
+                test_calls.append(name)  # pragma: SYNCPOINT
+                test_calls.append(name)  # pragma: SYNCPOINT
                 test_calls.append(name)
 
             return test
@@ -66,17 +75,39 @@ class Test_orchestrate:
         assert test_calls == expected
 
     @staticmethod
+    def test_named_syncpoints():
+        test_calls = []
+
+        def make_test(name):
+            def test():  # pragma: NO COVER
+                test_calls.append(name)  # pragma: SYNCPOINT test_named_syncpoints
+                test_calls.append(name)  # pragma: SYNCPOINT test_named_syncpoints
+                test_calls.append(name)  # pragma: SYNCPOINT
+
+            return test
+
+        test1 = make_test("A")
+        test2 = make_test("B")
+
+        permutations = orchestrate._permutations(["A", "B", "A", "B", "A", "B"])
+        expected = list(itertools.chain(*permutations))
+
+        counts = orchestrate.orchestrate(test1, test2, name="test_named_syncpoints")
+        assert counts == (3, 3)
+        assert test_calls == expected
+
+    @staticmethod
     def test_syncpoints_decrease_after_initial_run():
         test_calls = []
 
         def make_test(name):
             syncpoints = [name] * 4
 
-            def test():
+            def test():  # pragma: NO COVER
                 test_calls.append(name)
                 if syncpoints:
-                    orchestrate.syncpoint()
-                    test_calls.append(syncpoints.pop())
+                    syncpoints.pop()  # pragma: SYNCPOINT
+                    test_calls.append(name)
 
             return test
 
@@ -114,18 +145,20 @@ class Test_orchestrate:
     def test_syncpoints_increase_after_initial_run():
         test_calls = []
 
+        def do_nothing():  # pragma: NO COVER
+            pass
+
         def make_test(name):
             syncpoints = [None] * 4
 
-            def test():
-                test_calls.append(name)
-                orchestrate.syncpoint()
+            def test():  # pragma: NO COVER
+                test_calls.append(name)  # pragma: SYNCPOINT
                 test_calls.append(name)
 
                 if syncpoints:
                     syncpoints.pop()
                 else:
-                    orchestrate.syncpoint()
+                    do_nothing()  # pragma: SYNCPOINT
                     test_calls.append(name)
 
             return test
@@ -175,9 +208,8 @@ class Test_orchestrate:
         def make_test(name):
             syncpoints = [None] * 4
 
-            def test():
-                test_calls.append(name)
-                orchestrate.syncpoint()
+            def test():  # pragma: NO COVER
+                test_calls.append(name)  # pragma: SYNCPOINT
                 test_calls.append(name)
 
                 if syncpoints:
@@ -217,3 +249,130 @@ class Test_orchestrate:
             orchestrate.orchestrate(test1, test2)
 
         assert test_calls == expected
+
+
+def test__conductor():
+    conductor = orchestrate._Conductor()
+    items = []
+
+    def run_in_test_thread():
+        conductor.notify()
+        items.append("test1")
+        conductor.standby()
+        items.append("test2")
+        conductor.notify()
+        conductor.standby()
+        items.append("test3")
+        conductor.notify()
+
+    assert not items
+    test_thread = threading.Thread(target=run_in_test_thread)
+
+    test_thread.start()
+    conductor.wait()
+    assert items == ["test1"]
+
+    conductor.go()
+    conductor.wait()
+    assert items == ["test1", "test2"]
+
+    conductor.go()
+    conductor.wait()
+    assert items == ["test1", "test2", "test3"]
+
+
+def test__get_syncpoints():  # pragma: SYNCPOINT test_get_syncpoints
+    lines = enumerate(open(__file__, "r"), start=1)
+    for expected_lineno, line in lines:  # pragma: NO BRANCH COVER
+        if "# pragma: SYNCPOINT test_get_syncpoints" in line:
+            break
+
+    orchestrate._get_syncpoints(__file__)
+    syncpoints = orchestrate._SYNCPOINTS[__file__]["test_get_syncpoints"]
+    assert syncpoints == {expected_lineno}
+
+
+class Test_TestThread:
+    @staticmethod
+    def test__sync():
+        test_thread = orchestrate._TestThread(None, None)
+        test_thread.conductor = mock.Mock()
+        test_thread._sync()
+
+        test_thread.conductor.notify.assert_called_once_with()
+        test_thread.conductor.standby.assert_called_once_with()
+
+    @staticmethod
+    def test__trace_no_source_file():
+        orchestrate._SYNCPOINTS.clear()
+        frame = mock.Mock(f_globals={}, spec=("f_globals",))
+        test_thread = orchestrate._TestThread(None, None)
+        assert test_thread._trace(frame, None, None) is None
+        assert not orchestrate._SYNCPOINTS
+
+    @staticmethod
+    def test__trace_this_source_file():
+        orchestrate._SYNCPOINTS.clear()
+        frame = mock.Mock(
+            f_globals={"__file__": __file__},
+            f_lineno=1,
+            spec=(
+                "f_globals",
+                "f_lineno",
+            ),
+        )
+        test_thread = orchestrate._TestThread(None, None)
+        assert test_thread._trace(frame, None, None) == test_thread._trace
+        assert __file__ in orchestrate._SYNCPOINTS
+
+    @staticmethod
+    def test__trace_reach_syncpoint():
+        lines = enumerate(open(__file__, "r"), start=1)
+        for syncpoint_lineno, line in lines:  # pragma: NO BRANCH COVER
+            if "# pragma: SYNCPOINT test_get_syncpoints" in line:
+                break
+
+        orchestrate._SYNCPOINTS.clear()
+        frame = mock.Mock(
+            f_globals={"__file__": __file__},
+            f_lineno=syncpoint_lineno,
+            spec=(
+                "f_globals",
+                "f_lineno",
+            ),
+        )
+        test_thread = orchestrate._TestThread(None, "test_get_syncpoints")
+        test_thread._sync = mock.Mock()
+        assert test_thread._trace(frame, None, None) == test_thread._trace
+        test_thread._sync.assert_not_called()
+
+        frame = mock.Mock(
+            f_globals={"__file__": __file__},
+            f_lineno=syncpoint_lineno + 1,
+            spec=(
+                "f_globals",
+                "f_lineno",
+            ),
+        )
+        assert test_thread._trace(frame, None, None) == test_thread._trace
+        test_thread._sync.assert_called_once_with()
+
+    @staticmethod
+    def test__trace_other_source_file_with_no_syncpoints():
+        filename = orchestrate.__file__
+        if filename.endswith(".pyc"):  # pragma: NO COVER
+            filename = filename[:-1]
+
+        orchestrate._SYNCPOINTS.clear()
+        frame = mock.Mock(
+            f_globals={"__file__": filename + "c"},
+            f_lineno=1,
+            spec=(
+                "f_globals",
+                "f_lineno",
+            ),
+        )
+        test_thread = orchestrate._TestThread(None, None)
+        assert test_thread._trace(frame, None, None) is None
+        syncpoints = orchestrate._SYNCPOINTS[filename]
+        assert not syncpoints
