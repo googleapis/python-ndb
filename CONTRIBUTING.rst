@@ -287,6 +287,7 @@ We support:
 .. _Python 3.9: https://docs.python.org/3.9/
 .. _Python 3.10: https://docs.python.org/3.10/
 
+
 Supported versions can be found in our ``noxfile.py`` `config`_.
 
 .. _config: https://github.com/googleapis/python-ndb/blob/main/noxfile.py
