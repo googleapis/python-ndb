@@ -50,7 +50,8 @@ def cache_factories():  # pragma: NO COVER
 )
 @pytest.mark.parametrize("cache_factory", cache_factories())
 def test_global_cache_concurrent_write_692(
-    cache_factory, context_factory,
+    cache_factory,
+    context_factory,
 ):  # pragma: NO COVER
     """Regression test for #692
 
