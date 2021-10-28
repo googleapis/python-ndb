@@ -58,6 +58,7 @@ def unit(session):
             [
                 "--cov=google.cloud.ndb",
                 "--cov=unit",
+                "--cov-append",
                 "--cov-config",
                 get_path(".coveragerc"),
                 "--cov-report=term-missing",
@@ -75,8 +76,6 @@ def unit(session):
 def cover(session):
     # Install all dependencies.
     session.install("coverage")
-    # THis variable is used to skip coverage by Python version
-    session.env["PY_VERSION"] = session.python[0]
     # Run coverage report.
     session.run("coverage", "report", "--fail-under=100", "--show-missing")
     # Erase cached coverage data.
