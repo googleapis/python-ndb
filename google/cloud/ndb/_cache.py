@@ -673,7 +673,7 @@ def global_unlock_for_write(key, lock):
         if value == _LOCKED_FOR_WRITE:
             value = b""
 
-        if value is None or not value.startswith(_LOCKED_FOR_WRITE):
+        if value and not value.startswith(_LOCKED_FOR_WRITE):
             # If this happens, it means the lock expired and something else got written
             # to the cache in the meantime. Whatever value that is, since there was a
             # write operation that is concluding now, we should consider it stale and

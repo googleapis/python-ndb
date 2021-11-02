@@ -1017,7 +1017,7 @@ class Test_global_unlock_for_write:
             assert len(logged) == 1
 
         _global_get.assert_called_once_with(b"key")
-        global_set_if_not_exists.assert_called_once_with(b"key", b"", expires=64)
+        global_set_if_not_exists.assert_not_called()
 
     @staticmethod
     @mock.patch("google.cloud.ndb._cache.uuid")
