@@ -19,11 +19,14 @@ import uuid
 import warnings
 
 from google.api_core import retry as core_retry
+from google.cloud.datastore import entity
 
 from google.cloud.ndb import _batch
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import tasklets
 from google.cloud.ndb import utils
+
+from google.cloud.ndb.global_cache import GlobalCache
 
 _LOCKED_FOR_READ = b"0-"
 _LOCKED_FOR_WRITE = b"00"
@@ -738,4 +741,17 @@ def global_cache_key(key):
     Returns:
         bytes: The cache key.
     """
-    return _PREFIX + key.to_protobuf().SerializeToString()
+    cache = _global_cache()
+    if cache is None:
+        return GlobalCache.cache_key(key, _PREFIX)
+    return cache.cache_key(key, _PREFIX)
+
+
+def from_global_cache_value(key, result):
+    cache = _global_cache()
+    return cache.from_cache_value(key, result)
+
+
+def to_global_cache_value(entity_pb):
+    cache = _global_cache()
+    return cache.to_cache_value(entity_pb)

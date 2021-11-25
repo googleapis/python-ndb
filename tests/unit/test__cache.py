@@ -1132,13 +1132,24 @@ def test_is_locked_value():
     assert not _cache.is_locked_value(None)
 
 
-def test_global_cache_key():
+@pytest.mark.usefixtures("in_context")
+@mock.patch("google.cloud.ndb._cache._global_cache")
+def test_global_cache_key_default(_global_cache):
+    _global_cache.return_value = None
     key = mock.Mock()
     key.to_protobuf.return_value.SerializeToString.return_value = b"himom!"
     assert _cache.global_cache_key(key) == _cache._PREFIX + b"himom!"
     key.to_protobuf.assert_called_once_with()
     key.to_protobuf.return_value.SerializeToString.assert_called_once_with()
 
+
+@pytest.mark.usefixtures("in_context")
+@mock.patch("google.cloud.ndb._cache._global_cache")
+def test_global_cache_key_custom(_global_cache):
+    _global_cache.return_value.cache_key.return_value = b"himom!"
+    key = mock.Mock()
+    assert _cache.global_cache_key(key) == b"himom!"
+    _global_cache.return_value.cache_key.assert_called_once_with(key, _cache._PREFIX)
 
 def _future_result(result):
     future = tasklets.Future()

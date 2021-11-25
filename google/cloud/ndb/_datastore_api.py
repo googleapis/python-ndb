@@ -143,8 +143,7 @@ def lookup(key, options):
         key_locked = _cache.is_locked_value(result)
         if not key_locked:
             if result:
-                entity_pb = entity_pb2.Entity()
-                entity_pb.MergeFromString(result)
+                entity_pb = _cache.from_global_cache_value(key, result)
 
             elif use_datastore:
                 lock = yield _cache.global_lock_for_read(cache_key, result)
@@ -375,7 +374,7 @@ def put(entity, options):
             lock = yield _cache.global_lock_for_write(cache_key)
         else:
             expires = context._global_cache_timeout(entity.key, options)
-            cache_value = entity_pb.SerializeToString()
+            cache_value = _cache.to_global_cache_value(entity_pb)
             yield _cache.global_set(cache_key, cache_value, expires=expires)
 
     if use_datastore:

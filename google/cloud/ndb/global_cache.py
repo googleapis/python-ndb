@@ -26,6 +26,7 @@ import warnings
 
 import pymemcache
 import redis as redis_module
+from google.cloud.datastore_v1.proto import entity_pb2
 
 # Python 2.7 doesn't have ConnectionError. In Python 3, ConnectionError is subclass of
 # OSError, which Python 2.7 does have.
@@ -192,6 +193,39 @@ class GlobalCache(object):
         from reading potentially stale data from the cache.
         """
         raise NotImplementedError
+
+    @classmethod
+    def cache_key(cls, key, prefix):
+        """Convert Datastore key to ``bytes`` to use for global cache key.
+        Args:
+            key (datastore.Key): The Datastore key.
+        Returns:
+            bytes: The cache key.
+        """
+        return prefix + key.to_protobuf().SerializeToString()
+
+    @classmethod
+    def from_cache_value(cls, key, cache_data):
+        """Convert the data stored in the cache to a datastore entity protobuf
+        Args:
+            key (datastore.Key): The Datastore key.
+            cache_data (bytes): the data read from cache
+        Returns:
+            entity_pb2.Entity: the deserialized entity protobuf
+        """
+        entity_pb = entity_pb2.Entity()
+        entity_pb.MergeFromString(cache_data)
+        return entity_pb
+
+    @classmethod
+    def to_cache_value(cls, entity_pb):
+        """Convert a datastore entity protobuf into data for the cache
+        Args:
+            entity_pb (entity_pb2.Entity): The datastore entity
+        Returns:
+            bytes: the value to write to cache
+        """
+        return entity_pb.SerializeToString()        
 
 
 class _InProcessGlobalCache(GlobalCache):
