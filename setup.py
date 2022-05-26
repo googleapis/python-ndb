@@ -29,6 +29,7 @@ def main():
         "googleapis-common-protos < 1.53.0; python_version<'3.0'",
         "grpcio < 1.40dev; python_version<'3.0'",
         "protobuf < 3.18dev; python_version<'3.0'",
+        "protobuf >= 3.15.0, <4.0.0dev; python_version>'3.0'",
         "pymemcache",
         "redis",
         "pytz"
