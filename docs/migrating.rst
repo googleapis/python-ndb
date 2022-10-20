@@ -180,12 +180,12 @@ a function or method may be positional. Python 3 can do this using keyword-only
 arguments. What used to be written as::
 
     @utils.positional(2)
-    def function1(arg1, arg2, arg3=None, arg4=None)
+    def function1(arg1, arg2, arg3=None, arg4=None):
         pass
 
 Should be written like this in Python 3::
 
-    def function1(arg1, arg2, *, arg3=None, arg4=None)
+    def function1(arg1, arg2, *, arg3=None, arg4=None):
         pass
 
 However, ``positional`` remains available and works in both Python 2 and 3.
