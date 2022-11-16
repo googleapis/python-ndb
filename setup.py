@@ -14,7 +14,6 @@
 
 import io
 import os
-import sys
 
 import setuptools
 
@@ -30,9 +29,6 @@ def main():
         "redis >= 3.0.0, < 5.0.0dev",
         "pytz >= 2018.3"
     ]
-
-    if sys.version_info.major == 3 and sys.version_info.minor < 7:
-        dependencies.append("contextvars")
 
     setuptools.setup(
         name="google-cloud-ndb",
