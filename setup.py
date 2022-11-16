@@ -54,7 +54,6 @@ def main():
             "License :: OSI Approved :: Apache Software License",
             "Programming Language :: Python",
             "Programming Language :: Python :: 3",
-            "Programming Language :: Python :: 3.6",
             "Programming Language :: Python :: 3.7",
             "Programming Language :: Python :: 3.8",
             "Programming Language :: Python :: 3.9",
@@ -67,7 +66,7 @@ def main():
         namespace_packages=["google", "google.cloud"],
         install_requires=dependencies,
         extras_require={},
-        python_requires=">=3.6",
+        python_requires=">=3.7",
         include_package_data=False,
         zip_safe=False,
     )
