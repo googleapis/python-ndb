@@ -4,7 +4,7 @@
 
 [1]: https://pypi.org/project/google-cloud-ndb/#history
 
-## [1.12.0](https://github.com/googleapis/python-ndb/compare/v1.11.2...v1.12.0) (2022-11-17)
+## [1.12.0rc1](https://github.com/googleapis/python-ndb/compare/v1.11.2...v1.12.0rc1) (2022-11-17)
 
 
 ### Bug Fixes
