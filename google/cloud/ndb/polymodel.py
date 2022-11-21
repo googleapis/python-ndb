@@ -29,6 +29,8 @@ that support polymorphic queries.  Simply subclass PolyModel instead
 of Model.
 """
 
+from typing import Dict
+
 from google.cloud.ndb import model
 
 
@@ -184,7 +186,7 @@ class PolyModel(model.Model):
 
     class_ = _ClassKeyProperty()
 
-    _class_map = {}  # Map class key -> suitable subclass.
+    _class_map: Dict = {}  # Map class key -> suitable subclass.
 
     @classmethod
     def _update_kind_map(cls):

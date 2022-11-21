@@ -261,6 +261,8 @@ import zlib
 
 import pytz
 
+from typing import Dict
+
 from google.cloud.datastore import entity as ds_entity_module
 from google.cloud.datastore import helpers
 from google.cloud.datastore_v1.types import entity as entity_pb2
@@ -348,6 +350,7 @@ Key = key_module.Key
 BlobKey = _datastore_types.BlobKey
 GeoPt = helpers.GeoPoint
 Rollback = exceptions.Rollback
+
 
 _getfullargspec = inspect.getfullargspec
 
@@ -1017,7 +1020,7 @@ class Property(ModelAttribute):
     _verbose_name = None
     _write_empty_list = False
     # Non-public class attributes.
-    _FIND_METHODS_CACHE = {}
+    _FIND_METHODS_CACHE: Dict = {}
 
     @utils.positional(2)
     def __init__(
@@ -3589,7 +3592,7 @@ class KeyProperty(Property):
         wrapper._wrapped = wrapped
         return wrapper
 
-    @utils.positional(3)
+    @utils.positional(3)  # type: ignore
     @_handle_positional
     def __init__(
         self,
@@ -4819,7 +4822,7 @@ class Model(_NotEqualMixin):
     # Class variables updated by _fix_up_properties()
     _properties = None
     _has_repeated = False
-    _kind_map = {}  # Dict mapping {kind: Model subclass}
+    _kind_map = {}  # type:  Dict[str, Model]
 
     # Defaults for instance variables.
     _entity_key = None

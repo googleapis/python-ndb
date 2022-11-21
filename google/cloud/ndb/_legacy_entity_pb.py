@@ -393,7 +393,7 @@ class Property(ProtocolBuffer.ProtocolMessage):
     def Meaning_Name(cls, x):
         return cls._Meaning_NAMES.get(x, "")
 
-    Meaning_Name = classmethod(Meaning_Name)
+    Meaning_Name = classmethod(Meaning_Name)  # type: ignore
 
     has_meaning_ = 0
     meaning_ = 0

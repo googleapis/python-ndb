@@ -98,6 +98,21 @@ def run_black(session, use_check=False):
 
 
 @nox.session(py=DEFAULT_INTERPRETER)
+def mypy(session):
+    """Verify type hints are mypy compatible."""
+    session.install("-e", ".")
+    session.install(
+        "mypy",
+        "types-pytz",
+        "types-redis",
+        "types-requests",
+        "types-setuptools",
+        "types-six",
+    )
+    session.run("mypy", "-p", "google.cloud.ndb", "--no-incremental")
+
+
+@nox.session(py=DEFAULT_INTERPRETER)
 def lint(session):
     """Run linters.
     Returns a failure if the linters find linting errors or sufficiently

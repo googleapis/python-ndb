@@ -23,7 +23,7 @@ version of the ``db`` API (hence ``ndb``).
 
 from pkg_resources import get_distribution
 
-__version__ = get_distribution("google-cloud-ndb").version
+__version__: str = get_distribution("google-cloud-ndb").version
 
 from google.cloud.ndb.client import Client
 from google.cloud.ndb.context import AutoBatcher
