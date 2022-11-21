@@ -181,8 +181,10 @@ class Test_make_call:
 
 def _mock_key(key_str):
     key = mock.Mock(kind="SomeKind", spec=("to_protobuf", "kind"))
-    key.to_protobuf.return_value = protobuf = mock.Mock(spec=("SerializeToString",))
-    protobuf.SerializeToString.return_value = key_str
+    key.to_protobuf.return_value = protobuf = mock.Mock(
+        _pb=mock.Mock(spec=("SerializeToString",))
+    )
+    protobuf._pb.SerializeToString.return_value = key_str
     return key
 
 
@@ -260,7 +262,7 @@ class Test_lookup_WithGlobalCache:
 
         entity = SomeKind(key=key)
         entity_pb = model._entity_to_protobuf(entity)
-        cache_value = entity_pb.SerializeToString()
+        cache_value = entity_pb._pb.SerializeToString()
 
         batch = _LookupBatch.return_value
         batch.add.return_value = future_result(entity_pb)
@@ -324,7 +326,7 @@ class Test_lookup_WithGlobalCache:
 
         entity = SomeKind(key=key)
         entity_pb = model._entity_to_protobuf(entity)
-        cache_value = entity_pb.SerializeToString()
+        cache_value = entity_pb._pb.SerializeToString()
 
         global_cache.set({cache_key: cache_value})
 
@@ -424,8 +426,8 @@ class Test_LookupBatch:
     @staticmethod
     def test_found():
         def key_pb(key):
-            mock_key = mock.Mock(spec=("SerializeToString",))
-            mock_key.SerializeToString.return_value = key
+            mock_key = mock.Mock(_pb=mock.Mock(spec=("SerializeToString",)))
+            mock_key._pb.SerializeToString.return_value = key
             return mock_key
 
         future1, future2, future3 = (tasklets.Future() for _ in range(3))
@@ -455,8 +457,8 @@ class Test_LookupBatch:
     @staticmethod
     def test_missing():
         def key_pb(key):
-            mock_key = mock.Mock(spec=("SerializeToString",))
-            mock_key.SerializeToString.return_value = key
+            mock_key = mock.Mock(_pb=mock.Mock(spec=("SerializeToString",)))
+            mock_key._pb.SerializeToString.return_value = key
             return mock_key
 
         future1, future2, future3 = (tasklets.Future() for _ in range(3))
@@ -486,8 +488,8 @@ class Test_LookupBatch:
     @staticmethod
     def test_deferred(context):
         def key_pb(key):
-            mock_key = mock.Mock(spec=("SerializeToString",))
-            mock_key.SerializeToString.return_value = key
+            mock_key = mock.Mock(_pb=mock.Mock(spec=("SerializeToString",)))
+            mock_key._pb.SerializeToString.return_value = key
             return mock_key
 
         eventloop = mock.Mock(spec=("add_idle", "run"))
@@ -518,8 +520,8 @@ class Test_LookupBatch:
     @staticmethod
     def test_found_missing_deferred(context):
         def key_pb(key):
-            mock_key = mock.Mock(spec=("SerializeToString",))
-            mock_key.SerializeToString.return_value = key
+            mock_key = mock.Mock(_pb=mock.Mock(spec=("SerializeToString",)))
+            mock_key._pb.SerializeToString.return_value = key
             return mock_key
 
         eventloop = mock.Mock(spec=("add_idle", "run"))
@@ -773,7 +775,7 @@ class Test_put_WithGlobalCache:
         cache_key = _cache.global_cache_key(key._key)
 
         entity = SomeKind(key=key)
-        cache_value = model._entity_to_protobuf(entity).SerializeToString()
+        cache_value = model._entity_to_protobuf(entity)._pb.SerializeToString()
 
         batch = Batch.return_value
         batch.put.return_value = future_result(None)

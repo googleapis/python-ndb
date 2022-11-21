@@ -683,7 +683,7 @@ class _MultiQueryIteratorImpl(QueryIterator):
                 next_result = result_sets[0].next()
 
             # Check to see if it's a duplicate
-            hash_key = next_result.result_pb.entity.key.SerializeToString()
+            hash_key = next_result.result_pb.entity.key._pb.SerializeToString()
             if hash_key in self._seen_keys:
                 continue
 
@@ -937,7 +937,7 @@ def _query_to_protobuf(query):
             property=query_pb2.PropertyReference(name="__key__"),
             op=query_pb2.PropertyFilter.Operator.HAS_ANCESTOR,
         )
-        ancestor_filter_pb.value.key_value.CopyFrom(ancestor_pb)
+        ancestor_filter_pb.value.key_value._pb.CopyFrom(ancestor_pb._pb)
 
         if filter_pb is None:
             filter_pb = ancestor_filter_pb

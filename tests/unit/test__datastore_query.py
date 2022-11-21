@@ -1470,6 +1470,12 @@ class MockResultPB:
         self.result = result
         self.entity = self
         self.key = self
+        self._pb = MockResultPB_pb(result)
+
+
+class MockResultPB_pb:
+    def __init__(self, result):
+        self.result = result
 
     def SerializeToString(self):
         return self.result
@@ -1761,8 +1767,8 @@ class Test__query_to_protobuf:
                 )
             )
         )
-        expected_pb.filter.property_filter.value.key_value.CopyFrom(
-            key._key.to_protobuf()
+        expected_pb.filter.property_filter.value.key_value._pb.CopyFrom(
+            key._key.to_protobuf()._pb
         )
         assert _datastore_query._query_to_protobuf(query) == expected_pb
 
@@ -1782,7 +1788,7 @@ class Test__query_to_protobuf:
             property=query_pb2.PropertyReference(name="__key__"),
             op=query_pb2.PropertyFilter.Operator.HAS_ANCESTOR,
         )
-        ancestor_pb.value.key_value.CopyFrom(key._key.to_protobuf())
+        ancestor_pb.value.key_value._pb.CopyFrom(key._key.to_protobuf()._pb)
         expected_pb = query_pb2.Query(
             filter=query_pb2.Filter(
                 composite_filter=query_pb2.CompositeFilter(
@@ -1821,7 +1827,7 @@ class Test__query_to_protobuf:
             property=query_pb2.PropertyReference(name="__key__"),
             op=query_pb2.PropertyFilter.Operator.HAS_ANCESTOR,
         )
-        ancestor_pb.value.key_value.CopyFrom(key._key.to_protobuf())
+        ancestor_pb.value.key_value._pb.CopyFrom(key._key.to_protobuf()._pb)
         expected_pb = query_pb2.Query(
             filter=query_pb2.Filter(
                 composite_filter=query_pb2.CompositeFilter(

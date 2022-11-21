@@ -144,7 +144,7 @@ def lookup(key, options):
         if not key_locked:
             if result:
                 entity_pb = entity_pb2.Entity()
-                entity_pb.MergeFromString(result)
+                entity_pb._pb.MergeFromString(result)
 
             elif use_datastore:
                 lock = yield _cache.global_lock_for_read(cache_key, result)
@@ -165,7 +165,7 @@ def lookup(key, options):
         if use_global_cache and not key_locked:
             if entity_pb is not _NOT_FOUND:
                 expires = context._global_cache_timeout(key, options)
-                serialized = entity_pb.SerializeToString()
+                serialized = entity_pb._pb.SerializeToString()
                 yield _cache.global_compare_and_swap(
                     cache_key, serialized, expires=expires
                 )
@@ -211,7 +211,7 @@ class _LookupBatch(object):
         Returns:
             tasklets.Future: A future for the eventual result.
         """
-        todo_key = key.to_protobuf().SerializeToString()
+        todo_key = key.to_protobuf()._pb.SerializeToString()
         future = tasklets.Future(info="Lookup({})".format(key))
         self.todo.setdefault(todo_key, []).append(future)
         return future
@@ -264,20 +264,20 @@ class _LookupBatch(object):
         if results.deferred:
             next_batch = _batch.get_batch(type(self), self.options)
             for key in results.deferred:
-                todo_key = key.SerializeToString()
+                todo_key = key._pb.SerializeToString()
                 next_batch.todo.setdefault(todo_key, []).extend(self.todo[todo_key])
 
         # For all missing keys, set result to _NOT_FOUND and let callers decide
         # how to handle
         for result in results.missing:
-            todo_key = result.entity.key.SerializeToString()
+            todo_key = result.entity.key._pb.SerializeToString()
             for future in self.todo[todo_key]:
                 future.set_result(_NOT_FOUND)
 
         # For all found entities, set the result on their corresponding futures
         for result in results.found:
             entity = result.entity
-            todo_key = entity.key.SerializeToString()
+            todo_key = entity.key._pb.SerializeToString()
             for future in self.todo[todo_key]:
                 future.set_result(entity)
 
@@ -375,7 +375,7 @@ def put(entity, options):
             lock = yield _cache.global_lock_for_write(cache_key)
         else:
             expires = context._global_cache_timeout(entity.key, options)
-            cache_value = entity_pb.SerializeToString()
+            cache_value = entity_pb._pb.SerializeToString()
             yield _cache.global_set(cache_key, cache_value, expires=expires)
 
     if use_datastore:
@@ -725,7 +725,7 @@ class _TransactionalCommitBatch(_NonTransactionalCommitBatch):
         # Update mutations with complete keys
         response = rpc.result()
         for mutation, key, future in zip(mutations, response.keys, futures):
-            mutation.upsert.key.CopyFrom(key)
+            mutation.upsert.key._pb.CopyFrom(key._pb)
             future.set_result(key)
 
     @tasklets.tasklet
