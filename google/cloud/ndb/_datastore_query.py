@@ -38,24 +38,24 @@ from google.cloud.ndb import utils
 log = logging.getLogger(__name__)
 
 MoreResultsType = query_pb2.QueryResultBatch.MoreResultsType
-NO_MORE_RESULTS = MoreResultsType.Value("NO_MORE_RESULTS")
-NOT_FINISHED = MoreResultsType.Value("NOT_FINISHED")
-MORE_RESULTS_AFTER_LIMIT = MoreResultsType.Value("MORE_RESULTS_AFTER_LIMIT")
+NO_MORE_RESULTS = MoreResultsType.NO_MORE_RESULTS
+NOT_FINISHED = MoreResultsType.NOT_FINISHED
+MORE_RESULTS_AFTER_LIMIT = MoreResultsType.MORE_RESULTS_AFTER_LIMIT
 
 ResultType = query_pb2.EntityResult.ResultType
-RESULT_TYPE_FULL = ResultType.Value("FULL")
-RESULT_TYPE_KEY_ONLY = ResultType.Value("KEY_ONLY")
-RESULT_TYPE_PROJECTION = ResultType.Value("PROJECTION")
+RESULT_TYPE_FULL = ResultType.FULL
+RESULT_TYPE_KEY_ONLY = ResultType.KEY_ONLY
+RESULT_TYPE_PROJECTION = ResultType.PROJECTION
 
-DOWN = query_pb2.PropertyOrder.DESCENDING
-UP = query_pb2.PropertyOrder.ASCENDING
+DOWN = query_pb2.PropertyOrder.Direction.DESCENDING
+UP = query_pb2.PropertyOrder.Direction.ASCENDING
 
 FILTER_OPERATORS = {
-    "=": query_pb2.PropertyFilter.EQUAL,
-    "<": query_pb2.PropertyFilter.LESS_THAN,
-    "<=": query_pb2.PropertyFilter.LESS_THAN_OR_EQUAL,
-    ">": query_pb2.PropertyFilter.GREATER_THAN,
-    ">=": query_pb2.PropertyFilter.GREATER_THAN_OR_EQUAL,
+    "=": query_pb2.PropertyFilter.Operator.EQUAL,
+    "<": query_pb2.PropertyFilter.Operator.LESS_THAN,
+    "<=": query_pb2.PropertyFilter.Operator.LESS_THAN_OR_EQUAL,
+    ">": query_pb2.PropertyFilter.Operator.GREATER_THAN,
+    ">=": query_pb2.PropertyFilter.Operator.GREATER_THAN_OR_EQUAL,
 }
 
 _KEY_NOT_IN_CACHE = object()
@@ -92,7 +92,7 @@ def make_composite_and_filter(filter_pbs):
         query_pb2.CompositeFilter: The new composite filter.
     """
     return query_pb2.CompositeFilter(
-        op=query_pb2.CompositeFilter.AND,
+        op=query_pb2.CompositeFilter.Operator.AND,
         filters=[_filter_pb(filter_pb) for filter_pb in filter_pbs],
     )
 
@@ -935,7 +935,7 @@ def _query_to_protobuf(query):
         ancestor_pb = query.ancestor._key.to_protobuf()
         ancestor_filter_pb = query_pb2.PropertyFilter(
             property=query_pb2.PropertyReference(name="__key__"),
-            op=query_pb2.PropertyFilter.HAS_ANCESTOR,
+            op=query_pb2.PropertyFilter.Operator.HAS_ANCESTOR,
         )
         ancestor_filter_pb.value.key_value.CopyFrom(ancestor_pb)
 
@@ -947,7 +947,7 @@ def _query_to_protobuf(query):
 
         else:
             filter_pb = query_pb2.CompositeFilter(
-                op=query_pb2.CompositeFilter.AND,
+                op=query_pb2.CompositeFilter.Operator.AND,
                 filters=[
                     _filter_pb(filter_pb),
                     _filter_pb(ancestor_filter_pb),

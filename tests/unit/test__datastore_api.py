@@ -600,7 +600,7 @@ class Test_get_read_options:
             _options.ReadOptions(read_consistency=_api.EVENTUAL)
         )
         assert options == datastore_pb2.ReadOptions(
-            read_consistency=datastore_pb2.ReadOptions.EVENTUAL
+            read_consistency=datastore_pb2.ReadOptions.ReadConsistency.EVENTUAL
         )
 
     @staticmethod
@@ -1230,7 +1230,7 @@ class Test_datastore_commit:
 
         datastore_pb2.CommitRequest.assert_called_once_with(
             project_id="testing",
-            mode=datastore_pb2.CommitRequest.NON_TRANSACTIONAL,
+            mode=datastore_pb2.CommitRequest.Mode.NON_TRANSACTIONAL,
             mutations=mutations,
             transaction=None,
         )
@@ -1252,7 +1252,7 @@ class Test_datastore_commit:
 
         datastore_pb2.CommitRequest.assert_called_once_with(
             project_id="testing",
-            mode=datastore_pb2.CommitRequest.TRANSACTIONAL,
+            mode=datastore_pb2.CommitRequest.Mode.TRANSACTIONAL,
             mutations=mutations,
             transaction=b"tx123",
         )

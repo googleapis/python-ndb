@@ -33,9 +33,9 @@ from google.cloud.ndb import _retry
 from google.cloud.ndb import tasklets
 from google.cloud.ndb import utils
 
-EVENTUAL = datastore_pb2.ReadOptions.EVENTUAL
+EVENTUAL = datastore_pb2.ReadOptions.ReadConsistency.EVENTUAL
 EVENTUAL_CONSISTENCY = EVENTUAL  # Legacy NDB
-STRONG = datastore_pb2.ReadOptions.STRONG
+STRONG = datastore_pb2.ReadOptions.ReadConsistency.STRONG
 
 _DEFAULT_TIMEOUT = None
 _NOT_FOUND = object()
@@ -863,9 +863,9 @@ def _datastore_commit(mutations, transaction, retries=None, timeout=None):
             :class:`google.cloud.datastore_v1.datastore_pb2.CommitResponse`
     """
     if transaction is None:
-        mode = datastore_pb2.CommitRequest.NON_TRANSACTIONAL
+        mode = datastore_pb2.CommitRequest.Mode.NON_TRANSACTIONAL
     else:
-        mode = datastore_pb2.CommitRequest.TRANSACTIONAL
+        mode = datastore_pb2.CommitRequest.Mode.TRANSACTIONAL
 
     client = context_module.get_context().client
     request = datastore_pb2.CommitRequest(
