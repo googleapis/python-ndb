@@ -554,20 +554,20 @@ class Test_LookupBatch:
 def test__datastore_lookup(datastore_pb2, context):
     client = mock.Mock(
         project="theproject",
-        stub=mock.Mock(spec=("Lookup",)),
+        stub=mock.Mock(spec=("lookup",)),
         spec=("project", "stub"),
     )
     with context.new(client=client).use() as context:
-        client.stub.Lookup = Lookup = mock.Mock(spec=("future",))
+        client.stub.lookup = lookup = mock.Mock(spec=("future",))
         future = tasklets.Future()
         future.set_result("response")
-        Lookup.future.return_value = future
+        lookup.future.return_value = future
         assert _api._datastore_lookup(["foo", "bar"], None).result() == "response"
 
         datastore_pb2.LookupRequest.assert_called_once_with(
             project_id="theproject", keys=["foo", "bar"], read_options=None
         )
-        client.stub.Lookup.future.assert_called_once_with(
+        client.stub.lookup.future.assert_called_once_with(
             datastore_pb2.LookupRequest.return_value,
             timeout=_api._DEFAULT_TIMEOUT,
         )
@@ -1225,7 +1225,7 @@ class Test_datastore_commit:
         api = stub.return_value
         future = tasklets.Future()
         future.set_result("response")
-        api.Commit.future.return_value = future
+        api.commit.future.return_value = future
         assert _api._datastore_commit(mutations, None).result() == "response"
 
         datastore_pb2.CommitRequest.assert_called_once_with(
@@ -1236,7 +1236,7 @@ class Test_datastore_commit:
         )
 
         request = datastore_pb2.CommitRequest.return_value
-        assert api.Commit.future.called_once_with(request)
+        assert api.commit.future.called_once_with(request)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1247,7 +1247,7 @@ class Test_datastore_commit:
         api = stub.return_value
         future = tasklets.Future()
         future.set_result("response")
-        api.Commit.future.return_value = future
+        api.commit.future.return_value = future
         assert _api._datastore_commit(mutations, b"tx123").result() == "response"
 
         datastore_pb2.CommitRequest.assert_called_once_with(
@@ -1258,7 +1258,7 @@ class Test_datastore_commit:
         )
 
         request = datastore_pb2.CommitRequest.return_value
-        assert api.Commit.future.called_once_with(request)
+        assert api.commit.future.called_once_with(request)
 
 
 @pytest.mark.usefixtures("in_context")
@@ -1339,7 +1339,7 @@ def test__datastore_allocate_ids(stub, datastore_pb2):
     api = stub.return_value
     future = tasklets.Future()
     future.set_result("response")
-    api.AllocateIds.future.return_value = future
+    api.allocate_ids.future.return_value = future
     assert _api._datastore_allocate_ids(keys).result() == "response"
 
     datastore_pb2.AllocateIdsRequest.assert_called_once_with(
@@ -1347,7 +1347,7 @@ def test__datastore_allocate_ids(stub, datastore_pb2):
     )
 
     request = datastore_pb2.AllocateIdsRequest.return_value
-    assert api.AllocateIds.future.called_once_with(request)
+    assert api.allocate_ids.future.called_once_with(request)
 
 
 @pytest.mark.usefixtures("in_context")
@@ -1374,7 +1374,7 @@ class Test_datastore_begin_transaction:
         api = stub.return_value
         future = tasklets.Future()
         future.set_result("response")
-        api.BeginTransaction.future.return_value = future
+        api.begin_transaction.future.return_value = future
         assert _api._datastore_begin_transaction(True).result() == "response"
 
         datastore_pb2.TransactionOptions.assert_called_once_with(
@@ -1387,7 +1387,7 @@ class Test_datastore_begin_transaction:
         )
 
         request = datastore_pb2.BeginTransactionRequest.return_value
-        assert api.BeginTransaction.future.called_once_with(request)
+        assert api.begin_transaction.future.called_once_with(request)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -1397,7 +1397,7 @@ class Test_datastore_begin_transaction:
         api = stub.return_value
         future = tasklets.Future()
         future.set_result("response")
-        api.BeginTransaction.future.return_value = future
+        api.begin_transaction.future.return_value = future
         assert _api._datastore_begin_transaction(False).result() == "response"
 
         datastore_pb2.TransactionOptions.assert_called_once_with(
@@ -1410,7 +1410,7 @@ class Test_datastore_begin_transaction:
         )
 
         request = datastore_pb2.BeginTransactionRequest.return_value
-        assert api.BeginTransaction.future.called_once_with(request)
+        assert api.begin_transaction.future.called_once_with(request)
 
 
 @pytest.mark.usefixtures("in_context")
@@ -1433,7 +1433,7 @@ def test__datastore_rollback(stub, datastore_pb2):
     api = stub.return_value
     future = tasklets.Future()
     future.set_result("response")
-    api.Rollback.future.return_value = future
+    api.rollback.future.return_value = future
     assert _api._datastore_rollback(b"tx123").result() == "response"
 
     datastore_pb2.RollbackRequest.assert_called_once_with(
@@ -1441,7 +1441,7 @@ def test__datastore_rollback(stub, datastore_pb2):
     )
 
     request = datastore_pb2.RollbackRequest.return_value
-    assert api.Rollback.future.called_once_with(request)
+    assert api.rollback.future.called_once_with(request)
 
 
 def test__complete():

@@ -1016,7 +1016,7 @@ def _datastore_run_query(query):
         read_options=read_options,
     )
     response = yield _datastore_api.make_call(
-        "RunQuery", request, timeout=query.timeout
+        "run_query", request, timeout=query.timeout
     )
     utils.logging_debug(log, response)
     raise tasklets.Return(response)

@@ -221,7 +221,7 @@ class _LookupBatch(object):
         keys = []
         for todo_key in self.todo.keys():
             key_pb = entity_pb2.Key()
-            key_pb.ParseFromString(todo_key)
+            key_pb._pb.ParseFromString(todo_key)
             keys.append(key_pb)
 
         read_options = get_read_options(self.options)
@@ -306,7 +306,7 @@ def _datastore_lookup(keys, read_options, retries=None, timeout=None):
         read_options=read_options,
     )
 
-    return make_call("Lookup", request, retries=retries, timeout=timeout)
+    return make_call("lookup", request, retries=retries, timeout=timeout)
 
 
 def get_read_options(options, default_read_consistency=None):
@@ -875,7 +875,7 @@ def _datastore_commit(mutations, transaction, retries=None, timeout=None):
         transaction=transaction,
     )
 
-    return make_call("Commit", request, retries=retries, timeout=timeout)
+    return make_call("commit", request, retries=retries, timeout=timeout)
 
 
 def allocate(keys, options):
@@ -992,7 +992,7 @@ def _datastore_allocate_ids(keys, retries=None, timeout=None):
     client = context_module.get_context().client
     request = datastore_pb2.AllocateIdsRequest(project_id=client.project, keys=keys)
 
-    return make_call("AllocateIds", request, retries=retries, timeout=timeout)
+    return make_call("allocate_ids", request, retries=retries, timeout=timeout)
 
 
 @tasklets.tasklet
@@ -1048,7 +1048,7 @@ def _datastore_begin_transaction(read_only, retries=None, timeout=None):
         project_id=client.project, transaction_options=options
     )
 
-    return make_call("BeginTransaction", request, retries=retries, timeout=timeout)
+    return make_call("begin_transaction", request, retries=retries, timeout=timeout)
 
 
 @tasklets.tasklet
@@ -1089,4 +1089,4 @@ def _datastore_rollback(transaction, retries=None, timeout=None):
         project_id=client.project, transaction=transaction
     )
 
-    return make_call("Rollback", request, retries=retries, timeout=timeout)
+    return make_call("rollback", request, retries=retries, timeout=timeout)
