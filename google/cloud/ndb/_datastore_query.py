@@ -77,7 +77,7 @@ def make_filter(name, op, value):
         property=query_pb2.PropertyReference(name=name),
         op=FILTER_OPERATORS[op],
     )
-    helpers._set_protobuf_value(filter_pb.value, value)
+    helpers._set_protobuf_value(filter_pb.value._pb, value)
     return filter_pb
 
 
@@ -811,9 +811,9 @@ class _Result(object):
                 ).flat_path
             else:
                 this_value_pb = self.result_pb.entity.properties[order.name]
-                this_value = helpers._get_value_from_value_pb(this_value_pb)
+                this_value = helpers._get_value_from_value_pb(this_value_pb._pb)
                 other_value_pb = other.result_pb.entity.properties[order.name]
-                other_value = helpers._get_value_from_value_pb(other_value_pb)
+                other_value = helpers._get_value_from_value_pb(other_value_pb._pb)
 
                 # Compare key paths if ordering by key property
                 if isinstance(this_value, Key):
@@ -943,7 +943,7 @@ def _query_to_protobuf(query):
             filter_pb = ancestor_filter_pb
 
         elif isinstance(filter_pb, query_pb2.CompositeFilter):
-            filter_pb.filters.add(property_filter=ancestor_filter_pb)
+            filter_pb.filters._pb.add(property_filter=ancestor_filter_pb._pb)
 
         else:
             filter_pb = query_pb2.CompositeFilter(
@@ -969,7 +969,7 @@ def _query_to_protobuf(query):
         query_pb.offset = query.offset
 
     if query.limit:
-        query_pb.limit.value = query.limit
+        query_pb._pb.limit.value = query.limit
 
     return query_pb
 

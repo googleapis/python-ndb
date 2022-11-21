@@ -1912,7 +1912,7 @@ class Test__query_to_protobuf:
     def test_limit():
         query = query_module.QueryOptions(limit=20)
         expected_pb = query_pb2.Query()
-        expected_pb.limit.value = 20
+        expected_pb._pb.limit.value = 20
         assert _datastore_query._query_to_protobuf(query) == expected_pb
 
     @staticmethod

@@ -382,12 +382,19 @@ class Test_LookupBatch:
     @mock.patch("google.cloud.ndb._datastore_api.entity_pb2")
     @mock.patch("google.cloud.ndb._datastore_api._datastore_lookup")
     def test_idle_callback(_datastore_lookup, entity_pb2, context):
-        class MockKey:
-            def __init__(self, key=None):
+        class MockKeyPb:
+            def __init__(self, key=None, parent=None):
                 self.key = key
+                self.parent = parent
 
             def ParseFromString(self, key):
                 self.key = key
+                self.parent.key = key
+
+        class MockKey:
+            def __init__(self, key=None):
+                self.key = key
+                self._pb = MockKeyPb(key, self)
 
         rpc = tasklets.Future("_datastore_lookup")
         _datastore_lookup.return_value = rpc
