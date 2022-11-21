@@ -22,9 +22,9 @@ import os
 
 from google.cloud import environment_vars
 
-from google.cloud.datastore_v1.proto import datastore_pb2
-from google.cloud.datastore_v1.proto import entity_pb2
-from google.cloud.datastore_v1.proto import query_pb2
+from google.cloud.datastore_v1.types import datastore as datastore_pb2
+from google.cloud.datastore_v1.types import entity as entity_pb2
+from google.cloud.datastore_v1.types import query as query_pb2
 from google.cloud.datastore import helpers, Key
 
 from google.cloud.ndb import context as context_module

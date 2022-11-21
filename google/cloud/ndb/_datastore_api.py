@@ -20,8 +20,8 @@ import logging
 
 from google.api_core import exceptions as core_exceptions
 from google.cloud.datastore import helpers
-from google.cloud.datastore_v1.proto import datastore_pb2
-from google.cloud.datastore_v1.proto import entity_pb2
+from google.cloud.datastore_v1.types import datastore as datastore_pb2
+from google.cloud.datastore_v1.types import entity as entity_pb2
 
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _batch

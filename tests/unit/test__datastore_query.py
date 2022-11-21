@@ -21,9 +21,9 @@ except ImportError:  # pragma: NO PY3 COVER
 
 import pytest
 
-from google.cloud.datastore_v1.proto import datastore_pb2
-from google.cloud.datastore_v1.proto import entity_pb2
-from google.cloud.datastore_v1.proto import query_pb2
+from google.cloud.datastore_v1.types import datastore as datastore_pb2
+from google.cloud.datastore_v1.types import entity as entity_pb2
+from google.cloud.datastore_v1.types import query as query_pb2
 
 from google.cloud.ndb import _datastore_query
 from google.cloud.ndb import context as context_module

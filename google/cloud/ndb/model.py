@@ -263,7 +263,7 @@ import pytz
 
 from google.cloud.datastore import entity as ds_entity_module
 from google.cloud.datastore import helpers
-from google.cloud.datastore_v1.proto import entity_pb2
+from google.cloud.datastore_v1.types import entity as entity_pb2
 
 from google.cloud.ndb import _legacy_entity_pb
 from google.cloud.ndb import _datastore_types

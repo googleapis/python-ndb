@@ -29,7 +29,7 @@ from google.cloud.datastore import entity as entity_module
 from google.cloud.datastore import key as ds_key_module
 from google.cloud.datastore import helpers
 from google.cloud.datastore_v1 import types as ds_types
-from google.cloud.datastore_v1.proto import entity_pb2
+from google.cloud.datastore_v1.types import entity as entity_pb2
 import pytest
 
 from google.cloud.ndb import _datastore_types
