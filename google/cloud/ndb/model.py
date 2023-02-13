@@ -18,13 +18,15 @@
 
     from unittest import mock
     from google.cloud import ndb
+    from google.cloud.datastore.constants import DEFAULT_DATABASE
     from google.cloud.ndb import context as context_module
 
     client = mock.Mock(
         project="testing",
+        database=DEFAULT_DATABASE,
         namespace=None,
         stub=mock.Mock(spec=()),
-        spec=("project", "namespace", "stub"),
+        spec=("project", "namespace", "database", "stub"),
     )
     context = context_module.Context(client).use()
     context.__enter__()
@@ -4696,13 +4698,14 @@ class Model(_NotEqualMixin):
         >>> MyModel(value=7.34e22, description="Mass of the moon")
         MyModel(description='Mass of the moon', value=7.34e+22)
 
-    In addition to user-defined properties, there are six accepted keyword
+    In addition to user-defined properties, there are seven accepted keyword
     arguments:
 
     * ``key``
     * ``id``
     * ``app``
     * ``namespace``
+    * ``database``
     * ``parent``
     * ``projection``
 
@@ -4808,12 +4811,13 @@ class Model(_NotEqualMixin):
         namespace (str): Namespace for the entity key.
         project (str): Project ID for the entity key.
         app (str): DEPRECATED: Synonym for ``project``.
+        database (str): Database for the entity key.
         kwargs (Dict[str, Any]): Additional keyword arguments. These should map
             to properties of this model.
 
     Raises:
         .BadArgumentError: If the constructor is called with ``key`` and one
-            of ``id``, ``app``, ``namespace`` or ``parent`` specified.
+            of ``id``, ``app``, ``namespace``, ``database``, or ``parent`` specified.
     """
 
     # Class variables updated by _fix_up_properties()
@@ -4862,6 +4866,7 @@ class Model(_NotEqualMixin):
         project = self._get_arg(kwargs, "project")
         app = self._get_arg(kwargs, "app")
         namespace = self._get_arg(kwargs, "namespace", key_module.UNDEFINED)
+        database = self._get_arg(kwargs, "database", key_module.UNDEFINED)
         parent = self._get_arg(kwargs, "parent")
         projection = self._get_arg(kwargs, "projection")
 
@@ -4877,13 +4882,14 @@ class Model(_NotEqualMixin):
             id_ is None
             and parent is None
             and project is None
+            and database is key_module.UNDEFINED
             and namespace is key_module.UNDEFINED
         )
         if key is not None:
             if not key_parts_unspecified:
                 raise exceptions.BadArgumentError(
                     "Model constructor given 'key' does not accept "
-                    "'id', 'project', 'app', 'namespace', or 'parent'."
+                    "'id', 'project', 'app', 'namespace', 'database', or 'parent'."
                 )
             self._key = _validate_key(key, entity=self)
         elif not key_parts_unspecified:
@@ -4892,6 +4898,7 @@ class Model(_NotEqualMixin):
                 id_,
                 parent=parent,
                 project=project,
+                database=database,
                 namespace=namespace,
             )
 
@@ -5482,6 +5489,7 @@ class Model(_NotEqualMixin):
         distinct_on=None,
         group_by=None,
         default_options=None,
+        database=None,
     )
     def _query(cls, *filters, **kwargs):
         """Generate a query for this class.
@@ -5508,6 +5516,8 @@ class Model(_NotEqualMixin):
                 results.
             group_by (list[str]): Deprecated. Synonym for distinct_on.
             default_options (QueryOptions): QueryOptions object.
+            database (str): The database to perform the query against.
+                If not passed, uses the client's value.
         """
         # Validating distinct
         if kwargs["distinct"]:
@@ -5537,6 +5547,7 @@ class Model(_NotEqualMixin):
             distinct_on=kwargs["distinct_on"],
             group_by=kwargs["group_by"],
             default_options=kwargs["default_options"],
+            database=kwargs["database"],
         )
         query = query.filter(*cls._default_filters())
         query = query.filter(*filters)
@@ -5714,6 +5725,7 @@ class Model(_NotEqualMixin):
         max_memcache_items=None,
         force_writes=None,
         _options=None,
+        database: str = None,
     ):
         """Get an instance of Model class by ID.
 
@@ -5768,6 +5780,7 @@ class Model(_NotEqualMixin):
             project=project,
             app=app,
             _options=_options,
+            database=database,
         ).result()
 
     get_by_id = _get_by_id
@@ -5797,6 +5810,7 @@ class Model(_NotEqualMixin):
         max_memcache_items=None,
         force_writes=None,
         _options=None,
+        database: str = None,
     ):
         """Get an instance of Model class by ID.
 

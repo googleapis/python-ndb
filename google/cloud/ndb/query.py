@@ -1228,6 +1228,7 @@ class QueryOptions(_options.ReadOptions):
         "group_by",
         "namespace",
         "project",
+        "database",
         # Fetch options
         "keys_only",
         "limit",
@@ -1266,6 +1267,9 @@ class QueryOptions(_options.ReadOptions):
             if not self.project:
                 self.project = context.client.project
 
+            if self.database is None:
+                self.database = context.client.database
+
             if self.namespace is None:
                 if self.ancestor is None:
                     self.namespace = context.get_namespace()
@@ -1300,6 +1304,7 @@ class Query(object):
             results.
         group_by (list[str]): Deprecated. Synonym for distinct_on.
         default_options (QueryOptions): QueryOptions object.
+        database (str): The database to access. If not passed, uses the client's value.
 
     Raises:
         TypeError: If any of the arguments are invalid.
@@ -1322,6 +1327,8 @@ class Query(object):
         offset=None,
         keys_only=None,
         default_options=None,
+        *,
+        database: str = None,
     ):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import model
@@ -1367,6 +1374,7 @@ class Query(object):
             orders = self._option("orders", orders)
             project = self._option("project", project)
             app = self._option("app", app)
+            database = self._option("database", database)
             namespace = self._option("namespace", namespace)
             projection = self._option("projection", projection)
             distinct_on = self._option("distinct_on", distinct_on)
@@ -1431,6 +1439,7 @@ class Query(object):
         self.filters = filters
         self.order_by = order_by
         self.project = project
+        self.database = database
         self.namespace = namespace
         self.limit = limit
         self.offset = offset
@@ -1474,6 +1483,8 @@ class Query(object):
         args = []
         if self.project is not None:
             args.append("project=%r" % self.project)
+        if self.database is not None:
+            args.append("database=%r" % self.database)
         if self.namespace is not None:
             args.append("namespace=%r" % self.namespace)
         if self.kind is not None:
@@ -1544,6 +1555,7 @@ class Query(object):
             filters=new_filters,
             order_by=self.order_by,
             project=self.project,
+            database=self.database,
             namespace=self.namespace,
             default_options=self.default_options,
             projection=self.projection,
@@ -1577,6 +1589,7 @@ class Query(object):
             filters=self.filters,
             order_by=order_by,
             project=self.project,
+            database=self.database,
             namespace=self.namespace,
             default_options=self.default_options,
             projection=self.projection,
@@ -1658,6 +1671,7 @@ class Query(object):
             filters=filters,
             order_by=self.order_by,
             project=self.project,
+            database=self.database,
             namespace=self.namespace,
             default_options=self.default_options,
             projection=self.projection,

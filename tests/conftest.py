@@ -21,6 +21,7 @@ modules.
 import os
 
 from google.cloud import environment_vars
+from google.cloud.datastore.constants import DEFAULT_DATABASE
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import global_cache as global_cache_module
@@ -88,8 +89,9 @@ def context_factory():
     def context(**kwargs):
         client = mock.Mock(
             project="testing",
+            database=DEFAULT_DATABASE,
             namespace=None,
-            spec=("project", "namespace"),
+            spec=("project", "database", "namespace"),
             stub=mock.Mock(spec=()),
         )
         context = context_module.Context(
@@ -118,19 +120,22 @@ def in_context(context):
 
 
 @pytest.fixture
+def database():
+    return "testdb"
+
+
+@pytest.fixture
 def namespace():
     return "UnitTest"
 
 
 @pytest.fixture
-def client_context(namespace):
+def client_context(namespace, database):
     from google.cloud import ndb
 
     client = ndb.Client()
     context_manager = client.context(
-        cache_policy=False,
-        legacy_data=False,
-        namespace=namespace,
+        cache_policy=False, legacy_data=False, database=database, namespace=namespace
     )
     with context_manager as context:
         yield context
