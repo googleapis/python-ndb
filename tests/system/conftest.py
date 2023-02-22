@@ -8,6 +8,7 @@ import requests
 
 from google.cloud import datastore
 from google.cloud import ndb
+from google.cloud.datastore.constants import DEFAULT_DATABASE
 
 from google.cloud.ndb import global_cache as global_cache_module
 
@@ -15,11 +16,14 @@ from . import KIND, OTHER_KIND
 
 log = logging.getLogger(__name__)
 
+_DATASTORE_DATABASE = "SYSTEM_TESTS_DATABASE"
+TEST_DATABASE = os.getenv(_DATASTORE_DATABASE)
+
 
 @pytest.fixture(scope="session", autouse=True)
 def preclean():
     """Clean out default namespace in test database."""
-    ds_client = _make_ds_client(None)
+    ds_client = _make_ds_client(_get_database(), None)
     for kind in (KIND, OTHER_KIND):
         query = ds_client.query(kind=kind)
         query.keys_only()
@@ -28,12 +32,14 @@ def preclean():
             ds_client.delete_multi(keys)
 
 
-def _make_ds_client(namespace):
+def _make_ds_client(database, namespace):
     emulator = bool(os.environ.get("DATASTORE_EMULATOR_HOST"))
     if emulator:
-        client = datastore.Client(namespace=namespace, _http=requests.Session)
+        client = datastore.Client(
+            database=database, namespace=namespace, _http=requests.Session
+        )
     else:
-        client = datastore.Client(namespace=namespace)
+        client = datastore.Client(database=database, namespace=namespace)
 
     return client
 
@@ -57,8 +63,8 @@ def to_delete():
 
 
 @pytest.fixture
-def ds_client(namespace):
-    return _make_ds_client(namespace)
+def ds_client(database, namespace):
+    return _make_ds_client(database, namespace)
 
 
 @pytest.fixture
@@ -122,6 +128,18 @@ def dispose_of(with_ds_client, to_delete):
 
 
 @pytest.fixture
+def database():
+    return _get_database()
+
+
+def _get_database():
+    db = DEFAULT_DATABASE
+    if TEST_DATABASE is not None:
+        db = TEST_DATABASE
+    return db
+
+
+@pytest.fixture
 def namespace():
     return str(uuid.uuid4())
 
@@ -132,8 +150,8 @@ def other_namespace():
 
 
 @pytest.fixture
-def client_context(namespace):
-    client = ndb.Client()
+def client_context(database, namespace):
+    client = ndb.Client(database=database)
     context_manager = client.context(
         cache_policy=False,
         legacy_data=False,
