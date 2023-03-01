@@ -1010,11 +1010,14 @@ def _datastore_run_query(query):
     """
     query_pb = _query_to_protobuf(query)
     partition_id = entity_pb2.PartitionId(
-        project_id=query.project, namespace_id=query.namespace
+        project_id=query.project,
+        namespace_id=query.namespace,
+        database_id=query.database,
     )
     read_options = _datastore_api.get_read_options(query)
     request = datastore_pb2.RunQueryRequest(
         project_id=query.project,
+        database_id=query.database,
         partition_id=partition_id,
         query=query_pb,
         read_options=read_options,

@@ -24,6 +24,7 @@ from google.cloud import datastore
 from google.cloud.datastore import entity as entity_module
 from google.cloud.datastore import key as ds_key_module
 from google.cloud.datastore import helpers
+from google.cloud.datastore.constants import DEFAULT_DATABASE
 from google.cloud.datastore_v1 import types as ds_types
 from google.cloud.datastore_v1.types import entity as entity_pb2
 import pytest
@@ -2615,6 +2616,16 @@ class TestKeyProperty:
         value = prop._from_base_type(ds_value)
         assert value.kind() == "Kynd"
         assert value.id() == 123
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_equality():
+        class KeyPropTestModel(model.Model):
+            k = model.KeyProperty()
+
+        kptm1 = KeyPropTestModel(k=key_module.Key("k", 1))
+        kptm2 = KeyPropTestModel(k=key_module.Key("k", 1, database=DEFAULT_DATABASE))
+        assert kptm1 == kptm2
 
 
 class TestBlobKeyProperty:
@@ -6114,7 +6125,7 @@ class Test__from_pb:
     def test_with_key():
         m = model.Model()
         pb = _legacy_entity_pb.EntityProto()
-        key = key_module.Key("a", "b", app="c", namespace="")
+        key = key_module.Key("a", "b", app="c", database=DEFAULT_DATABASE, namespace="")
         ent = m._from_pb(pb, key=key)
         assert ent.key == key
 
@@ -6266,6 +6277,60 @@ def test_serialization():
     assert entity.other.key is None or entity.other.key.id() is None
     entity = pickle.loads(pickle.dumps(entity))
     assert entity.other.foo == 1
+
+
+class Test_Keyword_Name:
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_property_named_project():
+        class HasProjectProp(model.Model):
+            project = model.StringProperty()
+
+        has_project_prop = HasProjectProp(
+            project="the-property", _project="the-ds-project"
+        )
+        assert has_project_prop.project == "the-property"
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_property_named_app():
+        class HasAppProp(model.Model):
+            app = model.StringProperty()
+
+        has_app_prop = HasAppProp(app="the-property", _app="the-gae-app")
+        assert has_app_prop.app == "the-property"
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_property_named_database():
+        class HasDbProp(model.Model):
+            database = model.StringProperty()
+
+        has_db_prop = HasDbProp(database="the-property", _database="the-ds-database")
+        assert has_db_prop.database == "the-property"
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_property_named_namespace():
+        class HasNamespaceProp(model.Model):
+            namespace = model.StringProperty()
+
+        has_namespace_prop = HasNamespaceProp(
+            namespace="the-property", _namespace="the-ds-namespace"
+        )
+        assert has_namespace_prop.namespace == "the-property"
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_property_named_key():
+        k = key_module.Key("HasKeyProp", "k")
+
+        class HasKeyProp(model.Model):
+            key = model.StringProperty()
+
+        has_key_prop = HasKeyProp(key="the-property", _key=k)
+        assert has_key_prop.key == "the-property"
+        assert has_key_prop._key == k
 
 
 def ManyFieldsFactory():

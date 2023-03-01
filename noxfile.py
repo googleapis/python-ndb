@@ -27,7 +27,6 @@ LOCAL_DEPS = ("google-api-core", "google-cloud-core")
 NOX_DIR = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_INTERPRETER = "3.8"
 ALL_INTERPRETERS = ("3.7", "3.8", "3.9", "3.10", "3.11")
-MAJOR_INTERPRETERS = "3.8"
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 BLACK_VERSION = "black==22.3.0"
@@ -160,8 +159,9 @@ def doctest(session):
     session.run(*run_args)
 
 
-@nox.session(py=MAJOR_INTERPRETERS)
-def system(session):
+@nox.session(py=DEFAULT_INTERPRETER)
+@nox.parametrize("use_named_db", [False, True])
+def system(session, use_named_db):
     """Run the system test suite."""
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
@@ -172,6 +172,8 @@ def system(session):
     # Sanity check: Only run tests if the environment variable is set.
     if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):
         session.skip("Credentials must be set via environment variable")
+    if use_named_db and os.environ.get("RUN_NAMED_DB_TESTS", "false") == "false":
+        session.skip("RUN_NAMED_DB_TESTS is set to false, skipping")
 
     system_test_exists = os.path.exists(system_test_path)
     system_test_folder_exists = os.path.exists(system_test_folder_path)

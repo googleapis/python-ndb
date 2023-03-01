@@ -302,6 +302,7 @@ def _datastore_lookup(keys, read_options, retries=None, timeout=None):
     client = context_module.get_context().client
     request = datastore_pb2.LookupRequest(
         project_id=client.project,
+        database_id=client.database,
         keys=[key for key in keys],
         read_options=read_options,
     )
@@ -870,6 +871,7 @@ def _datastore_commit(mutations, transaction, retries=None, timeout=None):
     client = context_module.get_context().client
     request = datastore_pb2.CommitRequest(
         project_id=client.project,
+        database_id=client.database,
         mode=mode,
         mutations=mutations,
         transaction=transaction,
@@ -990,7 +992,9 @@ def _datastore_allocate_ids(keys, retries=None, timeout=None):
             :class:`google.cloud.datastore_v1.datastore_pb2.AllocateIdsResponse`
     """
     client = context_module.get_context().client
-    request = datastore_pb2.AllocateIdsRequest(project_id=client.project, keys=keys)
+    request = datastore_pb2.AllocateIdsRequest(
+        project_id=client.project, database_id=client.database, keys=keys
+    )
 
     return make_call("allocate_ids", request, retries=retries, timeout=timeout)
 
@@ -1045,7 +1049,9 @@ def _datastore_begin_transaction(read_only, retries=None, timeout=None):
         )
 
     request = datastore_pb2.BeginTransactionRequest(
-        project_id=client.project, transaction_options=options
+        project_id=client.project,
+        database_id=client.database,
+        transaction_options=options,
     )
 
     return make_call("begin_transaction", request, retries=retries, timeout=timeout)
@@ -1086,7 +1092,7 @@ def _datastore_rollback(transaction, retries=None, timeout=None):
     """
     client = context_module.get_context().client
     request = datastore_pb2.RollbackRequest(
-        project_id=client.project, transaction=transaction
+        project_id=client.project, database_id=client.database, transaction=transaction
     )
 
     return make_call("rollback", request, retries=retries, timeout=timeout)

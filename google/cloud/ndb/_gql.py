@@ -93,17 +93,27 @@ class GQL(object):
     _limit = -1
     _hint = ""
 
-    def __init__(self, query_string, _app=None, _auth_domain=None, namespace=None):
+    def __init__(
+        self,
+        query_string,
+        _app=None,
+        _auth_domain=None,
+        namespace=None,
+        *,
+        database: str = None
+    ):
         """Parses the input query into the class as a pre-compiled query.
 
         Args:
             query_string (str): properly formatted GQL query string.
-            namespace (str): the namespace to use for this query.
-
+            namespace (str): The namespace to use for this query. Defaults to the client's value.
+            database (str): The database to use for this query. Defaults to the client's value.
         Raises:
             exceptions.BadQueryError: if the query is not parsable.
         """
         self._app = _app
+
+        self._database = database
 
         self._namespace = namespace
 
@@ -712,6 +722,7 @@ class GQL(object):
             keys_only = None
         projection = self.projection()
         project = self._app
+        database = self._database
         namespace = self._namespace
         if self.is_distinct():
             distinct_on = projection
@@ -729,6 +740,7 @@ class GQL(object):
             filters=filters,
             order_by=order_by,
             project=project,
+            database=database,
             namespace=namespace,
             default_options=default_options,
             projection=projection,
@@ -853,7 +865,10 @@ def _key_function(values):
         context = context_module.get_context()
         client = context.client
         return key.Key(
-            *values, namespace=context.get_namespace(), project=client.project
+            *values,
+            project=client.project,
+            database=client.database,
+            namespace=context.get_namespace(),
         )
     _raise_cast_error(
         "Key requires even number of operands or single string, {}".format(values)
