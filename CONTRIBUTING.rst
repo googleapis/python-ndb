@@ -146,6 +146,7 @@ Running System Tests
 
 - To run system tests for a given package, you can execute::
 
+   $ export SYSTEM_TESTS_DATABASE=system-tests-named-db
    $ nox -e system
 
   .. note::
