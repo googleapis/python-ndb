@@ -19,6 +19,7 @@ import itertools
 import logging
 
 from google.api_core import exceptions as core_exceptions
+from google.api_core import gapic_v1
 from google.cloud.datastore import helpers
 from google.cloud.datastore_v1.types import datastore as datastore_pb2
 from google.cloud.datastore_v1.types import entity as entity_pb2
@@ -56,7 +57,7 @@ def stub():
     return context.client.stub
 
 
-def make_call(rpc_name, request, retries=None, timeout=None):
+def make_call(rpc_name, request, retries=None, timeout=None, metadata=()):
     """Make a call to the Datastore API.
 
     Args:
@@ -68,6 +69,8 @@ def make_call(rpc_name, request, retries=None, timeout=None):
             If :data:`0` is passed, the call is attempted only once.
         timeout (float): Timeout, in seconds, to pass to gRPC call. If
             :data:`None` is passed, will use :data:`_DEFAULT_TIMEOUT`.
+        metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata.
 
     Returns:
         tasklets.Future: Future for the eventual response for the API call.
@@ -85,7 +88,7 @@ def make_call(rpc_name, request, retries=None, timeout=None):
     def rpc_call():
         context = context_module.get_toplevel_context()
 
-        call = method.future(request, timeout=timeout)
+        call = method.future(request, timeout=timeout, metadata=metadata)
         rpc = _remote.RemoteCall(call, rpc_name)
         utils.logging_debug(log, rpc)
         utils.logging_debug(log, "timeout={}", timeout)
@@ -282,7 +285,7 @@ class _LookupBatch(object):
                 future.set_result(entity)
 
 
-def _datastore_lookup(keys, read_options, retries=None, timeout=None):
+def _datastore_lookup(keys, read_options, retries=None, timeout=None, metadata=()):
     """Issue a Lookup call to Datastore using gRPC.
 
     Args:
@@ -295,6 +298,8 @@ def _datastore_lookup(keys, read_options, retries=None, timeout=None):
             If :data:`0` is passed, the call is attempted only once.
         timeout (float): Timeout, in seconds, to pass to gRPC call. If
             :data:`None` is passed, will use :data:`_DEFAULT_TIMEOUT`.
+        metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata.
 
     Returns:
         tasklets.Future: Future object for eventual result of lookup.
@@ -306,8 +311,11 @@ def _datastore_lookup(keys, read_options, retries=None, timeout=None):
         keys=[key for key in keys],
         read_options=read_options,
     )
+    metadata = _add_routing_info(metadata, request)
 
-    return make_call("lookup", request, retries=retries, timeout=timeout)
+    return make_call(
+        "lookup", request, retries=retries, timeout=timeout, metadata=metadata
+    )
 
 
 def get_read_options(options, default_read_consistency=None):
@@ -844,7 +852,7 @@ def _complete(key_pb):
     return False
 
 
-def _datastore_commit(mutations, transaction, retries=None, timeout=None):
+def _datastore_commit(mutations, transaction, retries=None, timeout=None, metadata=()):
     """Call Commit on Datastore.
 
     Args:
@@ -858,6 +866,8 @@ def _datastore_commit(mutations, transaction, retries=None, timeout=None):
             If :data:`0` is passed, the call is attempted only once.
         timeout (float): Timeout, in seconds, to pass to gRPC call. If
             :data:`None` is passed, will use :data:`_DEFAULT_TIMEOUT`.
+        metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata.
 
     Returns:
         tasklets.Tasklet: A future for
@@ -876,8 +886,11 @@ def _datastore_commit(mutations, transaction, retries=None, timeout=None):
         mutations=mutations,
         transaction=transaction,
     )
+    metadata = _add_routing_info(metadata, request)
 
-    return make_call("commit", request, retries=retries, timeout=timeout)
+    return make_call(
+        "commit", request, retries=retries, timeout=timeout, metadata=metadata
+    )
 
 
 def allocate(keys, options):
@@ -975,7 +988,7 @@ class _AllocateIdsBatch(object):
             future.set_result(key)
 
 
-def _datastore_allocate_ids(keys, retries=None, timeout=None):
+def _datastore_allocate_ids(keys, retries=None, timeout=None, metadata=()):
     """Calls ``AllocateIds`` on Datastore.
 
     Args:
@@ -986,6 +999,8 @@ def _datastore_allocate_ids(keys, retries=None, timeout=None):
             If :data:`0` is passed, the call is attempted only once.
         timeout (float): Timeout, in seconds, to pass to gRPC call. If
             :data:`None` is passed, will use :data:`_DEFAULT_TIMEOUT`.
+        metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata.
 
     Returns:
         tasklets.Future: A future for
@@ -995,8 +1010,11 @@ def _datastore_allocate_ids(keys, retries=None, timeout=None):
     request = datastore_pb2.AllocateIdsRequest(
         project_id=client.project, database_id=client.database, keys=keys
     )
+    metadata = _add_routing_info(metadata, request)
 
-    return make_call("allocate_ids", request, retries=retries, timeout=timeout)
+    return make_call(
+        "allocate_ids", request, retries=retries, timeout=timeout, metadata=metadata
+    )
 
 
 @tasklets.tasklet
@@ -1022,7 +1040,7 @@ def begin_transaction(read_only, retries=None, timeout=None):
     raise tasklets.Return(response.transaction)
 
 
-def _datastore_begin_transaction(read_only, retries=None, timeout=None):
+def _datastore_begin_transaction(read_only, retries=None, timeout=None, metadata=()):
     """Calls ``BeginTransaction`` on Datastore.
 
     Args:
@@ -1033,6 +1051,8 @@ def _datastore_begin_transaction(read_only, retries=None, timeout=None):
             If :data:`0` is passed, the call is attempted only once.
         timeout (float): Timeout, in seconds, to pass to gRPC call. If
             :data:`None` is passed, will use :data:`_DEFAULT_TIMEOUT`.
+        metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata.
 
     Returns:
         tasklets.Tasklet: A future for
@@ -1053,8 +1073,15 @@ def _datastore_begin_transaction(read_only, retries=None, timeout=None):
         database_id=client.database,
         transaction_options=options,
     )
+    metadata = _add_routing_info(metadata, request)
 
-    return make_call("begin_transaction", request, retries=retries, timeout=timeout)
+    return make_call(
+        "begin_transaction",
+        request,
+        retries=retries,
+        timeout=timeout,
+        metadata=metadata,
+    )
 
 
 @tasklets.tasklet
@@ -1075,7 +1102,7 @@ def rollback(transaction, retries=None, timeout=None):
     yield _datastore_rollback(transaction, retries=retries, timeout=timeout)
 
 
-def _datastore_rollback(transaction, retries=None, timeout=None):
+def _datastore_rollback(transaction, retries=None, timeout=None, metadata=()):
     """Calls Rollback in Datastore.
 
     Args:
@@ -1085,6 +1112,8 @@ def _datastore_rollback(transaction, retries=None, timeout=None):
             If :data:`0` is passed, the call is attempted only once.
         timeout (float): Timeout, in seconds, to pass to gRPC call. If
             :data:`None` is passed, will use :data:`_DEFAULT_TIMEOUT`.
+        metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata.
 
     Returns:
         tasklets.Tasklet: Future for
@@ -1094,5 +1123,37 @@ def _datastore_rollback(transaction, retries=None, timeout=None):
     request = datastore_pb2.RollbackRequest(
         project_id=client.project, database_id=client.database, transaction=transaction
     )
+    metadata = _add_routing_info(metadata, request)
 
-    return make_call("rollback", request, retries=retries, timeout=timeout)
+    return make_call(
+        "rollback", request, retries=retries, timeout=timeout, metadata=metadata
+    )
+
+
+def _add_routing_info(metadata, request):
+    """Adds routing header info to the given metadata.
+
+    Args:
+        metadata (Sequence[Tuple[str, str]]): Strings which should be
+                sent along with the request as metadata. Not modified.
+        request (Any): An appropriate request object for the call, eg,
+            `entity_pb2.LookupRequest` for calling ``Lookup``.
+
+    Returns:
+        Sequence[Tuple[str, str]]: Sequence with routing info added,
+            if it is included in the request.
+    """
+    header_params = {}
+
+    if request.project_id:
+        header_params["project_id"] = request.project_id
+
+    if request.database_id:
+        header_params["database_id"] = request.database_id
+
+    if header_params:
+        return tuple(metadata) + (
+            gapic_v1.routing_header.to_grpc_metadata(header_params),
+        )
+
+    return tuple(metadata)

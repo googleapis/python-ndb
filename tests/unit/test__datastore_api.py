@@ -128,9 +128,10 @@ class Test_make_call:
         future.set_result("bar")
 
         request = object()
-        call = _api.make_call("foo", request, retries=0, timeout=20)
+        metadata = object()
+        call = _api.make_call("foo", request, retries=0, timeout=20, metadata=metadata)
         assert call.result() == "bar"
-        api.foo.future.assert_called_once_with(request, timeout=20)
+        api.foo.future.assert_called_once_with(request, timeout=20, metadata=metadata)
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -570,6 +571,8 @@ def test__datastore_lookup(datastore_pb2, context):
         future = tasklets.Future()
         future.set_result("response")
         lookup.future.return_value = future
+        datastore_pb2.LookupRequest.return_value.project_id = "theproject"
+        datastore_pb2.LookupRequest.return_value.database_id = "testdb"
         assert _api._datastore_lookup(["foo", "bar"], None).result() == "response"
 
         datastore_pb2.LookupRequest.assert_called_once_with(
@@ -581,6 +584,9 @@ def test__datastore_lookup(datastore_pb2, context):
         client.stub.lookup.future.assert_called_once_with(
             datastore_pb2.LookupRequest.return_value,
             timeout=_api._DEFAULT_TIMEOUT,
+            metadata=(
+                ("x-goog-request-params", "project_id=theproject&database_id=testdb"),
+            ),
         )
 
 
@@ -1471,3 +1477,28 @@ def test__complete():
     assert not _api._complete(mock.Mock(path=[MockElement()]))
     assert _api._complete(mock.Mock(path=[MockElement(id=1)]))
     assert _api._complete(mock.Mock(path=[MockElement(name="himom")]))
+
+
+@pytest.mark.parametrize(
+    "project_id,database_id,expected",
+    [
+        ("a", "b", "project_id=a&database_id=b"),
+        ("a", "", "project_id=a"),
+        ("", "b", "database_id=b"),
+    ],
+)
+def test__add_routing_info(project_id, database_id, expected):
+    expected_new_metadata = ("x-goog-request-params", expected)
+    request = datastore_pb2.LookupRequest(
+        project_id=project_id, database_id=database_id
+    )
+    assert _api._add_routing_info((), request) == (expected_new_metadata,)
+    assert _api._add_routing_info(("already=there",), request) == (
+        "already=there",
+        expected_new_metadata,
+    )
+
+
+def test__add_routing_info_no_request_info():
+    request = datastore_pb2.LookupRequest()
+    assert _api._add_routing_info((), request) == ()

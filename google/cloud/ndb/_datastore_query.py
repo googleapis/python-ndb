@@ -1018,8 +1018,10 @@ def _datastore_run_query(query):
         query=query_pb,
         read_options=read_options,
     )
+    metadata = _datastore_api._add_routing_info((), request)
+
     response = yield _datastore_api.make_call(
-        "run_query", request, timeout=query.timeout
+        "run_query", request, timeout=query.timeout, metadata=metadata
     )
     utils.logging_debug(log, response)
     raise tasklets.Return(response)
