@@ -94,13 +94,7 @@ class GQL(object):
     _hint = ""
 
     def __init__(
-        self,
-        query_string,
-        _app=None,
-        _auth_domain=None,
-        namespace=None,
-        *,
-        database: str = None
+        self, query_string, _app=None, _auth_domain=None, namespace=None, database=None
     ):
         """Parses the input query into the class as a pre-compiled query.
 

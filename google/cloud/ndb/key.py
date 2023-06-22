@@ -146,7 +146,7 @@ class Key(object):
         from google.cloud.ndb import context as context_module
         client = mock.Mock(
             project="testing",
-            database="",
+            database=None,
             namespace=None,
             stub=mock.Mock(spec=()),
             spec=("project", "database", "namespace", "stub"),
@@ -378,7 +378,7 @@ class Key(object):
 
     def _tuple(self):
         """Helper to return an orderable tuple."""
-        return (self.app(), self.namespace(), self.database(), self.pairs())
+        return (self.app(), self.namespace(), self.database() or "", self.pairs())
 
     def __eq__(self, other):
         """Equality comparison operation."""
@@ -464,7 +464,7 @@ class Key(object):
         _clean_flat_path(flat)
         project = _project_from_app(kwargs["app"])
 
-        database = ""
+        database = None
         if "database" in kwargs:
             database = kwargs["database"]
 
@@ -599,8 +599,7 @@ class Key(object):
            >>> key.database()
            'mydb'
         """
-        db = self._key.database or ""
-        return db
+        return self._key.database
 
     def id(self):
         """The string or integer ID in the last ``(kind, id)`` pair, if any.
@@ -1449,11 +1448,11 @@ def _parse_from_args(
         # Offload verification of parent to ``google.cloud.datastore.Key()``.
         parent_ds_key = parent._key
 
+    if database == "":
+        database = None
+
     if namespace == "":
         namespace = None
-
-    if database is None:
-        database = ""
 
     return google.cloud.datastore.Key(
         *flat,

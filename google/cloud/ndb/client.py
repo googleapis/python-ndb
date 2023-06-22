@@ -104,8 +104,7 @@ class Client(google_client.ClientWithProject):
         namespace=None,
         credentials=None,
         client_options=None,
-        *,
-        database: str = ""
+        database=None,
     ):
         self.namespace = namespace
         self.host = os.environ.get(environment_vars.GCD_HOST, DATASTORE_API_HOST)

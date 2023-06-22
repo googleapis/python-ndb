@@ -1327,8 +1327,7 @@ class Query(object):
         offset=None,
         keys_only=None,
         default_options=None,
-        *,
-        database: str = None,
+        database=None,
     ):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import model

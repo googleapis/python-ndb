@@ -22,7 +22,7 @@
 
     client = mock.Mock(
         project="testing",
-        database="",
+        database=None,
         namespace=None,
         stub=mock.Mock(spec=()),
         spec=("project", "namespace", "database", "stub"),
@@ -4864,8 +4864,8 @@ class Model(_NotEqualMixin):
         id_ = self._get_arg(kwargs, "id")
         project = self._get_arg(kwargs, "project")
         app = self._get_arg(kwargs, "app")
-        namespace = self._get_arg(kwargs, "namespace", key_module.UNDEFINED)
         database = self._get_arg(kwargs, "database", key_module.UNDEFINED)
+        namespace = self._get_arg(kwargs, "namespace", key_module.UNDEFINED)
         parent = self._get_arg(kwargs, "parent")
         projection = self._get_arg(kwargs, "projection")
 
@@ -5724,7 +5724,7 @@ class Model(_NotEqualMixin):
         max_memcache_items=None,
         force_writes=None,
         _options=None,
-        database: str = None,
+        database=None,
     ):
         """Get an instance of Model class by ID.
 
@@ -5768,6 +5768,8 @@ class Model(_NotEqualMixin):
                 ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
             force_writes (bool): No longer supported.
+            database (Optional[str]): Database for the entity to load. If not
+                passed, uses the client's value.
 
         Returns:
             Optional[Model]: The retrieved entity, if one is found.

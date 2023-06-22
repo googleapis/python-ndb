@@ -1705,7 +1705,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async() is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="foo", database="", namespace="bar")
+            query_module.QueryOptions(project="foo", namespace="bar")
         )
 
     @staticmethod
@@ -1716,9 +1716,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(keys_only=True) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", database="", projection=["__key__"]
-            )
+            query_module.QueryOptions(project="testing", projection=["__key__"])
         )
 
     @staticmethod
@@ -1730,7 +1728,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(options=options) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", keys_only=True)
+            query_module.QueryOptions(project="testing", keys_only=True)
         )
 
     @staticmethod
@@ -1748,9 +1746,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(projection=("foo", "bar")) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", database="", projection=["foo", "bar"]
-            )
+            query_module.QueryOptions(project="testing", projection=["foo", "bar"])
         )
 
     @staticmethod
@@ -1765,9 +1761,7 @@ class TestQuery:
         bar._name = "bar"
         assert query.fetch_async(projection=(foo, bar)) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", database="", projection=["foo", "bar"]
-            )
+            query_module.QueryOptions(project="testing", projection=["foo", "bar"])
         )
 
     @staticmethod
@@ -1779,9 +1773,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(options=options) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", database="", projection=("foo", "bar")
-            )
+            query_module.QueryOptions(project="testing", projection=("foo", "bar"))
         )
 
     @staticmethod
@@ -1799,7 +1791,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(offset=20) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", offset=20)
+            query_module.QueryOptions(project="testing", offset=20)
         )
 
     @staticmethod
@@ -1810,7 +1802,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(limit=20) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", limit=20)
+            query_module.QueryOptions(project="testing", limit=20)
         )
 
     @staticmethod
@@ -1821,7 +1813,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(20) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", limit=20)
+            query_module.QueryOptions(project="testing", limit=20)
         )
 
     @staticmethod
@@ -1853,7 +1845,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(produce_cursors=True) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="")
+            query_module.QueryOptions(project="testing")
         )
 
     @staticmethod
@@ -1864,9 +1856,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(start_cursor="cursor") is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", database="", start_cursor="cursor"
-            )
+            query_module.QueryOptions(project="testing", start_cursor="cursor")
         )
 
     @staticmethod
@@ -1877,9 +1867,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(end_cursor="cursor") is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", database="", end_cursor="cursor"
-            )
+            query_module.QueryOptions(project="testing", end_cursor="cursor")
         )
 
     @staticmethod
@@ -1890,7 +1878,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(deadline=20) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", timeout=20)
+            query_module.QueryOptions(project="testing", timeout=20)
         )
 
     @staticmethod
@@ -1901,7 +1889,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(timeout=20) is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", timeout=20)
+            query_module.QueryOptions(project="testing", timeout=20)
         )
 
     @staticmethod
@@ -1912,9 +1900,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(read_policy="foo") is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(
-                project="testing", database="", read_consistency="foo"
-            )
+            query_module.QueryOptions(project="testing", read_consistency="foo")
         )
 
     @staticmethod
@@ -1925,7 +1911,7 @@ class TestQuery:
         response = _datastore_query.fetch.return_value
         assert query.fetch_async(transaction="foo") is response
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", transaction="foo")
+            query_module.QueryOptions(project="testing", transaction="foo")
         )
 
     @staticmethod
@@ -1973,7 +1959,7 @@ class TestQuery:
         query = query_module.Query()
         assert query.fetch(20) == "foo"
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", limit=20)
+            query_module.QueryOptions(project="testing", limit=20)
         )
 
     @staticmethod
@@ -2019,9 +2005,7 @@ class TestQuery:
         query = query_module.Query()
         iterator = query.iter()
         assert isinstance(iterator, _datastore_query.QueryIterator)
-        assert iterator._query == query_module.QueryOptions(
-            project="testing", database=""
-        )
+        assert iterator._query == query_module.QueryOptions(project="testing")
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -2032,7 +2016,7 @@ class TestQuery:
         iterator = query.iter(projection=(foo,))
         assert isinstance(iterator, _datastore_query.QueryIterator)
         assert iterator._query == query_module.QueryOptions(
-            project="testing", database="", projection=["foo"]
+            project="testing", projection=["foo"]
         )
 
     @staticmethod
@@ -2041,9 +2025,7 @@ class TestQuery:
         query = query_module.Query()
         iterator = iter(query)
         assert isinstance(iterator, _datastore_query.QueryIterator)
-        assert iterator._query == query_module.QueryOptions(
-            project="testing", database=""
-        )
+        assert iterator._query == query_module.QueryOptions(project="testing")
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -2131,7 +2113,7 @@ class TestQuery:
         _datastore_query.fetch.return_value = utils.future_result(["foo", "bar"])
         assert query.get() == "foo"
         _datastore_query.fetch.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", limit=1)
+            query_module.QueryOptions(project="testing", limit=1)
         )
 
     @staticmethod
@@ -2194,7 +2176,6 @@ class TestQuery:
             query_module.QueryOptions(
                 filters=query.filters,
                 project="testing",
-                database="",
                 limit=5,
             ),
             raw=True,
@@ -2233,7 +2214,6 @@ class TestQuery:
         _datastore_query.iterate.assert_called_once_with(
             query_module.QueryOptions(
                 project="testing",
-                database="",
                 limit=5,
                 start_cursor="cursor000",
             ),
@@ -2263,7 +2243,6 @@ class TestQuery:
         _datastore_query.iterate.assert_called_once_with(
             query_module.QueryOptions(
                 project="testing",
-                database="",
                 limit=5,
                 start_cursor="cursor000",
             ),
@@ -2298,7 +2277,6 @@ class TestQuery:
             query_module.QueryOptions(
                 filters=query.filters,
                 project="testing",
-                database="",
                 limit=5,
             ),
             raw=True,
@@ -2333,7 +2311,7 @@ class TestQuery:
         assert more
 
         _datastore_query.iterate.assert_called_once_with(
-            query_module.QueryOptions(project="testing", database="", limit=5),
+            query_module.QueryOptions(project="testing", limit=5),
             raw=True,
         )
 

@@ -231,13 +231,11 @@ class TestKey:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test_constructor_with_default_database():
+    def test_constructor_with_default_database_as_empty_string():
         key = key_module.Key("Kind", 1337, database="")
 
-        assert key._key == google.cloud.datastore.Key(
-            "Kind", 1337, project="testing", database=""
-        )
-        assert key.database() == ""
+        assert key._key == google.cloud.datastore.Key("Kind", 1337, project="testing")
+        assert key.database() is None
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
