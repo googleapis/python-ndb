@@ -18,12 +18,11 @@
 
     from unittest import mock
     from google.cloud import ndb
-    from google.cloud.datastore.constants import DEFAULT_DATABASE
     from google.cloud.ndb import context as context_module
 
     client = mock.Mock(
         project="testing",
-        database=DEFAULT_DATABASE,
+        database="",
         namespace=None,
         stub=mock.Mock(spec=()),
         spec=("project", "namespace", "database", "stub"),

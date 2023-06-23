@@ -24,7 +24,6 @@ from google.cloud import datastore
 from google.cloud.datastore import entity as entity_module
 from google.cloud.datastore import key as ds_key_module
 from google.cloud.datastore import helpers
-from google.cloud.datastore.constants import DEFAULT_DATABASE
 from google.cloud.datastore_v1 import types as ds_types
 from google.cloud.datastore_v1.types import entity as entity_pb2
 import pytest
@@ -2624,7 +2623,7 @@ class TestKeyProperty:
             k = model.KeyProperty()
 
         kptm1 = KeyPropTestModel(k=key_module.Key("k", 1))
-        kptm2 = KeyPropTestModel(k=key_module.Key("k", 1, database=DEFAULT_DATABASE))
+        kptm2 = KeyPropTestModel(k=key_module.Key("k", 1, database=""))
         assert kptm1 == kptm2
 
 
@@ -6125,7 +6124,7 @@ class Test__from_pb:
     def test_with_key():
         m = model.Model()
         pb = _legacy_entity_pb.EntityProto()
-        key = key_module.Key("a", "b", app="c", database=DEFAULT_DATABASE, namespace="")
+        key = key_module.Key("a", "b", app="c", database="", namespace="")
         ent = m._from_pb(pb, key=key)
         assert ent.key == key
 

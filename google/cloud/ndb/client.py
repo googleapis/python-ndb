@@ -25,7 +25,6 @@ from google.api_core.gapic_v1 import client_info
 from google.cloud import environment_vars
 from google.cloud import _helpers
 from google.cloud import client as google_client
-from google.cloud.datastore.constants import DEFAULT_DATABASE
 from google.cloud.datastore_v1.services.datastore.transports import (
     grpc as datastore_grpc,
 )
@@ -106,7 +105,7 @@ class Client(google_client.ClientWithProject):
         credentials=None,
         client_options=None,
         *,
-        database: str = DEFAULT_DATABASE
+        database: str = ""
     ):
         self.namespace = namespace
         self.host = os.environ.get(environment_vars.GCD_HOST, DATASTORE_API_HOST)

@@ -8,7 +8,6 @@ import requests
 
 from google.cloud import datastore
 from google.cloud import ndb
-from google.cloud.datastore.constants import DEFAULT_DATABASE
 
 from google.cloud.ndb import global_cache as global_cache_module
 
@@ -133,7 +132,7 @@ def database():
 
 
 def _get_database():
-    db = DEFAULT_DATABASE
+    db = ""
     if TEST_DATABASE is not None:
         db = TEST_DATABASE
     return db
