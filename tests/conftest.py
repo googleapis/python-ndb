@@ -21,7 +21,6 @@ modules.
 import os
 
 from google.cloud import environment_vars
-from google.cloud.datastore.constants import DEFAULT_DATABASE
 from google.cloud.ndb import context as context_module
 from google.cloud.ndb import _eventloop
 from google.cloud.ndb import global_cache as global_cache_module
@@ -89,7 +88,7 @@ def context_factory():
     def context(**kwargs):
         client = mock.Mock(
             project="testing",
-            database=DEFAULT_DATABASE,
+            database="",
             namespace=None,
             spec=("project", "database", "namespace"),
             stub=mock.Mock(spec=()),

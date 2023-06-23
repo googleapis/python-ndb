@@ -21,7 +21,6 @@ from google.cloud.datastore import _app_engine_key_pb2
 import google.cloud.datastore
 import pytest
 
-from google.cloud.datastore.constants import DEFAULT_DATABASE
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import key as key_module
 from google.cloud.ndb import model
@@ -233,12 +232,12 @@ class TestKey:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_constructor_with_default_database():
-        key = key_module.Key("Kind", 1337, database=DEFAULT_DATABASE)
+        key = key_module.Key("Kind", 1337, database="")
 
         assert key._key == google.cloud.datastore.Key(
-            "Kind", 1337, project="testing", database=DEFAULT_DATABASE
+            "Kind", 1337, project="testing", database=""
         )
-        assert key.database() == DEFAULT_DATABASE
+        assert key.database() == ""
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
@@ -520,9 +519,7 @@ class TestKey:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_pickling_with_default_database():
-        key = key_module.Key(
-            "a", "b", app="c", namespace="d", database=DEFAULT_DATABASE
-        )
+        key = key_module.Key("a", "b", app="c", namespace="d", database="")
         pickled = pickle.dumps(key)
         unpickled = pickle.loads(pickled)
         assert key == unpickled

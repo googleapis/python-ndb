@@ -144,10 +144,9 @@ class Key(object):
 
         from unittest import mock
         from google.cloud.ndb import context as context_module
-        from google.cloud.datastore.constants import DEFAULT_DATABASE
         client = mock.Mock(
             project="testing",
-            database=DEFAULT_DATABASE,
+            database="",
             namespace=None,
             stub=mock.Mock(spec=()),
             spec=("project", "database", "namespace", "stub"),
@@ -465,7 +464,7 @@ class Key(object):
         _clean_flat_path(flat)
         project = _project_from_app(kwargs["app"])
 
-        database = google.cloud.datastore.constants.DEFAULT_DATABASE
+        database = ""
         if "database" in kwargs:
             database = kwargs["database"]
 
@@ -600,7 +599,7 @@ class Key(object):
            >>> key.database()
            'mydb'
         """
-        db = self._key.database or google.cloud.datastore.constants.DEFAULT_DATABASE
+        db = self._key.database or ""
         return db
 
     def id(self):
@@ -1454,7 +1453,7 @@ def _parse_from_args(
         namespace = None
 
     if database is None:
-        database = google.cloud.datastore.constants.DEFAULT_DATABASE
+        database = ""
 
     return google.cloud.datastore.Key(
         *flat,

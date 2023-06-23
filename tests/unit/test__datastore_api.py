@@ -22,7 +22,6 @@ from google.api_core import exceptions as core_exceptions
 from google.cloud.datastore import entity
 from google.cloud.datastore import helpers
 from google.cloud.datastore import key as ds_key_module
-from google.cloud.datastore.constants import DEFAULT_DATABASE
 from google.cloud.datastore_v1.types import datastore as datastore_pb2
 from google.cloud.datastore_v1.types import entity as entity_pb2
 from google.cloud.ndb import _batch
@@ -1247,7 +1246,7 @@ class Test_datastore_commit:
 
         datastore_pb2.CommitRequest.assert_called_once_with(
             project_id="testing",
-            database_id=DEFAULT_DATABASE,
+            database_id="",
             mode=datastore_pb2.CommitRequest.Mode.NON_TRANSACTIONAL,
             mutations=mutations,
             transaction=None,
@@ -1270,7 +1269,7 @@ class Test_datastore_commit:
 
         datastore_pb2.CommitRequest.assert_called_once_with(
             project_id="testing",
-            database_id=DEFAULT_DATABASE,
+            database_id="",
             mode=datastore_pb2.CommitRequest.Mode.TRANSACTIONAL,
             mutations=mutations,
             transaction=b"tx123",
@@ -1362,7 +1361,7 @@ def test__datastore_allocate_ids(stub, datastore_pb2):
     assert _api._datastore_allocate_ids(keys).result() == "response"
 
     datastore_pb2.AllocateIdsRequest.assert_called_once_with(
-        project_id="testing", database_id=DEFAULT_DATABASE, keys=keys
+        project_id="testing", database_id="", keys=keys
     )
 
     request = datastore_pb2.AllocateIdsRequest.return_value
@@ -1403,7 +1402,7 @@ class Test_datastore_begin_transaction:
         transaction_options = datastore_pb2.TransactionOptions.return_value
         datastore_pb2.BeginTransactionRequest.assert_called_once_with(
             project_id="testing",
-            database_id=DEFAULT_DATABASE,
+            database_id="",
             transaction_options=transaction_options,
         )
 
@@ -1428,7 +1427,7 @@ class Test_datastore_begin_transaction:
         transaction_options = datastore_pb2.TransactionOptions.return_value
         datastore_pb2.BeginTransactionRequest.assert_called_once_with(
             project_id="testing",
-            database_id=DEFAULT_DATABASE,
+            database_id="",
             transaction_options=transaction_options,
         )
 
@@ -1460,7 +1459,7 @@ def test__datastore_rollback(stub, datastore_pb2):
     assert _api._datastore_rollback(b"tx123").result() == "response"
 
     datastore_pb2.RollbackRequest.assert_called_once_with(
-        project_id="testing", database_id=DEFAULT_DATABASE, transaction=b"tx123"
+        project_id="testing", database_id="", transaction=b"tx123"
     )
 
     request = datastore_pb2.RollbackRequest.return_value
