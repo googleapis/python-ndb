@@ -66,11 +66,6 @@ class TestGQL:
         assert gql._namespace == "test-namespace"
 
     @staticmethod
-    def test_constructor_with_database():
-        gql = gql_module.GQL(GQL_QUERY, database="test-database")
-        assert gql._database == "test-database"
-
-    @staticmethod
     def test_constructor_bad_query():
         with pytest.raises(exceptions.BadQueryError):
             gql_module.GQL("BAD, BAD QUERY")
@@ -288,13 +283,13 @@ class TestGQL:
             prop4 = model.IntegerProperty()
 
         rep = (
-            "Query(database='testdb', namespace='test-namespace', kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
+            "Query(namespace='test-namespace', kind='SomeKind', filters=AND(FilterNode('prop2', '=', {}"
             "), FilterNode('prop3', '>', 5)), order_by=[PropertyOrder(name="
             "'prop4', reverse=False), PropertyOrder(name='prop1', "
             "reverse=True)], limit=10, offset=5, "
             "projection=['prop1', 'prop2'])"
         )
-        gql = gql_module.GQL(GQL_QUERY, database="testdb", namespace="test-namespace")
+        gql = gql_module.GQL(GQL_QUERY, namespace="test-namespace")
         query = gql.get_query()
         compat_rep = "'xxx'"
         assert repr(query) == rep.format(compat_rep)

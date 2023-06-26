@@ -5488,7 +5488,6 @@ class Model(_NotEqualMixin):
         distinct_on=None,
         group_by=None,
         default_options=None,
-        database=None,
     )
     def _query(cls, *filters, **kwargs):
         """Generate a query for this class.
@@ -5515,8 +5514,6 @@ class Model(_NotEqualMixin):
                 results.
             group_by (list[str]): Deprecated. Synonym for distinct_on.
             default_options (QueryOptions): QueryOptions object.
-            database (str): The database to perform the query against.
-                If not passed, uses the client's value.
         """
         # Validating distinct
         if kwargs["distinct"]:
@@ -5546,7 +5543,6 @@ class Model(_NotEqualMixin):
             distinct_on=kwargs["distinct_on"],
             group_by=kwargs["group_by"],
             default_options=kwargs["default_options"],
-            database=kwargs["database"],
         )
         query = query.filter(*cls._default_filters())
         query = query.filter(*filters)

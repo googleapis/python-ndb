@@ -38,6 +38,7 @@ def test___all__():
 
 class TestQueryOptions:
     @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_constructor():
         options = query_module.QueryOptions(kind="test", project="app")
         assert options.kind == "test"
@@ -71,8 +72,8 @@ class TestQueryOptions:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test___repr__():
-        representation = "QueryOptions(kind='test', project='app', database='db')"
-        options = query_module.QueryOptions(kind="test", project="app", database="db")
+        representation = "QueryOptions(kind='test', project='app')"
+        options = query_module.QueryOptions(kind="test", project="app")
         assert options.__repr__() == representation
 
     @staticmethod
@@ -93,13 +94,6 @@ class TestQueryOptions:
         assert options.project == "app2"
         assert options.database == "bar"
         assert options.namespace == "foo"
-
-    @staticmethod
-    def test_specify_database(in_context):
-        with in_context.new().use() as context:
-            context.client.database = "newdb"
-            options = query_module.QueryOptions(context=context, database="actualdb")
-            assert options.database == "actualdb"
 
     @staticmethod
     def test_explicitly_set_default_database(in_context):
@@ -1229,6 +1223,7 @@ def test_OR():
 
 class TestQuery:
     @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_constructor():
         query = query_module.Query(kind="Foo")
         assert query.kind == "Foo"
@@ -1447,7 +1442,6 @@ class TestQuery:
             kind="Foo",
             ancestor=key_module.Key("a", "b", app="app", namespace="space"),
             namespace="space",
-            database="base",
             app="app",
             group_by=["X"],
             projection=[model.Property(name="x")],
@@ -1456,7 +1450,7 @@ class TestQuery:
             order_by=[],
         )
         rep = (
-            "Query(project='app', database='base', namespace='space', kind='Foo', ancestor="
+            "Query(project='app', namespace='space', kind='Foo', ancestor="
             "Key('a', 'b', project='app', namespace='space'), filters="
             "FilterNode('f', None, None), order_by=[], projection=['x'], "
             "distinct_on=['X'], default_options=QueryOptions(kind='Bar'))"
