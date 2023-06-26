@@ -1017,11 +1017,11 @@ def _datastore_run_query(query):
     read_options = _datastore_api.get_read_options(query)
     request = datastore_pb2.RunQueryRequest(
         project_id=query.project,
+        database_id=query.database,
         partition_id=partition_id,
         query=query_pb,
         read_options=read_options,
     )
-    helpers.set_database_id_to_request(request, query.database)
     metadata = _datastore_api._add_routing_info((), request)
 
     response = yield _datastore_api.make_call(

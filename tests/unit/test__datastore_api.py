@@ -557,9 +557,8 @@ class Test_LookupBatch:
             assert context.eventloop.add_idle.call_count == 1
 
 
-@mock.patch("google.cloud.datastore.helpers.set_database_id_to_request")
 @mock.patch("google.cloud.ndb._datastore_api.datastore_pb2")
-def test__datastore_lookup(datastore_pb2, set_database_id_to_request, context):
+def test__datastore_lookup(datastore_pb2, context):
     client = mock.Mock(
         project="theproject",
         database="testdb",
@@ -577,11 +576,9 @@ def test__datastore_lookup(datastore_pb2, set_database_id_to_request, context):
 
         datastore_pb2.LookupRequest.assert_called_once_with(
             project_id="theproject",
+            database_id="testdb",
             keys=["foo", "bar"],
             read_options=None,
-        )
-        set_database_id_to_request.assert_called_once_with(
-            datastore_pb2.LookupRequest.return_value, "testdb"
         )
         client.stub.lookup.future.assert_called_once_with(
             datastore_pb2.LookupRequest.return_value,
@@ -1249,6 +1246,7 @@ class Test_datastore_commit:
 
         datastore_pb2.CommitRequest.assert_called_once_with(
             project_id="testing",
+            database_id=None,
             mode=datastore_pb2.CommitRequest.Mode.NON_TRANSACTIONAL,
             mutations=mutations,
             transaction=None,
@@ -1271,6 +1269,7 @@ class Test_datastore_commit:
 
         datastore_pb2.CommitRequest.assert_called_once_with(
             project_id="testing",
+            database_id=None,
             mode=datastore_pb2.CommitRequest.Mode.TRANSACTIONAL,
             mutations=mutations,
             transaction=b"tx123",
@@ -1362,7 +1361,7 @@ def test__datastore_allocate_ids(stub, datastore_pb2):
     assert _api._datastore_allocate_ids(keys).result() == "response"
 
     datastore_pb2.AllocateIdsRequest.assert_called_once_with(
-        project_id="testing", keys=keys
+        project_id="testing", database_id=None, keys=keys
     )
 
     request = datastore_pb2.AllocateIdsRequest.return_value
@@ -1403,6 +1402,7 @@ class Test_datastore_begin_transaction:
         transaction_options = datastore_pb2.TransactionOptions.return_value
         datastore_pb2.BeginTransactionRequest.assert_called_once_with(
             project_id="testing",
+            database_id=None,
             transaction_options=transaction_options,
         )
 
@@ -1427,6 +1427,7 @@ class Test_datastore_begin_transaction:
         transaction_options = datastore_pb2.TransactionOptions.return_value
         datastore_pb2.BeginTransactionRequest.assert_called_once_with(
             project_id="testing",
+            database_id=None,
             transaction_options=transaction_options,
         )
 
@@ -1458,7 +1459,7 @@ def test__datastore_rollback(stub, datastore_pb2):
     assert _api._datastore_rollback(b"tx123").result() == "response"
 
     datastore_pb2.RollbackRequest.assert_called_once_with(
-        project_id="testing", transaction=b"tx123"
+        project_id="testing", database_id=None, transaction=b"tx123"
     )
 
     request = datastore_pb2.RollbackRequest.return_value

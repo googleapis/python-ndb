@@ -159,9 +159,9 @@ def doctest(session):
     session.run(*run_args)
 
 
+# Run the system tests
 @nox.session(py=DEFAULT_INTERPRETER)
-@nox.parametrize("use_named_db", [False, True])
-def system(session, use_named_db):
+def system(session):
     """Run the system test suite."""
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
@@ -172,10 +172,6 @@ def system(session, use_named_db):
     # Sanity check: Only run tests if the environment variable is set.
     if not os.environ.get("GOOGLE_APPLICATION_CREDENTIALS", ""):
         session.skip("Credentials must be set via environment variable")
-    if use_named_db and os.environ.get("RUN_NAMED_DB_TESTS", "false") == "false":
-        session.skip("RUN_NAMED_DB_TESTS is set to false, skipping")
-
-    os.environ["IS_NAMED_DB_TEST"] = str(use_named_db)
 
     system_test_exists = os.path.exists(system_test_path)
     system_test_folder_exists = os.path.exists(system_test_folder_path)

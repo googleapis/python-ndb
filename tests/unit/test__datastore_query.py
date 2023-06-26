@@ -2020,6 +2020,7 @@ class Test__datastore_run_query:
         read_options = datastore_pb2.ReadOptions()
         request = datastore_pb2.RunQueryRequest(
             project_id="testing",
+            database_id=None,
             partition_id=entity_pb2.PartitionId(project_id="testing", namespace_id=""),
             query=query_pb,
             read_options=read_options,
