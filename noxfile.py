@@ -175,6 +175,8 @@ def system(session, use_named_db):
     if use_named_db and os.environ.get("RUN_NAMED_DB_TESTS", "false") == "false":
         session.skip("RUN_NAMED_DB_TESTS is set to false, skipping")
 
+    os.environ["IS_NAMED_DB_TEST"] = str(use_named_db)
+
     system_test_exists = os.path.exists(system_test_path)
     system_test_folder_exists = os.path.exists(system_test_folder_path)
     # Sanity check: only run tests if found.

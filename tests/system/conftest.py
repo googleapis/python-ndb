@@ -15,8 +15,8 @@ from . import KIND, OTHER_KIND
 
 log = logging.getLogger(__name__)
 
-_DATASTORE_DATABASE = "SYSTEM_TESTS_DATABASE"
-TEST_DATABASE = os.getenv(_DATASTORE_DATABASE)
+TEST_DATABASE = os.getenv("SYSTEM_TESTS_DATABASE")
+IS_NAMED_DB_TEST = os.getenv("IS_NAMED_DB_TEST")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -132,8 +132,8 @@ def database():
 
 
 def _get_database():
-    db = ""
-    if TEST_DATABASE is not None:
+    db = None
+    if IS_NAMED_DB_TEST == "True":
         db = TEST_DATABASE
     return db
 

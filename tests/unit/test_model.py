@@ -4690,6 +4690,7 @@ class TestModel:
             model.Model._check_properties(properties)
 
     @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_query():
         class XModel(model.Model):
             x = model.IntegerProperty()
@@ -4699,6 +4700,7 @@ class TestModel:
         assert query.filters == (XModel.x == 42)
 
     @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_query_distinct():
         class XModel(model.Model):
             x = model.IntegerProperty()
@@ -4731,6 +4733,7 @@ class TestModel:
             XModel.query(distinct=True, group_by=("x",))
 
     @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_query_projection_of_unindexed_attribute():
         class XModel(model.Model):
             x = model.IntegerProperty(indexed=False)

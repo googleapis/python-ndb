@@ -140,6 +140,7 @@ import functools
 import logging
 import six
 
+from google.cloud.ndb import context as context_module
 from google.cloud.ndb import exceptions
 from google.cloud.ndb import _options
 from google.cloud.ndb import tasklets
@@ -1267,8 +1268,8 @@ class QueryOptions(_options.ReadOptions):
             if not self.project:
                 self.project = context.client.project
 
-            if self.database is None:
-                self.database = context.client.database
+            # We always use the client's database, for consistency with python-datastore
+            self.database = context.client.database
 
             if self.namespace is None:
                 if self.ancestor is None:
@@ -1304,7 +1305,6 @@ class Query(object):
             results.
         group_by (list[str]): Deprecated. Synonym for distinct_on.
         default_options (QueryOptions): QueryOptions object.
-        database (str): The database to access. If not passed, uses the client's value.
 
     Raises:
         TypeError: If any of the arguments are invalid.
@@ -1327,8 +1327,6 @@ class Query(object):
         offset=None,
         keys_only=None,
         default_options=None,
-        *,
-        database: str = None,
     ):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import model
@@ -1374,7 +1372,6 @@ class Query(object):
             orders = self._option("orders", orders)
             project = self._option("project", project)
             app = self._option("app", app)
-            database = self._option("database", database)
             namespace = self._option("namespace", namespace)
             projection = self._option("projection", projection)
             distinct_on = self._option("distinct_on", distinct_on)
@@ -1382,6 +1379,9 @@ class Query(object):
             limit = self._option("limit", limit)
             offset = self._option("offset", offset)
             keys_only = self._option("keys_only", keys_only)
+
+        # Except in the case of ancestor queries, we always use the client's database
+        database = context_module.get_context().client.database or None
 
         if ancestor is not None:
             if isinstance(ancestor, ParameterizedThing):
@@ -1402,6 +1402,9 @@ class Query(object):
                         raise TypeError("ancestor/project id mismatch")
                 else:
                     project = ancestor.app()
+
+                database = ancestor.database()
+
                 if namespace is not None:
                     # if namespace is the empty string, that means default
                     # namespace, but after a put, if the ancestor is using
@@ -1413,6 +1416,7 @@ class Query(object):
                         raise TypeError("ancestor/namespace mismatch")
                 else:
                     namespace = ancestor.namespace()
+
         if filters is not None:
             if not isinstance(filters, Node):
                 raise TypeError(
@@ -1483,8 +1487,6 @@ class Query(object):
         args = []
         if self.project is not None:
             args.append("project=%r" % self.project)
-        if self.database is not None:
-            args.append("database=%r" % self.database)
         if self.namespace is not None:
             args.append("namespace=%r" % self.namespace)
         if self.kind is not None:
@@ -1555,7 +1557,6 @@ class Query(object):
             filters=new_filters,
             order_by=self.order_by,
             project=self.project,
-            database=self.database,
             namespace=self.namespace,
             default_options=self.default_options,
             projection=self.projection,
@@ -1589,7 +1590,6 @@ class Query(object):
             filters=self.filters,
             order_by=order_by,
             project=self.project,
-            database=self.database,
             namespace=self.namespace,
             default_options=self.default_options,
             projection=self.projection,
@@ -1671,7 +1671,6 @@ class Query(object):
             filters=filters,
             order_by=self.order_by,
             project=self.project,
-            database=self.database,
             namespace=self.namespace,
             default_options=self.default_options,
             projection=self.projection,

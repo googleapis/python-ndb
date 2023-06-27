@@ -47,7 +47,7 @@ class TestClient:
         assert client.SCOPE == ("https://www.googleapis.com/auth/datastore",)
         assert client.host == _http.DATASTORE_API_HOST
         assert client.project == "testing"
-        assert client.database == ""
+        assert client.database is None
         assert client.namespace is None
         assert client.secure is True
 
@@ -63,7 +63,7 @@ class TestClient:
         assert client.SCOPE == ("https://www.googleapis.com/auth/datastore",)
         assert client.host == "foo"
         assert client.project == "testing"
-        assert client.database == ""
+        assert client.database is None
         assert client.namespace is None
         assert client.secure is False
 

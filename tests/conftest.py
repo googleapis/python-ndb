@@ -88,7 +88,7 @@ def context_factory():
     def context(**kwargs):
         client = mock.Mock(
             project="testing",
-            database="",
+            database=None,
             namespace=None,
             spec=("project", "database", "namespace"),
             stub=mock.Mock(spec=()),
