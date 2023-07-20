@@ -307,10 +307,10 @@ def _datastore_lookup(keys, read_options, retries=None, timeout=None, metadata=(
     client = context_module.get_context().client
     request = datastore_pb2.LookupRequest(
         project_id=client.project,
+        database_id=client.database,
         keys=[key for key in keys],
         read_options=read_options,
     )
-    helpers.set_database_id_to_request(request, client.database)
     metadata = _add_routing_info(metadata, request)
 
     return make_call(
@@ -881,11 +881,11 @@ def _datastore_commit(mutations, transaction, retries=None, timeout=None, metada
     client = context_module.get_context().client
     request = datastore_pb2.CommitRequest(
         project_id=client.project,
+        database_id=client.database,
         mode=mode,
         mutations=mutations,
         transaction=transaction,
     )
-    helpers.set_database_id_to_request(request, client.database)
     metadata = _add_routing_info(metadata, request)
 
     return make_call(
@@ -1007,8 +1007,9 @@ def _datastore_allocate_ids(keys, retries=None, timeout=None, metadata=()):
             :class:`google.cloud.datastore_v1.datastore_pb2.AllocateIdsResponse`
     """
     client = context_module.get_context().client
-    request = datastore_pb2.AllocateIdsRequest(project_id=client.project, keys=keys)
-    helpers.set_database_id_to_request(request, client.database)
+    request = datastore_pb2.AllocateIdsRequest(
+        project_id=client.project, database_id=client.database, keys=keys
+    )
     metadata = _add_routing_info(metadata, request)
 
     return make_call(
@@ -1069,9 +1070,9 @@ def _datastore_begin_transaction(read_only, retries=None, timeout=None, metadata
 
     request = datastore_pb2.BeginTransactionRequest(
         project_id=client.project,
+        database_id=client.database,
         transaction_options=options,
     )
-    helpers.set_database_id_to_request(request, client.database)
     metadata = _add_routing_info(metadata, request)
 
     return make_call(
@@ -1121,9 +1122,9 @@ def _datastore_rollback(transaction, retries=None, timeout=None, metadata=()):
     client = context_module.get_context().client
     request = datastore_pb2.RollbackRequest(
         project_id=client.project,
+        database_id=client.database,
         transaction=transaction,
     )
-    helpers.set_database_id_to_request(request, client.database)
     metadata = _add_routing_info(metadata, request)
 
     return make_call(
