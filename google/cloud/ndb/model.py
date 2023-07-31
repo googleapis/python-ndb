@@ -5851,6 +5851,7 @@ class Model(_NotEqualMixin):
                 ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
             force_writes (bool): No longer supported.
+            database (Optional[str]): Database to access. Defaults to the (default) database.
 
         Returns:
             tasklets.Future: Optional[Model]: The retrieved entity, if one is
