@@ -5850,7 +5850,7 @@ class Model(_NotEqualMixin):
                 ``global_cache_timeout``.
             max_memcache_items (int): No longer supported.
             force_writes (bool): No longer supported.
-            database (Optional[str]): Ignored. Please set the database on the Client instead.
+            database (Optional[str]): This parameter is ignored. Please set the database on the Client instead.
 
         Returns:
             tasklets.Future: Optional[Model]: The retrieved entity, if one is
