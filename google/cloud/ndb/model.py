@@ -1230,6 +1230,17 @@ class Property(ModelAttribute):
 
         return query.FilterNode(self._name, op, value)
 
+    def _as_datastore_values(self, value):
+        values = []
+        for sub_value in value:
+            if sub_value is not None:
+                sub_value = self._do_validate(sub_value)
+                sub_value = self._call_to_base_type(sub_value)
+                sub_value = self._datastore_type(sub_value)
+            values.append(sub_value)
+
+        return values
+
     # Comparison operators on Property instances don't compare the
     # properties; instead they return ``FilterNode``` instances that can be
     # used in queries.
@@ -1278,21 +1289,21 @@ class Property(ModelAttribute):
                 must be contained in.
 
         Returns:
-            Union[~google.cloud.ndb.query.DisjunctionNode, \
-                ~google.cloud.ndb.query.FilterNode, \
+            Union[~google.cloud.ndb.query.FilterNode, \
                 ~google.cloud.ndb.query.FalseNode]: A node corresponding
             to the desired in filter.
 
             * If ``value`` is empty, this will return a :class:`.FalseNode`
             * If ``len(value) == 1``, this will return a :class:`.FilterNode`
-            * Otherwise, this will return a :class:`.DisjunctionNode`
+            * If ``len(value) > 30``, this will throw a :class:`google.cloud.ndb.exceptions.BadArgumentError`
+            * Otherwise, this will return a :class:`.FilterNode`
 
         Raises:
             ~google.cloud.ndb.exceptions.BadFilterError: If the current
                 property is not indexed.
             ~google.cloud.ndb.exceptions.BadArgumentError: If ``value`` is not
                 a basic container (:class:`list`, :class:`tuple`, :class:`set`
-                or :class:`frozenset`).
+                or :class:`frozenset`) or value has more elements than 30.
         """
         # Import late to avoid circular imports.
         from google.cloud.ndb import query
@@ -1307,17 +1318,60 @@ class Property(ModelAttribute):
                 "Expected list, tuple or set, got {!r}".format(value)
             )
 
-        values = []
-        for sub_value in value:
-            if sub_value is not None:
-                sub_value = self._do_validate(sub_value)
-                sub_value = self._call_to_base_type(sub_value)
-                sub_value = self._datastore_type(sub_value)
-            values.append(sub_value)
+        return query.FilterNode(self._name, "in", self._as_datastore_values(value))
 
-        return query.FilterNode(self._name, "in", values)
+    def _NOT_IN(self, value):
+        """For the ``not in`` comparison operator.
+
+        The ``not in`` operator cannot be overloaded in the way we want
+        to, so we define a method. For example:
+
+        .. code-block:: python
+
+            Employee.query(Employee.rank.NOT_IN([4, 5, 6]))
+
+        Note that the method is called ``_NOT_IN()`` but may normally be invoked
+        as ``NOT_IN()``.
+
+        Args:
+            value (Iterable[Any]): The set of values that the property value
+                must be contained in.
+
+        Returns:
+            Union[~google.cloud.ndb.query.FilterNode, \
+                ~google.cloud.ndb.query.FalseNode]: A node corresponding
+            to the desired in filter.
+
+            * If ``value`` is empty, this will return a :class:`.FalseNode`
+            * If ``len(value) == 1``, this will return a :class:`.FilterNode`
+            * If ``len(value) > 30``, this will throw a :class:`google.cloud.ndb.exceptions.BadArgumentError`
+            * Otherwise, this will return a :class:`.FilterNode`
+
+        Raises:
+            ~google.cloud.ndb.exceptions.BadFilterError: If the current
+                property is not indexed.
+            ~google.cloud.ndb.exceptions.BadArgumentError: If ``value`` is not
+                a basic container (:class:`list`, :class:`tuple`, :class:`set`
+                or :class:`frozenset`) or value has more elements than 10.
+        """
+
+        # Import late to avoid circular imports.
+        from google.cloud.ndb import query
+
+        if not self._indexed:
+            raise exceptions.BadFilterError(
+                "Cannot query for unindexed property {}".format(self._name)
+            )
+
+        if not isinstance(value, (list, tuple, set, frozenset)):
+            raise exceptions.BadArgumentError(
+                "Expected list, tuple or set, got {!r}".format(value)
+            )
+
+        return query.FilterNode(self._name, "not_in", self._as_datastore_values(value))
 
     IN = _IN
+    NOT_IN = _NOT_IN
     """Used to check if a property value is contained in a set of values.
 
     For example:
@@ -4178,6 +4232,11 @@ class StructuredProperty(Property):
             return FalseNode()
         else:
             return DisjunctionNode(*filters)
+
+    def _NOT_IN(self, value):
+        raise NotImplementedError(
+            "this method is not supported for structured property"
+        )
 
     IN = _IN
 

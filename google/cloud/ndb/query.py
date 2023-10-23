@@ -172,11 +172,14 @@ __all__ = [
 _EQ_OP = "="
 _NE_OP = "!="
 _IN_OP = "in"
+_NOT_IN_OP = "not_in"
 _LT_OP = "<"
 _GT_OP = ">"
-_OPS = frozenset([_EQ_OP, _NE_OP, _LT_OP, "<=", _GT_OP, ">=", _IN_OP])
+_OPS = frozenset([_EQ_OP, _NE_OP, _LT_OP, "<=", _GT_OP, ">=", _IN_OP, _NOT_IN_OP])
 
 _log = logging.getLogger(__name__)
+_NOT_IN_LIMIT = 10
+_IN_LIMIT = 30
 
 
 class PropertyOrder(object):
@@ -589,6 +592,8 @@ class ParameterNode(Node):
         value = self._param.resolve(bindings, used)
         if self._op == _IN_OP:
             return self._prop._IN(value)
+        elif self._op == _NOT_IN_OP:
+            return self._prop._NOT_IN(value)
         else:
             return self._prop._comparison(self._op, value)
 
@@ -639,23 +644,38 @@ class FilterNode(Node):
         if isinstance(value, model.Key):
             value = value._key
 
-        if opsymbol == _NE_OP:
-            node1 = FilterNode(name, _LT_OP, value)
-            node2 = FilterNode(name, _GT_OP, value)
-            return DisjunctionNode(node1, node2)
-
-        if opsymbol == _IN_OP:
+        if opsymbol in [_IN_OP, _NOT_IN_OP]:
             if not isinstance(value, (list, tuple, set, frozenset)):
                 raise TypeError(
                     "in expected a list, tuple or set of values; "
                     "received {!r}".format(value)
                 )
-            nodes = [FilterNode(name, _EQ_OP, sub_value) for sub_value in value]
-            if not nodes:
+
+        if opsymbol == _IN_OP:
+            if len(value) == 0:
                 return FalseNode()
-            if len(nodes) == 1:
-                return nodes[0]
-            return DisjunctionNode(*nodes)
+
+            if len(value) == 1:
+                # Return EQ filter
+                return FilterNode(name, _EQ_OP, value[0])
+
+            if len(value) > _IN_LIMIT:
+                # Datastore limitation
+                raise exceptions.BadArgumentError(
+                    "in can have up to {} values to match; "
+                    "received {}".format(_IN_LIMIT, len(value))
+                )
+
+        if opsymbol == _NOT_IN_OP:
+            if len(value) == 1:
+                return FilterNode(name, _NE_OP, value[0])
+
+            if len(value) > _NOT_IN_LIMIT:
+                # Datastore limitation
+                raise exceptions.BadArgumentError(
+                    "in can have up to {} values to match; "
+                    "received {}".format(_NOT_IN_LIMIT, len(value))
+                )
 
         instance = super(FilterNode, cls).__new__(cls)
         instance._name = name
@@ -714,12 +734,6 @@ class FilterNode(Node):
 
         if post:
             return None
-        if self._opsymbol in (_NE_OP, _IN_OP):
-            raise NotImplementedError(
-                "Inequality filters are not single filter "
-                "expressions and therefore cannot be converted "
-                "to a single filter ({!r})".format(self._opsymbol)
-            )
 
         return _datastore_query.make_filter(self._name, self._opsymbol, self._value)
 

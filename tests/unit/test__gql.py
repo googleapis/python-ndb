@@ -322,11 +322,26 @@ class TestGQL:
 
         gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 IN (1, 2, 3)")
         query = gql.get_query()
-        assert query.filters == query_module.OR(
-            query_module.FilterNode("prop1", "=", 1),
-            query_module.FilterNode("prop1", "=", 2),
-            query_module.FilterNode("prop1", "=", 3),
-        )
+        assert query.filters == query_module.FilterNode("prop1", "in", [1, 2, 3])
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_not_in():
+        class SomeKind(model.Model):
+            prop1 = model.IntegerProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 NOT IN (1, 2, 3)")
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode("prop1", "not_in", [1, 2, 3])
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_with_wrong_not():
+        class SomeKind(model.Model):
+            prop1 = model.IntegerProperty()
+
+        with pytest.raises(exceptions.BadQueryError):
+            gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 NOT = 1")
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")

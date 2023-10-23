@@ -30,8 +30,8 @@ class GQL(object):
         [OFFSET <offset>]
         [HINT (ORDER_FIRST | FILTER_FIRST | ANCESTOR_FIRST)]
         [;]
-    <condition> := <property> {< | <= | > | >= | = | != | IN} <value>
-    <condition> := <property> {< | <= | > | >= | = | != | IN} CAST(<value>)
+    <condition> := <property> {< | <= | > | >= | = | != | IN | NOT IN} <value>
+    <condition> := <property> {< | <= | > | >= | = | != | IN | NOT IN} CAST(<value>)
     <condition> := <property> IN (<value>, ...)
     <condition> := ANCESTOR IS <entity or key>
 
@@ -186,7 +186,7 @@ class GQL(object):
     _identifier_regex = re.compile(r"(\w+(?:\.\w+)*)$")
 
     _quoted_identifier_regex = re.compile(r'((?:"[^"\s]+")+)$')
-    _conditions_regex = re.compile(r"(<=|>=|!=|=|<|>|is|in)$", re.IGNORECASE)
+    _conditions_regex = re.compile(r"(<=|>=|!=|=|<|>|is|in|not)$", re.IGNORECASE)
     _number_regex = re.compile(r"(\d+)$")
     _cast_regex = re.compile(r"(geopt|user|key|date|time|datetime)$", re.IGNORECASE)
 
@@ -316,15 +316,26 @@ class GQL(object):
             return self._FilterList()
         return self._OrderBy()
 
+    def _GetCondition(self):
+        condition = self._AcceptRegex(self._conditions_regex)
+        if not condition:
+            self._Error("Invalid WHERE Condition")
+
+        return condition
+
     def _FilterList(self):
         """Consume the filter list (remainder of the WHERE clause)."""
         identifier = self._Identifier()
         if not identifier:
             self._Error("Invalid WHERE Identifier")
 
-        condition = self._AcceptRegex(self._conditions_regex)
-        if not condition:
-            self._Error("Invalid WHERE Condition")
+        condition = self._GetCondition()
+        if condition.lower() == "not":
+            condition += "_" + self._GetCondition()
+
+            if condition.lower() != "not_in":
+                self._Error("Invalid WHERE Idetifier")
+
         self._CheckFilterSyntax(identifier, condition)
 
         if not self._AddSimpleFilter(identifier, condition, self._Reference()):
@@ -409,8 +420,12 @@ class GQL(object):
             filter_rule = (self._ANCESTOR, "is")
             assert condition.lower() == "is"
 
-        if operator == "list" and condition.lower() != "in":
-            self._Error("Only IN can process a list of values")
+        if (
+            operator == "list"
+            and condition.lower() != "in"
+            and condition.lower() != "not_in"
+        ):
+            self._Error("Only IN and NOT IN can process a list of values")
 
         self._filters.setdefault(filter_rule, []).append((operator, parameters))
         return True
@@ -676,6 +691,8 @@ class GQL(object):
                     node = query_module.ParameterNode(prop, op, val)
                 elif op == "in":
                     node = prop._IN(val)
+                elif op == "not_in":
+                    node = prop._NOT_IN(val)
                 else:
                     node = prop._comparison(op, val)
                 filters.append(node)

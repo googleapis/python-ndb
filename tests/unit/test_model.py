@@ -479,10 +479,7 @@ class TestProperty:
     def test___ne__():
         prop = model.Property("name", indexed=True)
         value = 7.0
-        expected = query_module.DisjunctionNode(
-            query_module.FilterNode("name", "<", value),
-            query_module.FilterNode("name", ">", value),
-        )
+        expected = query_module.FilterNode("name", "!=", value)
 
         or_node_left = prop != value
         assert or_node_left == expected
@@ -554,15 +551,40 @@ class TestProperty:
     @staticmethod
     def test__IN():
         prop = model.Property("name", indexed=True)
-        or_node = prop._IN(["a", None, "xy"])
-        expected = query_module.DisjunctionNode(
-            query_module.FilterNode("name", "=", "a"),
-            query_module.FilterNode("name", "=", None),
-            query_module.FilterNode("name", "=", "xy"),
-        )
-        assert or_node == expected
+        filter_node = prop._IN(["a", None, "xy"])
+        expected = query_module.FilterNode("name", "in", ["a", None, "xy"])
+
+        assert filter_node == expected
         # Also verify the alias
-        assert or_node == prop.IN(["a", None, "xy"])
+        assert filter_node == prop.IN(["a", None, "xy"])
+
+    @staticmethod
+    def test__NOT_IN_wrong_container():
+        prop = model.Property("name", indexed=True)
+        with pytest.raises(exceptions.BadArgumentError):
+            prop._NOT_IN({1: "a", 11: "b"})
+
+        # Cache is untouched.
+        assert model.Property._FIND_METHODS_CACHE == {}
+
+    @staticmethod
+    def test__NOT_IN_not_indexed():
+        prop = model.Property("name", indexed=False)
+        with pytest.raises(exceptions.BadFilterError):
+            prop._NOT_IN([10, 20, 81])
+
+        # Cache is untouched.
+        assert model.Property._FIND_METHODS_CACHE == {}
+
+    @staticmethod
+    def test__NOT_IN():
+        prop = model.Property("name", indexed=True)
+        filter_node = prop._NOT_IN(["a", None, "xy"])
+        expected = query_module.FilterNode("name", "not_in", ["a", None, "xy"])
+
+        assert filter_node == expected
+        # Also verify the alias
+        assert filter_node == prop.NOT_IN(["a", None, "xy"])
 
     @staticmethod
     def test___neg__():
@@ -3211,6 +3233,20 @@ class TestStructuredProperty:
             query_module.FilterNode("baz.foo", "=", "x"),
             query_module.FilterNode("baz.foo", "=", "y"),
         )
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__NOT_IN():
+        class Mine(model.Model):
+            foo = model.StringProperty()
+
+        prop = model.StructuredProperty(Mine)
+        prop._name = "baz"
+        mine = Mine(foo="x")
+        minetoo = Mine(foo="y")
+
+        with pytest.raises(NotImplementedError):
+            prop._NOT_IN([mine, minetoo])
 
     @staticmethod
     def test_IN_no_value():

@@ -587,11 +587,23 @@ class TestParameterNode:
         used = {}
         resolved_node = parameter_node.resolve(bindings, used)
 
-        assert resolved_node == query_module.DisjunctionNode(
-            query_module.FilterNode("val", "=", 19),
-            query_module.FilterNode("val", "=", 20),
-            query_module.FilterNode("val", "=", 28),
-        )
+        assert resolved_node == query_module.FilterNode("val", "in", [19, 20, 28])
+
+        assert used == {"replace": True}
+
+    @staticmethod
+    def test_resolve_with_not_in():
+        prop = model.Property(name="val")
+        param = query_module.Parameter("replace")
+        parameter_node = query_module.ParameterNode(prop, "not_in", param)
+
+        value = (19, 20, 28)
+        bindings = {"replace": value}
+        used = {}
+        resolved_node = parameter_node.resolve(bindings, used)
+
+        assert resolved_node == query_module.FilterNode("val", "not_in", [19, 20, 28])
+
         assert used == {"replace": True}
 
     @staticmethod
@@ -627,14 +639,16 @@ class TestFilterNode:
 
     @staticmethod
     def test_constructor_in():
-        or_node = query_module.FilterNode("a", "in", ("x", "y", "z"))
+        filter_node = query_module.FilterNode("a", "in", ("x", "y", "z"))
 
-        filter_node1 = query_module.FilterNode("a", "=", "x")
-        filter_node2 = query_module.FilterNode("a", "=", "y")
-        filter_node3 = query_module.FilterNode("a", "=", "z")
-        assert or_node == query_module.DisjunctionNode(
-            filter_node1, filter_node2, filter_node3
-        )
+        assert filter_node._opsymbol == "in"
+        assert filter_node._name == "a"
+        assert filter_node._value == ("x", "y", "z")
+
+    @staticmethod
+    def test_constructor_in_with_over_limit_values():
+        with pytest.raises(exceptions.BadArgumentError):
+            query_module.FilterNode("a", "in", set(range(query_module._IN_LIMIT + 1)))
 
     @staticmethod
     def test_constructor_in_single():
@@ -642,6 +656,29 @@ class TestFilterNode:
         assert isinstance(filter_node, query_module.FilterNode)
         assert filter_node._name == "a"
         assert filter_node._opsymbol == "="
+        assert filter_node._value == 9000
+
+    @staticmethod
+    def test_constructor_not_in():
+        filter_node = query_module.FilterNode("a", "not_in", ("x", "y", "z"))
+
+        assert filter_node._opsymbol == "not_in"
+        assert filter_node._name == "a"
+        assert filter_node._value == ("x", "y", "z")
+
+    @staticmethod
+    def test_constructor_not_in_over_limit_values():
+        with pytest.raises(exceptions.BadArgumentError):
+            query_module.FilterNode(
+                "a", "not_in", set(range(query_module._NOT_IN_LIMIT + 1))
+            )
+
+    @staticmethod
+    def test_constructor_not_in_single():
+        filter_node = query_module.FilterNode("a", "not_in", [9000])
+        assert isinstance(filter_node, query_module.FilterNode)
+        assert filter_node._name == "a"
+        assert filter_node._opsymbol == "!="
         assert filter_node._value == 9000
 
     @staticmethod
@@ -656,11 +693,11 @@ class TestFilterNode:
 
     @staticmethod
     def test_constructor_ne():
-        or_node = query_module.FilterNode("a", "!=", 2.5)
+        filter_node = query_module.FilterNode("a", "!=", 2.5)
 
-        filter_node1 = query_module.FilterNode("a", "<", 2.5)
-        filter_node2 = query_module.FilterNode("a", ">", 2.5)
-        assert or_node == query_module.DisjunctionNode(filter_node1, filter_node2)
+        assert filter_node._value == 2.5
+        assert filter_node._opsymbol == "!="
+        assert filter_node._name == "a"
 
     @staticmethod
     def test_pickling():
@@ -692,13 +729,6 @@ class TestFilterNode:
     def test__to_filter_post():
         filter_node = query_module.FilterNode("speed", ">=", 88)
         assert filter_node._to_filter(post=True) is None
-
-    @staticmethod
-    def test__to_filter_bad_op():
-        filter_node = query_module.FilterNode("speed", ">=", 88)
-        filter_node._opsymbol = "!="
-        with pytest.raises(NotImplementedError):
-            filter_node._to_filter()
 
     @staticmethod
     @mock.patch("google.cloud.ndb._datastore_query")
