@@ -1344,7 +1344,7 @@ class Property(ModelAttribute):
 
             * If ``value`` is empty, this will return a :class:`.FalseNode`
             * If ``len(value) == 1``, this will return a :class:`.FilterNode`
-            * If ``len(value) > 30``, this will throw a :class:`google.cloud.ndb.exceptions.BadArgumentError`
+            * If ``len(value) > 10``, this will throw a :class:`google.cloud.ndb.exceptions.BadArgumentError`
             * Otherwise, this will return a :class:`.FilterNode`
 
         Raises:
