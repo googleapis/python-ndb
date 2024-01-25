@@ -154,8 +154,19 @@ def docs(session):
 @nox.session(py="3.9")
 def doctest(session):
     # Install all dependencies.
-    session.install("Sphinx==4.0.1")
-    session.install("sphinxcontrib.spelling")
+    session.install(
+        # We need to pin to specific versions of the `sphinxcontrib-*` packages
+        # which still support sphinx 4.x.
+        # See https://github.com/googleapis/sphinx-docfx-yaml/issues/344
+        # and https://github.com/googleapis/sphinx-docfx-yaml/issues/345.
+        "sphinxcontrib-applehelp==1.0.4",
+        "sphinxcontrib-devhelp==1.0.2",
+        "sphinxcontrib-htmlhelp==2.0.1",
+        "sphinxcontrib-qthelp==1.0.3",
+        "sphinxcontrib-serializinghtml==1.1.5",
+        "sphinx==4.0.1",
+        "sphinxcontrib.spelling",
+    )
     session.install(".")
     # Run the script for building docs and running doctests.
     run_args = [
