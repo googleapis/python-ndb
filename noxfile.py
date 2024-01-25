@@ -44,7 +44,7 @@ def unit(session):
     # Install all dependencies.
     session.install("pytest", "pytest-cov")
     session.install("google-cloud-testutils", "-c", constraints_path)
-    session.install("-e", ".", "-c", constraints_path)
+    session.install(".", "-c", constraints_path)
     # This variable is used to skip coverage by Python version
     session.env["PY_VERSION"] = session.python[0]
     # Run py.test against the unit tests.
@@ -119,7 +119,7 @@ def blacken(session):
 def docs(session):
     """Build the docs for this library."""
 
-    session.install("-e", ".")
+    session.install(".")
     session.install(
         "Sphinx==4.0.1", "alabaster", "recommonmark", "sphinxcontrib.spelling"
     )
@@ -190,7 +190,7 @@ def system(session):
     session.install("google-cloud-testutils")
     for local_dep in LOCAL_DEPS:
         session.install(local_dep)
-    session.install("-e", ".", "-c", constraints_path)
+    session.install(".", "-c", constraints_path)
 
     # Run py.test against the system tests.
     if system_test_exists:
