@@ -30,52 +30,64 @@ ALL_INTERPRETERS = ("3.7", "3.8", "3.9", "3.10", "3.11")
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 BLACK_VERSION = "black==22.3.0"
+UNIT_TEST_STANDARD_DEPENDENCIES = [
+    "mock",
+    "asyncmock",
+    "pytest",
+    "pytest-cov",
+    "google-cloud-testutils",
+    "google-cloud-core",
+]
 
 
 def get_path(*names):
     return os.path.join(NOX_DIR, *names)
 
 
-@nox.session(py=ALL_INTERPRETERS)
-def unit(session):
+def install_unittest_dependencies(session, *constraints):
+    standard_deps = UNIT_TEST_STANDARD_DEPENDENCIES
+    session.install(*standard_deps, *constraints)
+    session.install("-e", ".", *constraints)
+
+
+def default(session):
+    # Install all test dependencies, then install this package in-place.
     constraints_path = str(
         CURRENT_DIRECTORY / "testing" / f"constraints-{session.python}.txt"
     )
-    # Install all dependencies.
-    session.install("pytest", "pytest-cov")
-    session.install("google-cloud-testutils", "-c", constraints_path)
-    session.install(".", "-c", constraints_path)
-    # This variable is used to skip coverage by Python version
-    session.env["PY_VERSION"] = session.python[0]
+    install_unittest_dependencies(session, "-c", constraints_path)
     # Run py.test against the unit tests.
-    run_args = ["pytest"]
-    if session.posargs:
-        run_args.extend(session.posargs)
-    else:
-        run_args.extend(
-            [
-                "--cov=google.cloud.ndb",
-                "--cov=unit",
-                "--cov-append",
-                "--cov-config",
-                get_path(".coveragerc"),
-                "--cov-report=term-missing",
-            ]
-        )
-    run_args.append(get_path("tests", "unit"))
-    session.run(*run_args)
+    session.run(
+        "py.test",
+        "--quiet",
+        f"--junitxml=unit_{session.python}_sponge_log.xml",
+        "--cov=google",
+        "--cov=tests/unit",
+        "--cov-append",
+        "--cov-config=.coveragerc",
+        "--cov-report=",
+        "--cov-fail-under=0",
+        os.path.join("tests", "unit"),
+        *session.posargs,
+    )
 
-    if not session.posargs:
-        session.notify("cover")
+
+@nox.session(python=ALL_INTERPRETERS)
+def unit(session):
+    """Run the unit test suite."""
+    default(session)
 
 
 @nox.session(py=DEFAULT_INTERPRETER)
 def cover(session):
-    # Install all dependencies.
-    session.install("coverage")
-    # Run coverage report.
-    session.run("coverage", "report", "--fail-under=100", "--show-missing")
-    # Erase cached coverage data.
+    """Run the final coverage report.
+
+    This outputs the coverage report aggregating coverage from the unit
+    test runs (not system test runs), and then erases coverage data.
+    """
+    session.install("coverage", "pytest-cov")
+    session.run("coverage", "report", "--show-missing", "--fail-under=100")
+
     session.run("coverage", "erase")
 
 
