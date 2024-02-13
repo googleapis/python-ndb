@@ -2653,7 +2653,9 @@ class BlobProperty(Property):
                 data[key] = value
             if not self._repeated:
                 values = [
-                    zlib.compress(v) if v and not v.startswith(_ZLIB_COMPRESSION_MARKERS) else v
+                    zlib.compress(v)
+                    if v and not v.startswith(_ZLIB_COMPRESSION_MARKERS)
+                    else v
                     for v in (value if repeated else [value])
                 ]
                 value = values if repeated else values[0]
