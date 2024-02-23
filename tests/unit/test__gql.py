@@ -317,6 +317,20 @@ class TestGQL:
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test_get_query_in():
+        query_module._SERVER_IN_LIMIT = 5
+
+        class SomeKind(model.Model):
+            prop1 = model.IntegerProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 IN (1, 2, 3)")
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode("prop1", "in", [1, 2, 3])
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_get_query_in_large():
+        query_module._SERVER_IN_LIMIT = 2
+
         class SomeKind(model.Model):
             prop1 = model.IntegerProperty()
 

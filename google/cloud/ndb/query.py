@@ -176,6 +176,9 @@ _LT_OP = "<"
 _GT_OP = ">"
 _OPS = frozenset([_EQ_OP, _NE_OP, _LT_OP, "<=", _GT_OP, ">=", _IN_OP])
 
+# Limit from https://cloud.google.com/datastore/docs/concepts/queries#in
+_SERVER_IN_LIMIT = 30
+
 _log = logging.getLogger(__name__)
 
 
@@ -655,7 +658,8 @@ class FilterNode(Node):
                 return FalseNode()
             if len(nodes) == 1:
                 return nodes[0]
-            return DisjunctionNode(*nodes)
+            if len(nodes) > _SERVER_IN_LIMIT:
+                return DisjunctionNode(*nodes)
 
         instance = super(FilterNode, cls).__new__(cls)
         instance._name = name
@@ -704,17 +708,17 @@ class FilterNode(Node):
                 representation of the filter.
 
         Raises:
-            NotImplementedError: If the ``opsymbol`` is ``!=`` or ``in``, since
-                they should correspond to a composite filter. This should
+            NotImplementedError: If the ``opsymbol`` is ``!=``, since
+                it should correspond to a composite filter. This should
                 never occur since the constructor will create ``OR`` nodes for
-                ``!=`` and ``in``
+                ``!=``.
         """
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import _datastore_query
 
         if post:
             return None
-        if self._opsymbol in (_NE_OP, _IN_OP):
+        if self._opsymbol in (_NE_OP,):
             raise NotImplementedError(
                 "Inequality filters are not single filter "
                 "expressions and therefore cannot be converted "

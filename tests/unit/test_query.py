@@ -627,6 +627,16 @@ class TestFilterNode:
 
     @staticmethod
     def test_constructor_in():
+        query_module._SERVER_IN_LIMIT = 8
+        in_node = query_module.FilterNode("a", "in", ("x", "y", "z"))
+        assert not isinstance(in_node, query_module.DisjunctionNode)
+        assert in_node._name == "a"
+        assert in_node._opsymbol == "in"
+        assert in_node._value == ("x", "y", "z")
+
+    @staticmethod
+    def test_constructor_in_large():
+        query_module._SERVER_IN_LIMIT = 2
         or_node = query_module.FilterNode("a", "in", ("x", "y", "z"))
 
         filter_node1 = query_module.FilterNode("a", "=", "x")

@@ -56,6 +56,7 @@ FILTER_OPERATORS = {
     "<=": query_pb2.PropertyFilter.Operator.LESS_THAN_OR_EQUAL,
     ">": query_pb2.PropertyFilter.Operator.GREATER_THAN,
     ">=": query_pb2.PropertyFilter.Operator.GREATER_THAN_OR_EQUAL,
+    "in": query_pb2.PropertyFilter.Operator.IN,
 }
 
 _KEY_NOT_IN_CACHE = object()

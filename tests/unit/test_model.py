@@ -553,6 +553,17 @@ class TestProperty:
 
     @staticmethod
     def test__IN():
+        query_module._SERVER_IN_LIMIT = 8
+        prop = model.Property("name", indexed=True)
+        in_node = prop._IN(["a", None, "xy"])
+        expected = query_module.FilterNode("name", "in", ["a", None, "xy"])
+        assert in_node == expected
+        # Also verify the alias
+        assert in_node == prop.IN(["a", None, "xy"])
+
+    @staticmethod
+    def test__IN_large():
+        query_module._SERVER_IN_LIMIT = 2
         prop = model.Property("name", indexed=True)
         or_node = prop._IN(["a", None, "xy"])
         expected = query_module.DisjunctionNode(
