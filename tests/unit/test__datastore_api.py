@@ -1253,7 +1253,9 @@ class Test_datastore_commit:
         )
 
         request = datastore_pb2.CommitRequest.return_value
-        assert api.commit.future.called_once_with(request)
+        api.commit.future.assert_called_once_with(
+            request, metadata=mock.ANY, timeout=mock.ANY
+        )
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
