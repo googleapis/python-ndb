@@ -14,9 +14,25 @@
 
 import io
 import os
+import re
 
 import setuptools
 
+
+PACKAGE_ROOT = os.path.abspath(os.path.dirname(__file__))
+
+version = None
+
+with open(os.path.join(PACKAGE_ROOT, "google/cloud/ndb/version.py")) as fp:
+    version_candidates = re.findall(r"(?<=\")\d+.\d+.\d+(?=\")", fp.read())
+    assert len(version_candidates) == 1
+    version = version_candidates[0]
+
+packages = [
+    package
+    for package in setuptools.find_namespace_packages()
+    if package.startswith("google")
+]
 
 def main():
     package_root = os.path.abspath(os.path.dirname(__file__))
@@ -25,16 +41,18 @@ def main():
         readme = readme_file.read()
     dependencies = [
         "google-api-core[grpc] >= 1.34.0, <3.0.0dev,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*,!=2.8.*,!=2.9.*,!=2.10.*",
-        "google-cloud-datastore >= 2.7.2, <3.0.0dev",
+        "google-cloud-datastore >= 2.16.0, < 3.0.0dev",
         "protobuf >= 3.19.5, <5.0.0dev,!=3.20.0,!=3.20.1,!=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5",
         "pymemcache >= 2.1.0, < 5.0.0dev",
-        "redis >= 3.0.0, < 5.0.0dev",
-        "pytz >= 2018.3"
+        "pytz >= 2018.3",
+        "redis >= 3.0.0, < 6.0.0dev",
+        # TODO(https://github.com/googleapis/python-ndb/issues/913) remove this dependency once six is no longer used in the codebase
+        "six >= 1.12.0, < 2.0.0dev"
     ]
 
     setuptools.setup(
         name="google-cloud-ndb",
-        version = "2.1.1",
+        version = version,
         description="NDB library for Google Cloud Datastore",
         long_description=readme,
         long_description_content_type="text/markdown",
@@ -57,12 +75,12 @@ def main():
             "Programming Language :: Python :: 3.9",
             "Programming Language :: Python :: 3.10",
             "Programming Language :: Python :: 3.11",
+            "Programming Language :: Python :: 3.12",
             "Operating System :: OS Independent",
             "Topic :: Internet",
         ],
         platforms="Posix; MacOS X; Windows",
-        packages=setuptools.find_packages(),
-        namespace_packages=["google", "google.cloud"],
+        packages=packages,
         install_requires=dependencies,
         extras_require={},
         python_requires=">=3.7",
