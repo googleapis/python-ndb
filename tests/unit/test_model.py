@@ -479,15 +479,12 @@ class TestProperty:
     def test___ne__():
         prop = model.Property("name", indexed=True)
         value = 7.0
-        expected = query_module.DisjunctionNode(
-            query_module.FilterNode("name", "<", value),
-            query_module.FilterNode("name", ">", value),
-        )
+        expected = query_module.FilterNode("name", "!=", value)
 
-        or_node_left = prop != value
-        assert or_node_left == expected
-        or_node_right = value != prop
-        assert or_node_right == expected
+        ne_node_left = prop != value
+        assert ne_node_left == expected
+        ne_node_right = value != prop
+        assert ne_node_right == expected
 
     @staticmethod
     def test___lt__():
@@ -552,7 +549,7 @@ class TestProperty:
         assert model.Property._FIND_METHODS_CACHE == {}
 
     @staticmethod
-    def test__IN():
+    def test__IN_default():
         prop = model.Property("name", indexed=True)
         or_node = prop._IN(["a", None, "xy"])
         expected = query_module.DisjunctionNode(
@@ -563,6 +560,33 @@ class TestProperty:
         assert or_node == expected
         # Also verify the alias
         assert or_node == prop.IN(["a", None, "xy"])
+
+    @staticmethod
+    def test__IN_client():
+        prop = model.Property("name", indexed=True)
+        or_node = prop._IN(["a", None, "xy"], server_op=False)
+        expected = query_module.DisjunctionNode(
+            query_module.FilterNode("name", "=", "a"),
+            query_module.FilterNode("name", "=", None),
+            query_module.FilterNode("name", "=", "xy"),
+        )
+        assert or_node == expected
+        # Also verify the alias
+        assert or_node == prop.IN(["a", None, "xy"])
+
+    @staticmethod
+    def test_server__IN():
+        prop = model.Property("name", indexed=True)
+        in_node = prop._IN(["a", None, "xy"], server_op=True)
+        assert in_node == prop.IN(["a", None, "xy"], server_op=True)
+        assert in_node != query_module.DisjunctionNode(
+            query_module.FilterNode("name", "=", "a"),
+            query_module.FilterNode("name", "=", None),
+            query_module.FilterNode("name", "=", "xy"),
+        )
+        assert in_node == query_module.FilterNode(
+            "name", "in", ["a", None, "xy"], server_op=True
+        )
 
     @staticmethod
     def test___neg__():
