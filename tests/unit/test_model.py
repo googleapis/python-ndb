@@ -562,6 +562,20 @@ class TestProperty:
         assert or_node == prop.IN(["a", None, "xy"])
 
     @staticmethod
+    def test_server__IN():
+        prop = model.Property("name", indexed=True)
+        in_node = prop._IN(["a", None, "xy"], force_server=True)
+        assert in_node == prop.IN(["a", None, "xy"], force_server=True)
+        assert in_node != query_module.DisjunctionNode(
+            query_module.FilterNode("name", "=", "a"),
+            query_module.FilterNode("name", "=", None),
+            query_module.FilterNode("name", "=", "xy"),
+        )
+        assert in_node == query_module.FilterNode(
+            "name", "in", ["a", None, "xy"], force_server=True
+        )
+
+    @staticmethod
     def test___neg__():
         prop = model.Property("name")
         order = -prop
