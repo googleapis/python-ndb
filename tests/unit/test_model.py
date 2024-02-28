@@ -479,15 +479,12 @@ class TestProperty:
     def test___ne__():
         prop = model.Property("name", indexed=True)
         value = 7.0
-        expected = query_module.DisjunctionNode(
-            query_module.FilterNode("name", "<", value),
-            query_module.FilterNode("name", ">", value),
-        )
+        expected = query_module.FilterNode("name", "!=", value)
 
-        or_node_left = prop != value
-        assert or_node_left == expected
-        or_node_right = value != prop
-        assert or_node_right == expected
+        ne_node_left = prop != value
+        assert ne_node_left == expected
+        ne_node_right = value != prop
+        assert ne_node_right == expected
 
     @staticmethod
     def test___lt__():
@@ -552,7 +549,7 @@ class TestProperty:
         assert model.Property._FIND_METHODS_CACHE == {}
 
     @staticmethod
-    def test__IN():
+    def test__IN_default():
         prop = model.Property("name", indexed=True)
         or_node = prop._IN(["a", None, "xy"])
         expected = query_module.DisjunctionNode(
@@ -563,6 +560,33 @@ class TestProperty:
         assert or_node == expected
         # Also verify the alias
         assert or_node == prop.IN(["a", None, "xy"])
+
+    @staticmethod
+    def test__IN_client():
+        prop = model.Property("name", indexed=True)
+        or_node = prop._IN(["a", None, "xy"], server_op=False)
+        expected = query_module.DisjunctionNode(
+            query_module.FilterNode("name", "=", "a"),
+            query_module.FilterNode("name", "=", None),
+            query_module.FilterNode("name", "=", "xy"),
+        )
+        assert or_node == expected
+        # Also verify the alias
+        assert or_node == prop.IN(["a", None, "xy"])
+
+    @staticmethod
+    def test_server__IN():
+        prop = model.Property("name", indexed=True)
+        in_node = prop._IN(["a", None, "xy"], server_op=True)
+        assert in_node == prop.IN(["a", None, "xy"], server_op=True)
+        assert in_node != query_module.DisjunctionNode(
+            query_module.FilterNode("name", "=", "a"),
+            query_module.FilterNode("name", "=", None),
+            query_module.FilterNode("name", "=", "xy"),
+        )
+        assert in_node == query_module.FilterNode(
+            "name", "in", ["a", None, "xy"], server_op=True
+        )
 
     @staticmethod
     def test___neg__():
@@ -1862,11 +1886,12 @@ class TestBlobProperty:
         compressed_value_one = zlib.compress(uncompressed_value_one)
         uncompressed_value_two = b"xyz" * 1000
         compressed_value_two = zlib.compress(uncompressed_value_two)
-        datastore_entity.update({"foo": [compressed_value_one, compressed_value_two]})
+        compressed_value = [compressed_value_one, compressed_value_two]
+        datastore_entity.update({"foo": compressed_value})
         meanings = {
             "foo": (
                 model._MEANING_COMPRESSED,
-                [compressed_value_one, compressed_value_two],
+                compressed_value,
             )
         }
         datastore_entity._meanings = meanings
@@ -1874,6 +1899,32 @@ class TestBlobProperty:
         entity = model._entity_from_protobuf(protobuf)
         ds_entity = model._entity_to_ds_entity(entity)
         assert ds_entity["foo"] == [compressed_value_one, compressed_value_two]
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_compressed_repeated_to_uncompressed():
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=False, repeated=True)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value_one = b"abc" * 1000
+        compressed_value_one = zlib.compress(uncompressed_value_one)
+        uncompressed_value_two = b"xyz" * 1000
+        compressed_value_two = zlib.compress(uncompressed_value_two)
+        compressed_value = [compressed_value_one, compressed_value_two]
+        datastore_entity.update({"foo": compressed_value})
+        meanings = {
+            "foo": (
+                model._MEANING_COMPRESSED,
+                compressed_value,
+            )
+        }
+        datastore_entity._meanings = meanings
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == [uncompressed_value_one, uncompressed_value_two]
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")

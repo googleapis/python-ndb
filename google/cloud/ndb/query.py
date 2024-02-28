@@ -604,8 +604,6 @@ class FilterNode(Node):
         The constructor for this type may not always return a
         :class:`FilterNode`. For example:
 
-        * The filter ``name != value`` is converted into
-          ``(name > value) OR (name < value)`` (a :class:`DisjunctionNode`)
         * The filter ``name in (value1, ..., valueN)`` is converted into
           ``(name = value1) OR ... OR (name = valueN)`` (also a
           :class:`DisjunctionNode`)
@@ -621,6 +619,7 @@ class FilterNode(Node):
         opsymbol (str): The comparison operator. One of ``=``, ``!=``, ``<``,
             ``<=``, ``>``, ``>=`` or ``in``.
         value (Any): The value to filter on / relative to.
+        server_op (bool): Force the operator to use a server side filter.
 
     Raises:
         TypeError: If ``opsymbol`` is ``"in"`` but ``value`` is not a
@@ -632,17 +631,12 @@ class FilterNode(Node):
     _opsymbol = None
     _value = None
 
-    def __new__(cls, name, opsymbol, value):
+    def __new__(cls, name, opsymbol, value, server_op=False):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import model
 
         if isinstance(value, model.Key):
             value = value._key
-
-        if opsymbol == _NE_OP:
-            node1 = FilterNode(name, _LT_OP, value)
-            node2 = FilterNode(name, _GT_OP, value)
-            return DisjunctionNode(node1, node2)
 
         if opsymbol == _IN_OP:
             if not isinstance(value, (list, tuple, set, frozenset)):
@@ -655,7 +649,8 @@ class FilterNode(Node):
                 return FalseNode()
             if len(nodes) == 1:
                 return nodes[0]
-            return DisjunctionNode(*nodes)
+            if not server_op:
+                return DisjunctionNode(*nodes)
 
         instance = super(FilterNode, cls).__new__(cls)
         instance._name = name
@@ -702,24 +697,12 @@ class FilterNode(Node):
             Optional[query_pb2.PropertyFilter]: Returns :data:`None`, if
                 this is a post-filter, otherwise returns the protocol buffer
                 representation of the filter.
-
-        Raises:
-            NotImplementedError: If the ``opsymbol`` is ``!=`` or ``in``, since
-                they should correspond to a composite filter. This should
-                never occur since the constructor will create ``OR`` nodes for
-                ``!=`` and ``in``
         """
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import _datastore_query
 
         if post:
             return None
-        if self._opsymbol in (_NE_OP, _IN_OP):
-            raise NotImplementedError(
-                "Inequality filters are not single filter "
-                "expressions and therefore cannot be converted "
-                "to a single filter ({!r})".format(self._opsymbol)
-            )
 
         return _datastore_query.make_filter(self._name, self._opsymbol, self._value)
 
