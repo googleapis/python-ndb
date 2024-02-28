@@ -882,9 +882,7 @@ def test_fetch_page_in_query(dispose_of):
     for key in make_entities():
         dispose_of(key._key)
 
-    query = SomeKind.query().filter(
-        SomeKind.foo.IN([1, 2, n_entities], force_server=True)
-    )
+    query = SomeKind.query().filter(SomeKind.foo.IN([1, 2, n_entities], server_op=True))
     eventually(query.fetch, length_equals(n_entities))
 
     results, cursor, more = query.fetch_page(page_size)

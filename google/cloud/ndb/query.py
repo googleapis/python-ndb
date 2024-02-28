@@ -619,7 +619,7 @@ class FilterNode(Node):
         opsymbol (str): The comparison operator. One of ``=``, ``!=``, ``<``,
             ``<=``, ``>``, ``>=`` or ``in``.
         value (Any): The value to filter on / relative to.
-        force_server (bool): Force the operator to use a server side filter.
+        server_op (bool): Force the operator to use a server side filter.
 
     Raises:
         TypeError: If ``opsymbol`` is ``"in"`` but ``value`` is not a
@@ -631,7 +631,7 @@ class FilterNode(Node):
     _opsymbol = None
     _value = None
 
-    def __new__(cls, name, opsymbol, value, force_server=False):
+    def __new__(cls, name, opsymbol, value, server_op=False):
         # Avoid circular import in Python 2.7
         from google.cloud.ndb import model
 
@@ -649,7 +649,7 @@ class FilterNode(Node):
                 return FalseNode()
             if len(nodes) == 1:
                 return nodes[0]
-            if not force_server:
+            if not server_op:
                 return DisjunctionNode(*nodes)
 
         instance = super(FilterNode, cls).__new__(cls)
