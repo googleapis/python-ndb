@@ -1866,6 +1866,28 @@ def test_IN(ds_entity):
     assert results[1].foo == 3
 
 
+@pytest.mark.filterwarnings("ignore")
+@pytest.mark.usefixtures("client_context")
+def test_IN_timestamp(ds_entity):
+    for i in range(5):
+        entity_id = test_utils.system.unique_resource_id()
+        ds_entity(KIND, entity_id, foo=datetime.datetime.fromtimestamp(i))
+
+    class SomeKind(ndb.Model):
+        foo = ndb.DateTimeProperty()
+
+    eventually(SomeKind.query().fetch, length_equals(5))
+
+    t2 = datetime.datetime.fromtimestamp(2)
+    t3 = datetime.datetime.fromtimestamp(3)
+
+    query = SomeKind.query(SomeKind.foo.IN((t2, t3), server_op=True))
+    results = query.fetch()
+    assert len(results) == 2
+    assert results[0].foo == t2
+    assert results[1].foo == t3
+
+
 @pytest.mark.usefixtures("client_context")
 def test_projection_with_json_property(dispose_of):
     """Regression test for #378

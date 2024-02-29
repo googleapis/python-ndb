@@ -575,7 +575,7 @@ class TestProperty:
         assert or_node == prop.IN(["a", None, "xy"])
 
     @staticmethod
-    def test_server__IN():
+    def test__IN_server():
         prop = model.Property("name", indexed=True)
         in_node = prop._IN(["a", None, "xy"], server_op=True)
         assert in_node == prop.IN(["a", None, "xy"], server_op=True)
