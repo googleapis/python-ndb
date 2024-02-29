@@ -1485,7 +1485,9 @@ class Property(ModelAttribute):
         if self._repeated:
             if not isinstance(value, (list, tuple, set, frozenset)):
                 raise exceptions.BadValueError(
-                    "Expected list or tuple, got {!r}".format(value)
+                    "In field {}, expected list or tuple, got {!r}".format(
+                        self._name, value
+                    )
                 )
             value = [self._do_validate(v) for v in value]
         else:
@@ -2372,7 +2374,9 @@ class BooleanProperty(Property):
             .BadValueError: If ``value`` is not a :class:`bool`.
         """
         if not isinstance(value, bool):
-            raise exceptions.BadValueError("Expected bool, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected bool, got {!r}".format(self._name, value)
+            )
         return value
 
     def _from_base_type(self, value):
@@ -2417,7 +2421,9 @@ class IntegerProperty(Property):
                 to one.
         """
         if not isinstance(value, six.integer_types):
-            raise exceptions.BadValueError("Expected integer, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected integer, got {!r}".format(self._name, value)
+            )
         return int(value)
 
 
@@ -2447,7 +2453,9 @@ class FloatProperty(Property):
                 to one.
         """
         if not isinstance(value, six.integer_types + (float,)):
-            raise exceptions.BadValueError("Expected float, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected float, got {!r}".format(self._name, value)
+            )
         return float(value)
 
 
@@ -2578,7 +2586,9 @@ class BlobProperty(Property):
                 exceeds the maximum length (1500 bytes).
         """
         if not isinstance(value, bytes):
-            raise exceptions.BadValueError("Expected bytes, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected bytes, got {!r}".format(self._name, value)
+            )
 
         if self._indexed and len(value) > _MAX_STRING_LENGTH:
             raise exceptions.BadValueError(
@@ -2766,11 +2776,13 @@ class CompressedTextProperty(BlobProperty):
                     value = value.decode("utf-8")
                 except UnicodeError:
                     raise exceptions.BadValueError(
-                        "Expected valid UTF-8, got {!r}".format(value)
+                        "In field {}, expected valid UTF-8, got {!r}".format(
+                            self._name, value
+                        )
                     )
             else:
                 raise exceptions.BadValueError(
-                    "Expected string, got {!r}".format(value)
+                    "In field {}, expected string, got {!r}".format(self._name, value)
                 )
 
     def _to_base_type(self, value):
@@ -2925,7 +2937,9 @@ class TextProperty(Property):
                 value = value.decode("utf-8")
             except UnicodeError:
                 raise exceptions.BadValueError(
-                    "Expected valid UTF-8, got {!r}".format(value)
+                    "In field {}, expected valid UTF-8, got {!r}".format(
+                        self._name, value
+                    )
                 )
         elif isinstance(value, six.string_types):
             encoded_length = len(value.encode("utf-8"))
@@ -3031,7 +3045,9 @@ class GeoPtProperty(Property):
             .BadValueError: If ``value`` is not a :attr:`.GeoPt`.
         """
         if not isinstance(value, GeoPt):
-            raise exceptions.BadValueError("Expected GeoPt, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected GeoPt, got {!r}".format(self._name, value)
+            )
 
 
 class PickleProperty(BlobProperty):
@@ -3452,7 +3468,9 @@ class UserProperty(Property):
         """
         # Might be GAE User or our own version
         if type(value).__name__ != "User":
-            raise exceptions.BadValueError("Expected User, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected User, got {!r}".format(self._name, value)
+            )
 
     def _prepare_for_put(self, entity):
         """Pre-put hook
@@ -3664,19 +3682,22 @@ class KeyProperty(Property):
                 and ``value`` does not match that kind.
         """
         if not isinstance(value, Key):
-            raise exceptions.BadValueError("Expected Key, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected Key, got {!r}".format(self._name, value)
+            )
 
         # Reject incomplete keys.
         if not value.id():
             raise exceptions.BadValueError(
-                "Expected complete Key, got {!r}".format(value)
+                "In field {}, expected complete Key, got {!r}".format(self._name, value)
             )
 
         # Verify kind if provided.
         if self._kind is not None:
             if value.kind() != self._kind:
                 raise exceptions.BadValueError(
-                    "Expected Key with kind={!r}, got " "{!r}".format(self._kind, value)
+                    "In field {}, expected Key with kind={!r}, got "
+                    "{!r}".format(self._name, self._kind, value)
                 )
 
     def _to_base_type(self, value):
@@ -3727,7 +3748,9 @@ class BlobKeyProperty(Property):
                 :class:`~google.cloud.ndb.model.BlobKey`.
         """
         if not isinstance(value, BlobKey):
-            raise exceptions.BadValueError("Expected BlobKey, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected BlobKey, got {!r}".format(self._name, value)
+            )
 
 
 class DateTimeProperty(Property):
@@ -3843,7 +3866,9 @@ class DateTimeProperty(Property):
             .BadValueError: If ``value`` is not a :class:`~datetime.datetime`.
         """
         if not isinstance(value, datetime.datetime):
-            raise exceptions.BadValueError("Expected datetime, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected datetime, got {!r}".format(self._name, value)
+            )
 
         if self._tzinfo is None and value.tzinfo is not None:
             raise exceptions.BadValueError(
@@ -3940,7 +3965,9 @@ class DateProperty(DateTimeProperty):
             .BadValueError: If ``value`` is not a :class:`~datetime.date`.
         """
         if not isinstance(value, datetime.date):
-            raise exceptions.BadValueError("Expected date, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected date, got {!r}".format(self._name, value)
+            )
 
     def _to_base_type(self, value):
         """Convert a value to the "base" value type for this property.
@@ -3998,7 +4025,9 @@ class TimeProperty(DateTimeProperty):
             .BadValueError: If ``value`` is not a :class:`~datetime.time`.
         """
         if not isinstance(value, datetime.time):
-            raise exceptions.BadValueError("Expected time, got {!r}".format(value))
+            raise exceptions.BadValueError(
+                "In field {}, expected time, got {!r}".format(self._name, value)
+            )
 
     def _to_base_type(self, value):
         """Convert a value to the "base" value type for this property.
@@ -4196,8 +4225,9 @@ class StructuredProperty(Property):
             return self._model_class(**value)
         if not isinstance(value, self._model_class):
             raise exceptions.BadValueError(
-                "Expected %s instance, got %s"
-                % (self._model_class.__name__, value.__class__)
+                "In field {}, expected {} instance, got {!r}".format(
+                    self._name, self._model_class.__name__, value.__class__
+                )
             )
 
     def _has_value(self, entity, rest=None):
@@ -4404,7 +4434,9 @@ class LocalStructuredProperty(BlobProperty):
 
         if not isinstance(value, self._model_class):
             raise exceptions.BadValueError(
-                "Expected {}, got {!r}".format(self._model_class.__name__, value)
+                "In field {}, expected {}, got {!r}".format(
+                    self._name, self._model_class.__name__, value
+                )
             )
 
     def _get_for_dict(self, entity):
