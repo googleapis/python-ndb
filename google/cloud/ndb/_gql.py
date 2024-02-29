@@ -30,8 +30,8 @@ class GQL(object):
         [OFFSET <offset>]
         [HINT (ORDER_FIRST | FILTER_FIRST | ANCESTOR_FIRST)]
         [;]
-    <condition> := <property> {< | <= | > | >= | = | != | IN} <value>
-    <condition> := <property> {< | <= | > | >= | = | != | IN} CAST(<value>)
+    <condition> := <property> {< | <= | > | >= | = | != | IN | NOT_IN} <value>
+    <condition> := <property> {< | <= | > | >= | = | != | IN | NOT_IN} CAST(<value>)
     <condition> := <property> IN (<value>, ...)
     <condition> := ANCESTOR IS <entity or key>
 
@@ -186,7 +186,7 @@ class GQL(object):
     _identifier_regex = re.compile(r"(\w+(?:\.\w+)*)$")
 
     _quoted_identifier_regex = re.compile(r'((?:"[^"\s]+")+)$')
-    _conditions_regex = re.compile(r"(<=|>=|!=|=|<|>|is|in)$", re.IGNORECASE)
+    _conditions_regex = re.compile(r"(<=|>=|!=|=|<|>|is|in|not_in)$", re.IGNORECASE)
     _number_regex = re.compile(r"(\d+)$")
     _cast_regex = re.compile(r"(geopt|user|key|date|time|datetime)$", re.IGNORECASE)
 
@@ -409,8 +409,8 @@ class GQL(object):
             filter_rule = (self._ANCESTOR, "is")
             assert condition.lower() == "is"
 
-        if operator == "list" and condition.lower() != "in":
-            self._Error("Only IN can process a list of values")
+        if operator == "list" and condition.lower() not in ["in", "not_in"]:
+            self._Error("Only IN can process a list of values, given '%s'" % condition)
 
         self._filters.setdefault(filter_rule, []).append((operator, parameters))
         return True
@@ -676,6 +676,8 @@ class GQL(object):
                     node = query_module.ParameterNode(prop, op, val)
                 elif op == "in":
                     node = prop._IN(val)
+                elif op == "not_in":
+                    node = prop._NOT_IN(val)
                 else:
                     node = prop._comparison(op, val)
                 filters.append(node)

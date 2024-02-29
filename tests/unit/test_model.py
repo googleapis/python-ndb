@@ -589,6 +589,15 @@ class TestProperty:
         )
 
     @staticmethod
+    def test__NOT_IN_server():
+        prop = model.Property("name", indexed=True)
+        not_in_node = prop._NOT_IN(["a", None, "xy"])
+        assert not_in_node == prop.NOT_IN(["a", None, "xy"])
+        assert not_in_node == query_module.FilterNode(
+            "name", "not_in", ["a", None, "xy"]
+        )
+
+    @staticmethod
     def test___neg__():
         prop = model.Property("name")
         order = -prop
