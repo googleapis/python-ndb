@@ -201,7 +201,7 @@ class TestGQL:
     @staticmethod
     def test_not_in_list():
         Literal = gql_module.Literal
-        gql = gql_module.GQL("SELECT * FROM SomeKind WHERE prop1 NOT_IN (1, 2, 3)")
+        gql = gql_module.GQL("SELECT * FROM SomeKind WHERE prop1 NOT IN (1, 2, 3)")
         assert gql.filters() == {
             ("prop1", "NOT_IN"): [("list", [Literal(1), Literal(2), Literal(3)])]
         }
@@ -210,6 +210,11 @@ class TestGQL:
     def test_cast_list_no_in():
         with pytest.raises(exceptions.BadQueryError):
             gql_module.GQL("SELECT * FROM SomeKind WHERE prop1=(1, 2, 3)")
+
+    @staticmethod
+    def test_not_without_in():
+        with pytest.raises(exceptions.BadQueryError):
+            gql_module.GQL("SELECT * FROM SomeKind WHERE prop1 NOT=1")
 
     @staticmethod
     def test_reference():
@@ -338,6 +343,16 @@ class TestGQL:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test_get_query_not_in():
+        class SomeKind(model.Model):
+            prop1 = model.IntegerProperty()
+
+        gql = gql_module.GQL("SELECT prop1 FROM SomeKind WHERE prop1 NOT IN (1, 2)")
+        query = gql.get_query()
+        assert query.filters == query_module.FilterNode("prop1", "not_in", [1, 2])
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test_get_query_in_parameterized():
         class SomeKind(model.Model):
             prop1 = model.StringProperty()
@@ -353,7 +368,7 @@ class TestGQL:
             prop1 = model.StringProperty()
 
         gql = gql_module.GQL(
-            "SELECT prop1 FROM SomeKind WHERE prop1 NOT_IN (:1, :2, :3)"
+            "SELECT prop1 FROM SomeKind WHERE prop1 NOT IN (:1, :2, :3)"
         )
         query = gql.get_query()
         assert "'not_in'," in str(query.filters)

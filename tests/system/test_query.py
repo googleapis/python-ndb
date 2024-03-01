@@ -1907,7 +1907,7 @@ def test_NOT_IN(ds_entity):
     assert results[0].foo == 0
     assert results[1].foo == 2
 
-    query = SomeKind.gql("where foo not_in :1", [2, 3])
+    query = SomeKind.gql("where foo not in :1", [2, 3])
     results = query.fetch()
     assert len(results) == 3
     assert results[0].foo == 0
