@@ -30,9 +30,9 @@ class GQL(object):
         [OFFSET <offset>]
         [HINT (ORDER_FIRST | FILTER_FIRST | ANCESTOR_FIRST)]
         [;]
-    <condition> := <property> {< | <= | > | >= | = | != | IN | NOT_IN} <value>
-    <condition> := <property> {< | <= | > | >= | = | != | IN | NOT_IN} CAST(<value>)
-    <condition> := <property> IN (<value>, ...)
+    <condition> := <property> {< | <= | > | >= | = | != | IN | NOT IN} <value>
+    <condition> := <property> {< | <= | > | >= | = | != | IN | NOT IN} CAST(<value>)
+    <condition> := <property> {IN | NOT IN} (<value>, ...)
     <condition> := ANCESTOR IS <entity or key>
 
     The class is implemented using some basic regular expression tokenization
