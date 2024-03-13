@@ -115,12 +115,23 @@ def emulator_system(session):
 
     # TODO: It would be better to allow the emulator to bind to any port and pull
     # the port from stderr.
-    emulator_args = ["gcloud", "emulators", "firestore", "start",
-                     "--database-mode=datastore-mode", "--host-port=localhost:8092"]
+    emulator_args = [
+        "gcloud",
+        "emulators",
+        "firestore",
+        "start",
+        "--database-mode=datastore-mode",
+        "--host-port=localhost:8092",
+    ]
     emulator = subprocess.Popen(emulator_args, stderr=subprocess.PIPE)
     # Run py.test against the system tests.
-    session.run("py.test", "--quiet", system_test_folder_path, *session.posargs,
-                env={"DATASTORE_EMULATOR_HOST": "localhost:8092"})
+    session.run(
+        "py.test",
+        "--quiet",
+        system_test_folder_path,
+        *session.posargs,
+        env={"DATASTORE_EMULATOR_HOST": "localhost:8092"},
+    )
     session.run("curl", "-d", "", "localhost:8092/shutdown", external=True)
     emulator.terminate()
     emulator.wait(timeout=2)
