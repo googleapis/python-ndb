@@ -20,8 +20,8 @@ import os
 import requests
 
 import google.api_core.client_options
-
 from google.api_core.gapic_v1 import client_info
+from google.auth.credentials import AnonymousCredentials  # type: ignore
 from google.cloud import environment_vars
 from google.cloud import _helpers
 from google.cloud import client as google_client
@@ -147,7 +147,13 @@ class Client(google_client.ClientWithProject):
             )
 
         if emulator:
-            channel = grpc.insecure_channel(self.host)
+            channel = grpc.insecure_channel(
+                self.host,
+                options=[
+                    # Default options provided in DatastoreGrpcTransport, but not when we override the channel.
+                    ("grpc.max_send_message_length", -1),
+                    ("grpc.max_receive_message_length", -1),
+                ])
         else:
             user_agent = self.client_info.to_user_agent()
             channel = _helpers.make_secure_channel(
