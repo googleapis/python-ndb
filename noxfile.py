@@ -95,13 +95,7 @@ def cover(session):
 
 @nox.session(name="old-emulator-system", python=ALL_INTERPRETERS)
 def old_emulator_system(session):
-    emulator_args = [
-        "gcloud",
-        "beta",
-        "emulators",
-        "datastore",
-        "start"
-    ]
+    emulator_args = ["gcloud", "beta", "emulators", "datastore", "start"]
     _run_emulator(session, emulator_args)
 
 
@@ -112,7 +106,7 @@ def emulator_system(session):
         "emulators",
         "firestore",
         "start",
-        "--database-mode=datastore-mode"
+        "--database-mode=datastore-mode",
     ]
     _run_emulator(session, emulator_args)
 
