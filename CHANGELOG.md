@@ -4,6 +4,13 @@
 
 [1]: https://pypi.org/project/google-cloud-ndb/#history
 
+## [2.3.2](https://github.com/googleapis/python-ndb/compare/v2.3.1...v2.3.2) (2024-04-12)
+
+
+### Documentation
+
+* Add pypi badges to README. ([#976](https://github.com/googleapis/python-ndb/issues/976)) ([c57d234](https://github.com/googleapis/python-ndb/commit/c57d234837e03eec2fef6a0804ea9879f165ecee))
+
 ## [2.3.1](https://github.com/googleapis/python-ndb/compare/v2.3.0...v2.3.1) (2024-03-16)
 
 
