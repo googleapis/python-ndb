@@ -42,6 +42,9 @@ UNIT_TEST_STANDARD_DEPENDENCIES = [
     "google-cloud-core",
 ]
 
+# Error if a python version is missing
+nox.options.error_on_missing_interpreters = True
+
 
 def get_path(*names):
     return os.path.join(NOX_DIR, *names)
@@ -262,7 +265,7 @@ def blacken(session):
     run_black(session)
 
 
-@nox.session(py="3.9")
+@nox.session(py="3.10")
 def docs(session):
     """Build the docs for this library."""
 
