@@ -557,7 +557,11 @@ def _entity_from_ds_entity(ds_entity, model_class=None):
         if not isinstance(class_key, list):
             kind = class_key
         else:
-            kind = class_key[-1]
+            poly_model_class = Model._class_map.get(tuple(class_key))
+            if not model_class and poly_model_class:
+                model_class = poly_model_class
+            else:
+                kind = class_key[-1]
     else:
         kind = ds_entity.kind
 
@@ -4877,6 +4881,7 @@ class Model(_NotEqualMixin, metaclass=MetaModel):
     _properties = None
     _has_repeated = False
     _kind_map = {}  # Dict mapping {kind: Model subclass}
+    _class_map = {}  # Map class key -> suitable subclass (populated by PolyModel)
 
     # Defaults for instance variables.
     _entity_key = None
