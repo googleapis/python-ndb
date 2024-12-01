@@ -81,6 +81,13 @@ def make_filter(name, op, value):
         op=FILTER_OPERATORS[op],
     )
     helpers._set_protobuf_value(filter_pb.value._pb, value)
+
+    # Handle UserProperty meanings which are stored at the entity's top level,
+    # not within individual property values. This ensures proper meaning propagation
+    # when filtering on UserProperty fields.
+    if hasattr(value, "_meanings"):
+        helpers._set_pb_meaning_from_entity(value, name, value, filter_pb.value._pb)
+
     return filter_pb
 
 
