@@ -314,7 +314,6 @@ def doctest(session):
         "sphinxcontrib-qthelp==1.0.3",
         "sphinxcontrib-serializinghtml==1.1.5",
         "sphinx==4.0.1",
-        "sphinxcontrib.spelling",
     )
     session.install(".")
     # Run the script for building docs and running doctests.
