@@ -15,14 +15,6 @@ s.move(templated_files / '.kokoro')
 s.move(templated_files / '.trampolinerc')
 s.move(templated_files / "renovate.json")
 
-s.replace(".kokoro/build.sh", "pushd \"\$\{PROJECT_ROOT\}\"", 
-"""pushd "${PROJECT_ROOT}"
-
-# Need enchant for spell check
-sudo apt-get update
-sudo apt-get -y install dictionaries-common aspell aspell-en \\
-                        hunspell-en-us libenchant1c2a enchant""")
-
 s.replace(".kokoro/build.sh", """(export PROJECT_ID=.*)""", """\g<1>
 
 if [[ -f "${KOKORO_GFILE_DIR}/service-account.json" ]]; then
