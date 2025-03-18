@@ -2714,7 +2714,7 @@ class BlobProperty(Property):
                 for idx, sub_value in enumerate(value):
                     try:
                         sub_value_meaning = sub_meanings[idx]
-                    except IndexError: 
+                    except IndexError:
                         sub_value_meaning = None
                     if sub_value_meaning == _MEANING_COMPRESSED:
                         sub_value.b_val = zlib.decompress(sub_value.b_val)
