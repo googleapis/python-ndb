@@ -2069,6 +2069,39 @@ class TestBlobProperty:
         ds_entity = model._entity_to_ds_entity(entity)
         assert ds_entity["foo"] == [uncompressed_value_one, uncompressed_value_two]
 
+    @pytest.mark.skipif(
+        [int(v) for v in datastore.__version__.split(".")] >= [2, 20, 2],
+        reason="uses meanings semantics from datastore v2.20.2 and later"
+    )
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_compressed_repeated_to_uncompressed_mixed_meaning():
+        """
+        One item is compressed, one uncompressed
+        """
+        class ThisKind(model.Model):
+            foo = model.BlobProperty(compressed=False, repeated=True)
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value_one = b"abc" * 1000
+        compressed_value_one = zlib.compress(uncompressed_value_one)
+        uncompressed_value_two = b"xyz" * 1000
+        compressed_value_two = zlib.compress(uncompressed_value_two)
+        compressed_value = [compressed_value_one, compressed_value_two]
+        datastore_entity.update({"foo": compressed_value})
+        meanings = {
+            "foo": (
+                (None, [model._MEANING_COMPRESSED, None]),
+                compressed_value,
+            )
+        }
+        datastore_entity._meanings = meanings
+        protobuf = helpers.entity_to_protobuf(datastore_entity)
+        entity = model._entity_from_protobuf(protobuf)
+        ds_entity = model._entity_to_ds_entity(entity)
+        assert ds_entity["foo"] == [uncompressed_value_one, compressed_value_two]
+
     @staticmethod
     @pytest.mark.usefixtures("in_context")
     def test__from_datastore_uncompressed_to_uncompressed():
