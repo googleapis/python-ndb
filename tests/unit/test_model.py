@@ -1930,12 +1930,11 @@ class TestBlobProperty:
         assert ds_entity["foo"] == compressed_value
 
     @pytest.mark.skipif(
-        [int(v) for v in datastore.__version__.split(".")] < [2, 20, 2],
+        [int(v) for v in datastore.__version__.split(".")] >= [2, 20, 2],
         reason="uses meanings semantics from datastore v2.20.1 and lower",
     )
-    @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_compressed_legacy():
+    def test__from_datastore_compressed_repeated_to_compressed_legacy(self):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=True, repeated=True)
 
@@ -1960,22 +1959,18 @@ class TestBlobProperty:
         assert ds_entity["foo"] == [compressed_value_one, compressed_value_two]
 
     @pytest.mark.skipif(
-        [int(v) for v in datastore.__version__.split(".")] >= [2, 20, 2],
+        [int(v) for v in datastore.__version__.split(".")] < [2, 20, 2],
         reason="uses meanings semantics from datastore v2.20.2 and later",
     )
     @pytest.mark.parametrize(
         "meaning",
         [
             (model._MEANING_COMPRESSED, None),  # set root meaning
-            (
-                None,
-                [model._MEANING_COMPRESSED, model._MEANING_COMPRESSED],
-            ),  # set sub-meanings
+            (None, [model._MEANING_COMPRESSED] * 2),  # set sub-meanings
         ],
     )
-    @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_compressed(meaning):
+    def test__from_datastore_compressed_repeated_to_compressed(self, meaning):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=True, repeated=True)
 
@@ -2000,12 +1995,11 @@ class TestBlobProperty:
         assert ds_entity["foo"] == [compressed_value_one, compressed_value_two]
 
     @pytest.mark.skipif(
-        [int(v) for v in datastore.__version__.split(".")] < [2, 20, 2],
+        [int(v) for v in datastore.__version__.split(".")] >= [2, 20, 2],
         reason="uses meanings semantics from datastore v2.20.1 and lower",
     )
-    @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_uncompressed_legacy(meaning):
+    def test__from_datastore_compressed_repeated_to_uncompressed_legacy(self):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=False, repeated=True)
 
@@ -2030,22 +2024,18 @@ class TestBlobProperty:
         assert ds_entity["foo"] == [uncompressed_value_one, uncompressed_value_two]
 
     @pytest.mark.skipif(
-        [int(v) for v in datastore.__version__.split(".")] >= [2, 20, 2],
+        [int(v) for v in datastore.__version__.split(".")] < [2, 20, 2],
         reason="uses meanings semantics from datastore v2.20.2 and later",
     )
     @pytest.mark.parametrize(
         "meaning",
         [
             (model._MEANING_COMPRESSED, None),  # set root meaning
-            (
-                None,
-                [model._MEANING_COMPRESSED, model._MEANING_COMPRESSED],
-            ),  # set sub-meanings
+            (None, [model._MEANING_COMPRESSED] * 2),  # set sub-meanings
         ],
     )
-    @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_uncompressed(meaning):
+    def test__from_datastore_compressed_repeated_to_uncompressed(self, meaning):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=False, repeated=True)
 
@@ -2070,15 +2060,15 @@ class TestBlobProperty:
         assert ds_entity["foo"] == [uncompressed_value_one, uncompressed_value_two]
 
     @pytest.mark.skipif(
-        [int(v) for v in datastore.__version__.split(".")] >= [2, 20, 2],
-        reason="uses meanings semantics from datastore v2.20.2 and later"
+        [int(v) for v in datastore.__version__.split(".")] < [2, 20, 2],
+        reason="uses meanings semantics from datastore v2.20.2 and later",
     )
-    @staticmethod
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_uncompressed_mixed_meaning():
+    def test__from_datastore_compressed_repeated_to_uncompressed_mixed_meaning(self):
         """
         One item is compressed, one uncompressed
         """
+
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=False, repeated=True)
 
