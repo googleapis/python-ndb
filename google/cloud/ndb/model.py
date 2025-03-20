@@ -2710,7 +2710,7 @@ class BlobProperty(Property):
             elif root_meaning == _MEANING_COMPRESSED and self._repeated:
                 for sub_value in value:
                     sub_value.b_val = zlib.decompress(sub_value.b_val)
-            elif sub_meanings and isinstance(sub_meanings, list) and self._repeated:
+            elif isinstance(sub_meanings, list) and self._repeated:
                 for idx, sub_value in enumerate(value):
                     try:
                         if sub_meanings[idx] == _MEANING_COMPRESSED:
