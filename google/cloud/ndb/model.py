@@ -2710,14 +2710,14 @@ class BlobProperty(Property):
             elif root_meaning == _MEANING_COMPRESSED and self._repeated:
                 for sub_value in value:
                     sub_value.b_val = zlib.decompress(sub_value.b_val)
-            elif sub_meanings and self._repeated:
+            elif sub_meanings and isinstance(sub_meanings, list) and self._repeated:
                 for idx, sub_value in enumerate(value):
                     try:
-                        sub_value_meaning = sub_meanings[idx]
+                        if sub_meanings[idx] == _MEANING_COMPRESSED:
+                            sub_value.b_val = zlib.decompress(sub_value.b_val)
                     except IndexError:
-                        sub_value_meaning = None
-                    if sub_value_meaning == _MEANING_COMPRESSED:
-                        sub_value.b_val = zlib.decompress(sub_value.b_val)
+                        # value list size exceeds sub_meanings list
+                        break
         return value
 
     def _db_set_compressed_meaning(self, p):
