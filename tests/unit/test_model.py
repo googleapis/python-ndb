@@ -1968,7 +1968,9 @@ class TestBlobProperty:
         ],
     )
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_compressed_tuple_meaning(self, meaning):
+    def test__from_datastore_compressed_repeated_to_compressed_tuple_meaning(
+        self, meaning
+    ):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=True, repeated=True)
 
@@ -2031,7 +2033,9 @@ class TestBlobProperty:
         ],
     )
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_uncompressed_tuple_meaning(self, meaning):
+    def test__from_datastore_compressed_repeated_to_uncompressed_tuple_meaning(
+        self, meaning
+    ):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=False, repeated=True)
 
