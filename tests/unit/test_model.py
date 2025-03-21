@@ -1929,12 +1929,8 @@ class TestBlobProperty:
         ds_entity = model._entity_to_ds_entity(entity)
         assert ds_entity["foo"] == compressed_value
 
-    @pytest.mark.skipif(
-        [int(v) for v in datastore.__version__.split(".")] >= [2, 20, 2],
-        reason="uses meanings semantics from datastore v2.20.1 and lower",
-    )
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_compressed_legacy(self):
+    def test__from_datastore_compressed_repeated_to_compressed(self):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=True, repeated=True)
 
@@ -1972,7 +1968,7 @@ class TestBlobProperty:
         ],
     )
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_compressed(self, meaning):
+    def test__from_datastore_compressed_repeated_to_compressed_tuple_meaning(self, meaning):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=True, repeated=True)
 
@@ -1996,12 +1992,8 @@ class TestBlobProperty:
         ds_entity = model._entity_to_ds_entity(entity)
         assert ds_entity["foo"] == [compressed_value_one, compressed_value_two]
 
-    @pytest.mark.skipif(
-        [int(v) for v in datastore.__version__.split(".")] >= [2, 20, 2],
-        reason="uses meanings semantics from datastore v2.20.1 and lower",
-    )
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_uncompressed_legacy(self):
+    def test__from_datastore_compressed_repeated_to_uncompressed(self):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=False, repeated=True)
 
@@ -2039,7 +2031,7 @@ class TestBlobProperty:
         ],
     )
     @pytest.mark.usefixtures("in_context")
-    def test__from_datastore_compressed_repeated_to_uncompressed(self, meaning):
+    def test__from_datastore_compressed_repeated_to_uncompressed_tuple_meaning(self, meaning):
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=False, repeated=True)
 
