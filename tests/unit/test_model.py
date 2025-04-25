@@ -2150,6 +2150,39 @@ class TestBlobProperty:
 
     @staticmethod
     @pytest.mark.usefixtures("in_context")
+    def test__from_datastore_large_value_list():
+        """
+        try calling _from_datastore with a meaning list smaller than the value list
+        """
+
+        prop = model.BlobProperty(compressed=False, repeated=True)
+        prop._name = "foo"
+
+        key = datastore.Key("ThisKind", 123, project="testing")
+        datastore_entity = datastore.Entity(key=key)
+        uncompressed_value_one = b"abc" * 1000
+        compressed_value_one = zlib.compress(uncompressed_value_one)
+        uncompressed_value_two = b"xyz" * 1000
+        compressed_value_two = zlib.compress(uncompressed_value_two)
+        compressed_value = [model._BaseValue(compressed_value_one), model._BaseValue(compressed_value_two)]
+        datastore_entity.update({"foo": compressed_value})
+        meanings = {
+            "foo": (
+                (None, [model._MEANING_COMPRESSED]),
+                compressed_value,
+            )
+        }
+
+        datastore_entity._meanings = meanings
+
+        updated_value = prop._from_datastore(datastore_entity, compressed_value)
+        assert len(updated_value) == 2
+        assert updated_value[0].b_val == uncompressed_value_one
+        # second value should remain compressed
+        assert updated_value[1].b_val == compressed_value_two
+
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
     def test__from_datastore_uncompressed_to_uncompressed():
         class ThisKind(model.Model):
             foo = model.BlobProperty(compressed=False)
