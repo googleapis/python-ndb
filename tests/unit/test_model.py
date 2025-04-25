@@ -2155,8 +2155,7 @@ class TestBlobProperty:
         try calling _from_datastore with a meaning list smaller than the value list
         """
 
-        prop = model.BlobProperty(compressed=False, repeated=True)
-        prop._name = "foo"
+        prop = model.BlobProperty(compressed=False, repeated=True, name="foo")
 
         key = datastore.Key("ThisKind", 123, project="testing")
         datastore_entity = datastore.Entity(key=key)
@@ -2164,7 +2163,10 @@ class TestBlobProperty:
         compressed_value_one = zlib.compress(uncompressed_value_one)
         uncompressed_value_two = b"xyz" * 1000
         compressed_value_two = zlib.compress(uncompressed_value_two)
-        compressed_value = [model._BaseValue(compressed_value_one), model._BaseValue(compressed_value_two)]
+        compressed_value = [
+            model._BaseValue(compressed_value_one),
+            model._BaseValue(compressed_value_two),
+        ]
         datastore_entity.update({"foo": compressed_value})
         meanings = {
             "foo": (
