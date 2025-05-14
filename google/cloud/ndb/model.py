@@ -3483,6 +3483,17 @@ class UserProperty(Property):
         if auto_current_user_add is not None:
             raise exceptions.NoLongerImplementedError()
 
+    def _comparison(self, op, value):
+        query = super(UserProperty, self)._comparison(op, value)
+        # Assign _MEANING_PREDEFINED_ENTITY_USER to the property's meaning dictionary
+        # This special meaning designation is crucial for enabling filter queries on userProperty
+        # Without this meaning, the datastore would not properly recognize user-related filters
+        # in queries. This ensures the outer layer of userProperty is correctly marked as a
+        # predefined user entity type for query operations
+        query._value._meanings = {self._name: (_MEANING_PREDEFINED_ENTITY_USER, query._value)}
+
+        return query
+
     def _validate(self, value):
         """Validate a ``value`` before setting it.
 
