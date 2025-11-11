@@ -30,6 +30,7 @@ LOCAL_DEPS = ("google-api-core", "google-cloud-core")
 NOX_DIR = os.path.abspath(os.path.dirname(__file__))
 DEFAULT_INTERPRETER = "3.14"
 ALL_INTERPRETERS = ("3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14")
+EMULTATOR_INTERPRETERS = ("3.9", "3.10", "3.11", "3.12", "3.13", "3.14")
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
 BLACK_VERSION = "black[jupyter]==23.7.0"
@@ -44,6 +45,22 @@ UNIT_TEST_STANDARD_DEPENDENCIES = [
 
 # Error if a python version is missing
 nox.options.error_on_missing_interpreters = True
+
+nox.options.sessions = [
+    "prerelease_deps",
+    "unit-3.9",
+    "unit-3.10",
+    "unit-3.11",
+    "unit-3.12",
+    "unit-3.13",
+    "unit-3.14",
+    "cover",
+    "old-emulator-system" "emulator-system" "lint",
+    "blacken",
+    "docs",
+    "doctests",
+    "system",
+]
 
 
 def get_path(*names):
@@ -179,13 +196,13 @@ def cover(session):
     session.run("coverage", "erase")
 
 
-@nox.session(name="old-emulator-system", python=ALL_INTERPRETERS)
+@nox.session(name="old-emulator-system", python=EMULTATOR_INTERPRETERS)
 def old_emulator_system(session):
     emulator_args = ["gcloud", "beta", "emulators", "datastore", "start"]
     _run_emulator(session, emulator_args)
 
 
-@nox.session(name="emulator-system", python=ALL_INTERPRETERS)
+@nox.session(name="emulator-system", python=EMULTATOR_INTERPRETERS)
 def emulator_system(session):
     emulator_args = [
         "gcloud",
