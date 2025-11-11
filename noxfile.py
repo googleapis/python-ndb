@@ -28,11 +28,11 @@ import nox
 
 LOCAL_DEPS = ("google-api-core", "google-cloud-core")
 NOX_DIR = os.path.abspath(os.path.dirname(__file__))
-DEFAULT_INTERPRETER = "3.8"
-ALL_INTERPRETERS = ("3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13")
+DEFAULT_INTERPRETER = "3.14"
+ALL_INTERPRETERS = ("3.7", "3.8", "3.9", "3.10", "3.11", "3.12", "3.13", "3.14")
 CURRENT_DIRECTORY = pathlib.Path(__file__).parent.absolute()
 
-BLACK_VERSION = "black==22.3.0"
+BLACK_VERSION = "black[jupyter]==23.7.0"
 UNIT_TEST_STANDARD_DEPENDENCIES = [
     "mock",
     "asyncmock",
@@ -78,7 +78,7 @@ def default(session):
     )
 
 
-@nox.session(python="3.13")
+@nox.session(python=DEFAULT_INTERPRETER)
 @nox.parametrize(
     "protobuf_implementation",
     ["python", "upb", "cpp"],
@@ -86,7 +86,7 @@ def default(session):
 def prerelease_deps(session, protobuf_implementation):
     """Run all tests with prerelease versions of dependencies installed."""
 
-    if protobuf_implementation == "cpp" and session.python in ("3.11", "3.12", "3.13"):
+    if protobuf_implementation == "cpp" and session.python in ("3.11", "3.12", "3.13", "3.14"):
         session.skip("cpp implementation is not supported in python 3.11+")
 
     # Install all dependencies
@@ -252,7 +252,7 @@ def lint(session):
     Returns a failure if the linters find linting errors or sufficiently
     serious code quality issues.
     """
-    session.install("flake8", BLACK_VERSION, "click<8.1.0")
+    session.install("flake8", BLACK_VERSION)
     run_black(session, use_check=True)
     session.run("flake8", "google", "tests")
 
@@ -260,7 +260,7 @@ def lint(session):
 @nox.session(py=DEFAULT_INTERPRETER)
 def blacken(session):
     # Install all dependencies.
-    session.install(BLACK_VERSION, "click<8.1.0")
+    session.install(BLACK_VERSION)
     # Run ``black``.
     run_black(session)
 
