@@ -60,7 +60,7 @@ nox.options.sessions = [
     "lint",
     "blacken",
     "docs",
-    "doctests",
+    "doctest",
     "system",
 ]
 
@@ -340,7 +340,7 @@ def doctest(session):
         "sphinx==4.0.1",
     )
     session.install(".")
-    # Run the script for building docs and running doctests.
+    # Run the script for building docs and running doctest.
     run_args = [
         "sphinx-build",
         "-W",
