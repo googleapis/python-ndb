@@ -5999,6 +5999,47 @@ class Test_entity_from_ds_entity:
         assert entity.bar == "himom!"
         assert entity.class_ == ["Cat"]
 
+    @staticmethod
+    @pytest.mark.usefixtures("in_context")
+    def test_polymodel_equal_names_different_bases():
+        def inherit_cat(base):
+            class Cat(base):
+                data = model.StringProperty()
+            return Cat
+        
+        class Animal(polymodel.PolyModel):
+            foo = model.IntegerProperty()
+
+        class Command(polymodel.PolyModel):
+            bar = model.StringProperty()
+
+        CatAnimal = inherit_cat(Animal)
+        CatCommand = inherit_cat(Command)
+
+        animal_key = datastore.Key("Animal", 123, project="testing")
+        datastore_entity = datastore.Entity(key=animal_key)
+        datastore_entity.update(
+            {"foo": 42, "data": "meow!", "class": ["Animal", "Cat"]}
+        )
+
+        entity = model._entity_from_ds_entity(datastore_entity)
+        assert isinstance(entity, CatAnimal)
+        assert entity.foo == 42
+        assert entity.data == "meow!"
+        assert entity.class_ == ["Animal", "Cat"]
+
+        command_key = datastore.Key("Command", 456, project="testing")
+        datastore_entity = datastore.Entity(key=command_key)
+        datastore_entity.update(
+            {"bar": "42", "data": "config.conf", "class": ["Command", "Cat"]}
+        )
+
+        entity = model._entity_from_ds_entity(datastore_entity)
+        assert isinstance(entity, CatCommand)
+        assert entity.bar == "42"
+        assert entity.data == "config.conf"
+        assert entity.class_ == ["Command", "Cat"]
+
 
 class Test_entity_to_protobuf:
     @staticmethod

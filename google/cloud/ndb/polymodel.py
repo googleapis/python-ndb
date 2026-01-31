@@ -184,8 +184,6 @@ class PolyModel(model.Model):
 
     class_ = _ClassKeyProperty()
 
-    _class_map = {}  # Map class key -> suitable subclass.
-
     @classmethod
     def _update_kind_map(cls):
         """Override; called by Model._fix_up_properties().
@@ -193,8 +191,7 @@ class PolyModel(model.Model):
         Update the kind map as well as the class map, except for PolyModel
         itself (its class key is empty).  Note that the kind map will
         contain entries for all classes in a PolyModel hierarchy; they all
-        have the same kind, but different class names.  PolyModel class
-        names, like regular Model class names, must be globally unique.
+        have the same kind, but different class names.
         """
         cls._kind_map[cls._class_name()] = cls
         class_key = cls._class_key()
