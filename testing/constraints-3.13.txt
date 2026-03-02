@@ -1,2 +1,0 @@
-protobuf>=6
-redis>=6
